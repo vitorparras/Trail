@@ -96,4 +96,7 @@
   <data name="BackToHome" xml:space="preserve">
     <value>Voltar ao início</value>
   </data>
+  <data name="RateLimitExceeded" xml:space="preserve">
+    <value>Muitas tentativas. Tente novamente mais tarde.</value>
+  </data>
 </root>

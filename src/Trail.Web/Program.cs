@@ -1,9 +1,11 @@
 using System.Globalization;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Trail.Application;
+using Trail.Infrastructure;
 using Trail.Web.Cli;
 using Trail.Web.Htmx;
 using Trail.Web.Observability;
@@ -17,6 +19,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddTrailObservability();
 builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration);
 
 var culture = CultureInfo.GetCultureInfo("pt-BR");
 
@@ -49,6 +52,16 @@ app.UseExceptionHandler("/Error");
 app.UseRequestLocalization();
 app.MapStaticAssets();
 app.MapRazorPages().WithStaticAssets();
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false,
+});
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+});
 
 app.Run();
 

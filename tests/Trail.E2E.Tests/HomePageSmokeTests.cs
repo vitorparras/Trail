@@ -4,7 +4,8 @@ using static Microsoft.Playwright.Assertions;
 
 namespace Trail.E2E.Tests;
 
-public sealed class HomePageSmokeTests(DockerAppFixture fixture) : IClassFixture<DockerAppFixture>
+[Collection(E2ETestCollectionDefinition.Name)]
+public sealed class HomePageSmokeTests(DockerAppFixture fixture)
 {
     [Fact]
     public async Task Desktop_LightTheme_RendersShellAndPassesAccessibilityScan()

@@ -7,7 +7,9 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Trail.Application;
+using Trail.Application.Abstractions;
 using Trail.Infrastructure;
+using Trail.Web.Auth;
 using Trail.Web.Cli;
 using Trail.Web.Htmx;
 using Trail.Web.Observability;
@@ -23,6 +25,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddTrailObservability();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.Replace(ServiceDescriptor.Scoped<ICurrentUser, HttpCurrentUser>());
 
 var culture = CultureInfo.GetCultureInfo("pt-BR");
 
@@ -60,26 +65,34 @@ builder.Services.AddOptions<RepositoryOptions>()
     .ValidateOnStart();
 builder.Services.AddSingleton<IValidateOptions<RepositoryOptions>, RepositoryOptionsValidator>();
 
-var app = builder.Build();
+if (args is ["--reset-admin-password", ..])
+{
+    var app = builder.Build();
+    return await ResetAdminPasswordCommand.RunAsync(args, app.Services);
+}
 
-app.UseExceptionHandler("/Error");
-app.UseSecurityHeaders();
-app.UseRequestLocalization();
-app.UseRouting();
-app.UseRateLimiter();
-app.MapStaticAssets();
-app.MapRazorPages().WithStaticAssets();
+var webApp = builder.Build();
 
-app.MapHealthChecks("/health/live", new HealthCheckOptions
+webApp.UseExceptionHandler("/Error");
+webApp.UseSecurityHeaders();
+webApp.UseRequestLocalization();
+webApp.UseRouting();
+webApp.UseAuthentication();
+webApp.UseAuthorization();
+webApp.UseRateLimiter();
+webApp.MapStaticAssets();
+webApp.MapRazorPages().WithStaticAssets();
+
+webApp.MapHealthChecks("/health/live", new HealthCheckOptions
 {
     Predicate = _ => false,
 });
 
-app.MapHealthChecks("/health/ready", new HealthCheckOptions
+webApp.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
     Predicate = check => check.Tags.Contains("ready"),
 });
 
-app.Run();
+webApp.Run();
 
 return 0;

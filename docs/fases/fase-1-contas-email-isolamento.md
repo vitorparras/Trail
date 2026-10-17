@@ -1,7 +1,7 @@
 # Fase 1 — Contas, e-mail e isolamento: detalhamento
 
-> **Situação:** em implementação na branch `phase/1-accounts-email-isolation` (empilhada
-> sobre `phase/0-foundation`).
+> **Situação:** concluída e aguardando a revisão do autor no
+> [PR #2](https://github.com/vitorparras/trail/pull/2), empilhado sobre o PR #1 (Fase 0).
 
 ## Objetivo
 

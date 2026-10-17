@@ -1,0 +1,21 @@
+@model Trail.Web.Pages.Plans.AddSectionFormModel
+@{
+    const string errorsId = "add-section-errors";
+    var errors = PlanFormErrors.For(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.NameField);
+    var nameInvalid = PlanFormErrors.HasErrors(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.NameField);
+}
+
+<form method="post" aria-labelledby="add-section-heading" asp-page-handler="AddSection" asp-route-planId="@Model.PlanId" class="flex flex-wrap items-center gap-2">
+    <input type="hidden" name="expectedPlanVersion" value="@Model.PlanVersion" />
+    <input type="text"
+           name="name"
+           value="@Model.Name"
+           placeholder="@SharedLocalizer["SectionName"]"
+           aria-label="@SharedLocalizer["SectionName"]"
+           aria-invalid="@(nameInvalid ? "true" : null)"
+           aria-describedby="@(nameInvalid ? errorsId : null)"
+           class="input input-bordered input-sm flex-1 @(nameInvalid ? "input-error" : null)"
+           required />
+    <button type="submit" class="btn btn-sm btn-primary">@SharedLocalizer["AddSection"]</button>
+    <partial name="_FormErrors" model="new FormErrorList(errorsId, errors)" />
+</form>

@@ -1,0 +1,55 @@
+@model Trail.Web.Pages.Plans.UpdateTopicFormModel
+@{
+    const string errorsId = "update-topic-errors";
+    var errors = PlanFormErrors.For(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.CodeField, PlanFormErrors.TitleField);
+    var codeInvalid = PlanFormErrors.HasErrors(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.CodeField);
+    var titleInvalid = PlanFormErrors.HasErrors(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.TitleField);
+}
+
+<form method="post"
+      asp-page-handler="UpdateTopic"
+      asp-route-planId="@Model.PlanId"
+      asp-route-subjectId="@Model.SubjectId"
+      class="space-y-3">
+    <input type="hidden" name="expectedSubjectVersion" value="@Model.SubjectVersion" />
+    <div class="form-control">
+        <label class="label" for="update-topic-id">
+            <span class="label-text text-xs">@SharedLocalizer["Topic"]</span>
+        </label>
+        <select id="update-topic-id" name="topicId" class="select select-bordered select-sm w-full" required>
+            @foreach (var topic in Model.Topics)
+            {
+                <!option value="@topic.Id.Value" @(Model.TopicId == topic.Id.Value ? "selected" : null)>@(topic.Code != null ? $"{topic.Code} - " : string.Empty)@topic.Title</!option>
+            }
+        </select>
+    </div>
+    <div class="grid grid-cols-3 gap-2">
+        <div class="form-control">
+            <label class="label" for="update-topic-code">
+                <span class="label-text text-xs">@SharedLocalizer["TopicCode"]</span>
+            </label>
+            <input id="update-topic-code"
+                   type="text"
+                   name="code"
+                   value="@Model.Code"
+                   aria-invalid="@(codeInvalid ? "true" : null)"
+                   aria-describedby="@(codeInvalid ? errorsId : null)"
+                   class="input input-bordered input-sm font-mono text-xs @(codeInvalid ? "input-error" : null)" />
+        </div>
+        <div class="form-control col-span-2">
+            <label class="label" for="update-topic-title">
+                <span class="label-text text-xs">@SharedLocalizer["TopicTitle"]</span>
+            </label>
+            <input id="update-topic-title"
+                   type="text"
+                   name="title"
+                   value="@Model.Title"
+                   aria-invalid="@(titleInvalid ? "true" : null)"
+                   aria-describedby="@(titleInvalid ? errorsId : null)"
+                   class="input input-bordered input-sm @(titleInvalid ? "input-error" : null)"
+                   required />
+        </div>
+    </div>
+    <partial name="_FormErrors" model="new FormErrorList(errorsId, errors)" />
+    <button type="submit" class="btn btn-primary btn-sm">@SharedLocalizer["Save"]</button>
+</form>

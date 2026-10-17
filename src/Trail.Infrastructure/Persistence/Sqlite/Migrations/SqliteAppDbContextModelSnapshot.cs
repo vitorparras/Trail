@@ -171,6 +171,193 @@ namespace Trail.Infrastructure.Persistence.Sqlite.Migrations
                     b.ToTable("UserSettings");
                 });
 
+            modelBuilder.Entity("Trail.Domain.Planning.Section", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("StudyPlanId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StudyPlanId");
+
+                    b.ToTable("Sections", (string)null);
+                });
+
+            modelBuilder.Entity("Trail.Domain.Planning.StudyPlan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DefaultMockExamQuestions")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("ExamDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("FitnessTestEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ScoringRule")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("StudyPlans", (string)null);
+                });
+
+            modelBuilder.Entity("Trail.Domain.Planning.Subject", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("StudyPlanId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("StudyPlanId");
+
+                    b.ToTable("Subjects", (string)null);
+                });
+
+            modelBuilder.Entity("Trail.Domain.Planning.SubjectPlacement", b =>
+                {
+                    b.Property<Guid>("StudyPlanId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("SectionId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("StudyPlanId", "SubjectId");
+
+                    b.ToTable("SubjectPlacements", (string)null);
+                });
+
+            modelBuilder.Entity("Trail.Domain.Planning.Topic", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Code")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SearchText")
+                        .IsRequired()
+                        .HasMaxLength(650)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentId");
+
+                    b.HasIndex("SearchText");
+
+                    b.HasIndex("SubjectId");
+
+                    b.HasIndex("SubjectId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("Topics", (string)null);
+                });
+
+            modelBuilder.Entity("Trail.Domain.Planning.TopicNote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Markdown")
+                        .IsRequired()
+                        .HasMaxLength(50000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("TopicId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("TopicId")
+                        .IsUnique();
+
+                    b.ToTable("TopicNotes", (string)null);
+                });
+
             modelBuilder.Entity("Trail.Infrastructure.Identity.AccountInvitation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -340,6 +527,116 @@ namespace Trail.Infrastructure.Persistence.Sqlite.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Trail.Domain.Planning.Section", b =>
+                {
+                    b.HasOne("Trail.Domain.Planning.StudyPlan", null)
+                        .WithMany("Sections")
+                        .HasForeignKey("StudyPlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Trail.Domain.Planning.StudyPlan", b =>
+                {
+                    b.OwnsOne("Trail.Domain.Planning.PerformanceBands", "PerformanceBands", b1 =>
+                        {
+                            b1.Property<Guid>("StudyPlanId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<int>("HighThreshold")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<int>("LowThreshold")
+                                .HasColumnType("INTEGER");
+
+                            b1.HasKey("StudyPlanId");
+
+                            b1.ToTable("StudyPlans");
+
+                            b1.WithOwner()
+                                .HasForeignKey("StudyPlanId");
+                        });
+
+                    b.OwnsOne("Trail.Domain.Planning.PerformancePeriod", "DefaultPerformancePeriod", b1 =>
+                        {
+                            b1.Property<Guid>("StudyPlanId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<int?>("Days")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<DateOnly?>("EndDate")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<int>("Kind")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<DateOnly?>("StartDate")
+                                .HasColumnType("TEXT");
+
+                            b1.HasKey("StudyPlanId");
+
+                            b1.ToTable("StudyPlans");
+
+                            b1.WithOwner()
+                                .HasForeignKey("StudyPlanId");
+                        });
+
+                    b.Navigation("DefaultPerformancePeriod")
+                        .IsRequired();
+
+                    b.Navigation("PerformanceBands")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Trail.Domain.Planning.Subject", b =>
+                {
+                    b.HasOne("Trail.Domain.Planning.StudyPlan", null)
+                        .WithMany()
+                        .HasForeignKey("StudyPlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Trail.Domain.Planning.SubjectPlacement", b =>
+                {
+                    b.HasOne("Trail.Domain.Planning.StudyPlan", null)
+                        .WithMany("Outline")
+                        .HasForeignKey("StudyPlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Trail.Domain.Planning.Topic", b =>
+                {
+                    b.HasOne("Trail.Domain.Planning.Subject", null)
+                        .WithMany("Topics")
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Trail.Domain.Planning.TopicNote", b =>
+                {
+                    b.HasOne("Trail.Domain.Planning.Topic", null)
+                        .WithOne()
+                        .HasForeignKey("Trail.Domain.Planning.TopicNote", "TopicId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Trail.Domain.Planning.StudyPlan", b =>
+                {
+                    b.Navigation("Outline");
+
+                    b.Navigation("Sections");
+                });
+
+            modelBuilder.Entity("Trail.Domain.Planning.Subject", b =>
+                {
+                    b.Navigation("Topics");
                 });
 #pragma warning restore 612, 618
         }

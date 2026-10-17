@@ -1,0 +1,120 @@
+@model Trail.Application.Planning.SubjectDetailView
+
+<div class="flex flex-wrap items-center gap-2 pb-2 border-b border-base-300">
+    <span class="text-xs font-semibold uppercase tracking-wider text-base-content/80 mr-2">@SharedLocalizer["Summary"]:</span>
+    <span class="badge badge-status-to-study">@SharedLocalizer["TopicStatus_ToStudy"]: @Model.ToStudyCount</span>
+    <span class="badge badge-status-studying">@SharedLocalizer["TopicStatus_Studying"]: @Model.StudyingCount</span>
+    <span class="badge badge-status-studied">@SharedLocalizer["TopicStatus_Studied"]: @Model.StudiedCount</span>
+    <span class="badge badge-status-reviewing">@SharedLocalizer["TopicStatus_Reviewing"]: @Model.ReviewingCount</span>
+</div>
+
+@if (Model.Topics.Count == 0)
+{
+    <div class="card bg-base-200 p-6 text-center">
+        <p class="text-base-content/70 text-sm">@SharedLocalizer["NoTopics"]</p>
+    </div>
+}
+else
+{
+    <ul class="divide-y divide-base-200" aria-label="@SharedLocalizer["Topics"]">
+        @foreach (var topic in Model.Topics)
+        {
+            var indentClass = topic.Depth switch
+            {
+                0 => "pl-0",
+                1 => "pl-6",
+                2 => "pl-12",
+                3 => "pl-18",
+                _ => "pl-24"
+            };
+
+            <li class="py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3 @indentClass">
+                <div class="flex items-center gap-2 flex-1 min-w-0">
+                    @if (!string.IsNullOrWhiteSpace(topic.Code))
+                    {
+                        <span class="font-mono text-xs px-1.5 py-0.5 rounded bg-base-200 text-base-content/70 shrink-0">@topic.Code</span>
+                    }
+                    <span class="font-medium text-base-content text-sm truncate">@topic.Title</span>
+                    @if (topic.HasNote)
+                    {
+                        <span class="badge badge-ghost badge-xs shrink-0" title="@SharedLocalizer["TopicNotes"]">📝</span>
+                    }
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 shrink-0">
+                    @switch (topic.Status)
+                    {
+                        case Trail.Domain.Planning.TopicStatus.ToStudy:
+                            <span class="badge badge-status-to-study">@SharedLocalizer["TopicStatus_ToStudy"]</span>
+                            break;
+                        case Trail.Domain.Planning.TopicStatus.Studying:
+                            <span class="badge badge-status-studying">@SharedLocalizer["TopicStatus_Studying"]</span>
+                            break;
+                        case Trail.Domain.Planning.TopicStatus.Studied:
+                            <span class="badge badge-status-studied">@SharedLocalizer["TopicStatus_Studied"]</span>
+                            break;
+                        case Trail.Domain.Planning.TopicStatus.Reviewing:
+                            <span class="badge badge-status-reviewing">@SharedLocalizer["TopicStatus_Reviewing"]</span>
+                            break;
+                    }
+
+                    <form method="post"
+                          asp-page-handler="ChangeStatus"
+                          asp-route-planId="@Model.StudyPlanId.Value"
+                          asp-route-subjectId="@Model.Id.Value"
+                          hx-post="/planos/@Model.StudyPlanId.Value/disciplinas/@Model.Id.Value?handler=ChangeStatus"
+                          hx-target="#topic-tree-container"
+                          hx-headers='{"HX-Request-Type": "partial"}'
+                          class="inline-flex items-center gap-1">
+                        <input type="hidden" name="topicId" value="@topic.Id.Value" />
+                        <select name="newStatus" aria-label="@SharedLocalizer["TopicStatusFor", topic.Title]" class="select select-bordered select-xs">
+                            <!option value="@Trail.Domain.Planning.TopicStatus.ToStudy" @(topic.Status == Trail.Domain.Planning.TopicStatus.ToStudy ? "selected" : null)>@SharedLocalizer["TopicStatus_ToStudy"]</!option>
+                            <!option value="@Trail.Domain.Planning.TopicStatus.Studying" @(topic.Status == Trail.Domain.Planning.TopicStatus.Studying ? "selected" : null)>@SharedLocalizer["TopicStatus_Studying"]</!option>
+                            <!option value="@Trail.Domain.Planning.TopicStatus.Studied" @(topic.Status == Trail.Domain.Planning.TopicStatus.Studied ? "selected" : null)>@SharedLocalizer["TopicStatus_Studied"]</!option>
+                            <!option value="@Trail.Domain.Planning.TopicStatus.Reviewing" @(topic.Status == Trail.Domain.Planning.TopicStatus.Reviewing ? "selected" : null)>@SharedLocalizer["TopicStatus_Reviewing"]</!option>
+                        </select>
+                        <button type="submit" class="btn btn-ghost btn-xs">@SharedLocalizer["Apply"]</button>
+                    </form>
+
+                    <a asp-page="/Plans/Subject"
+                       asp-route-planId="@Model.StudyPlanId.Value"
+                       asp-route-subjectId="@Model.Id.Value"
+                       asp-route-noteTopicId="@topic.Id.Value"
+                       class="btn btn-ghost btn-xs">
+                        @SharedLocalizer["TopicNotes"]
+                    </a>
+
+                    <form method="post"
+                          asp-page-handler="ReorderTopic"
+                          asp-route-planId="@Model.StudyPlanId.Value"
+                          asp-route-subjectId="@Model.Id.Value"
+                          class="inline">
+                        <input type="hidden" name="topicId" value="@topic.Id.Value" />
+                        <input type="hidden" name="direction" value="up" />
+                        <input type="hidden" name="expectedSubjectVersion" value="@Model.Version" />
+                        <button type="submit" class="btn btn-ghost btn-xs" aria-label="@SharedLocalizer["MoveUp"]">↑</button>
+                    </form>
+                    <form method="post"
+                          asp-page-handler="ReorderTopic"
+                          asp-route-planId="@Model.StudyPlanId.Value"
+                          asp-route-subjectId="@Model.Id.Value"
+                          class="inline">
+                        <input type="hidden" name="topicId" value="@topic.Id.Value" />
+                        <input type="hidden" name="direction" value="down" />
+                        <input type="hidden" name="expectedSubjectVersion" value="@Model.Version" />
+                        <button type="submit" class="btn btn-ghost btn-xs" aria-label="@SharedLocalizer["MoveDown"]">↓</button>
+                    </form>
+
+                    <form method="post"
+                          asp-page-handler="DeleteTopic"
+                          asp-route-planId="@Model.StudyPlanId.Value"
+                          asp-route-subjectId="@Model.Id.Value"
+                          class="inline">
+                        <input type="hidden" name="topicId" value="@topic.Id.Value" />
+                        <button type="submit" class="btn btn-ghost btn-xs text-error">@SharedLocalizer["Delete"]</button>
+                    </form>
+                </div>
+            </li>
+        }
+    </ul>
+}

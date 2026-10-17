@@ -498,4 +498,346 @@
   <data name="Role" xml:space="preserve">
     <value>Função</value>
   </data>
+  <data name="StudyPlans" xml:space="preserve">
+    <value>Planos de estudo</value>
+  </data>
+  <data name="NewStudyPlan" xml:space="preserve">
+    <value>Novo plano de estudo</value>
+  </data>
+  <data name="EditStudyPlan" xml:space="preserve">
+    <value>Editar plano</value>
+  </data>
+  <data name="DeleteStudyPlan" xml:space="preserve">
+    <value>Excluir plano</value>
+  </data>
+  <data name="PlanName" xml:space="preserve">
+    <value>Nome do plano</value>
+  </data>
+  <data name="PlanDescription" xml:space="preserve">
+    <value>Descrição</value>
+  </data>
+  <data name="ScoringRule" xml:space="preserve">
+    <value>Regra de pontuação</value>
+  </data>
+  <data name="ScoringRule_Cebraspe" xml:space="preserve">
+    <value>Cebraspe (certa − errada)</value>
+  </data>
+  <data name="ScoringRule_Standard" xml:space="preserve">
+    <value>Tradicional (% de acertos)</value>
+  </data>
+  <data name="ScoringRule_None" xml:space="preserve">
+    <value>Sem pontuação</value>
+  </data>
+  <data name="DefaultPerformancePeriod" xml:space="preserve">
+    <value>Período de desempenho padrão</value>
+  </data>
+  <data name="Period_All" xml:space="preserve">
+    <value>Todas as questões</value>
+  </data>
+  <data name="Period_LastDays" xml:space="preserve">
+    <value>Últimos N dias</value>
+  </data>
+  <data name="Period_DateRange" xml:space="preserve">
+    <value>Intervalo de datas</value>
+  </data>
+  <data name="LowBandThreshold" xml:space="preserve">
+    <value>Limite inferior da faixa (%)</value>
+  </data>
+  <data name="HighBandThreshold" xml:space="preserve">
+    <value>Limite superior da faixa (%)</value>
+  </data>
+  <data name="ExamDate" xml:space="preserve">
+    <value>Data da prova</value>
+  </data>
+  <data name="DefaultMockExamQuestions" xml:space="preserve">
+    <value>Questões por simulado</value>
+  </data>
+  <data name="FitnessTestEnabled" xml:space="preserve">
+    <value>Habilitar TAF</value>
+  </data>
+  <data name="Sections" xml:space="preserve">
+    <value>Blocos</value>
+  </data>
+  <data name="AddSection" xml:space="preserve">
+    <value>Adicionar bloco</value>
+  </data>
+  <data name="UnassignedSubjects" xml:space="preserve">
+    <value>Disciplinas sem bloco</value>
+  </data>
+  <data name="Subjects" xml:space="preserve">
+    <value>Disciplinas</value>
+  </data>
+  <data name="AddSubject" xml:space="preserve">
+    <value>Adicionar disciplina</value>
+  </data>
+  <data name="Topics" xml:space="preserve">
+    <value>Tópicos</value>
+  </data>
+  <data name="AddTopic" xml:space="preserve">
+    <value>Adicionar tópico</value>
+  </data>
+  <data name="AddSubtopic" xml:space="preserve">
+    <value>Adicionar subtópico</value>
+  </data>
+  <data name="TopicCode" xml:space="preserve">
+    <value>Código (ex.: 4.1)</value>
+  </data>
+  <data name="TopicTitle" xml:space="preserve">
+    <value>Título do tópico</value>
+  </data>
+  <data name="TopicStatus_ToStudy" xml:space="preserve">
+    <value>A estudar</value>
+  </data>
+  <data name="TopicStatus_Studying" xml:space="preserve">
+    <value>Estudando</value>
+  </data>
+  <data name="TopicStatus_Studied" xml:space="preserve">
+    <value>Estudado</value>
+  </data>
+  <data name="TopicStatus_Reviewing" xml:space="preserve">
+    <value>Revisando</value>
+  </data>
+  <data name="TopicNotes" xml:space="preserve">
+    <value>Anotações</value>
+  </data>
+  <data name="SaveNotes" xml:space="preserve">
+    <value>Salvar anotações</value>
+  </data>
+  <data name="FilterBySubject" xml:space="preserve">
+    <value>Filtrar por disciplina</value>
+  </data>
+  <data name="FilterByStatus" xml:space="preserve">
+    <value>Filtrar por status</value>
+  </data>
+  <data name="SearchTopicsPlaceholder" xml:space="preserve">
+    <value>Buscar tópico sem acento...</value>
+  </data>
+  <data name="ConfirmDelete" xml:space="preserve">
+    <value>Confirmar exclusão</value>
+  </data>
+  <data name="DeletionImpactWarning" xml:space="preserve">
+    <value>Esta ação apagará permanentemente os itens abaixo:</value>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>Mover para cima</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>Mover para baixo</value>
+  </data>
+  <data name="ConcurrencyConflictBanner" xml:space="preserve">
+    <value>Este item foi atualizado em outro aparelho ou aba. Seu texto foi mantido abaixo; revise e salve novamente.</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Salvar</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancelar</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>Voltar</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Editar</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Excluir</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>Renomear</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>Buscar</value>
+  </data>
+  <data name="Filter" xml:space="preserve">
+    <value>Filtrar</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>Todos</value>
+  </data>
+  <data name="None" xml:space="preserve">
+    <value>Nenhum</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Fechar</value>
+  </data>
+  <data name="Days" xml:space="preserve">
+    <value>Dias</value>
+  </data>
+  <data name="StartDate" xml:space="preserve">
+    <value>Data inicial</value>
+  </data>
+  <data name="EndDate" xml:space="preserve">
+    <value>Data final</value>
+  </data>
+  <data name="NoStudyPlans" xml:space="preserve">
+    <value>Nenhum plano de estudo cadastrado.</value>
+  </data>
+  <data name="NoSubjects" xml:space="preserve">
+    <value>Nenhuma disciplina cadastrada.</value>
+  </data>
+  <data name="NoTopics" xml:space="preserve">
+    <value>Nenhum tópico cadastrado.</value>
+  </data>
+  <data name="MarkdownPreview" xml:space="preserve">
+    <value>Pré-visualização</value>
+  </data>
+  <data name="MarkdownSource" xml:space="preserve">
+    <value>Editar markdown</value>
+  </data>
+  <data name="Details" xml:space="preserve">
+    <value>Detalhes</value>
+  </data>
+  <data name="Summary" xml:space="preserve">
+    <value>Resumo</value>
+  </data>
+  <data name="TotalTopics" xml:space="preserve">
+    <value>Total de tópicos</value>
+  </data>
+  <data name="Subtopics" xml:space="preserve">
+    <value>Subtópicos</value>
+  </data>
+  <data name="Notes" xml:space="preserve">
+    <value>Anotações</value>
+  </data>
+  <data name="SectionName" xml:space="preserve">
+    <value>Nome do bloco</value>
+  </data>
+  <data name="SubjectName" xml:space="preserve">
+    <value>Nome da disciplina</value>
+  </data>
+  <data name="MoveToSection" xml:space="preserve">
+    <value>Mover para bloco</value>
+  </data>
+  <data name="planning.concurrency_conflict" xml:space="preserve">
+    <value>Este registro foi alterado em outro dispositivo. Revise os dados e tente novamente.</value>
+  </data>
+  <data name="planning.plan.not_found" xml:space="preserve">
+    <value>Plano de estudo não encontrado.</value>
+  </data>
+  <data name="planning.plan.name_required" xml:space="preserve">
+    <value>O nome do plano de estudo é obrigatório.</value>
+  </data>
+  <data name="planning.plan.name_too_long" xml:space="preserve">
+    <value>O nome do plano de estudo excede o limite de caracteres.</value>
+  </data>
+  <data name="planning.plan.description_too_long" xml:space="preserve">
+    <value>A descrição do plano de estudo excede o limite de caracteres.</value>
+  </data>
+  <data name="planning.plan.mock_exam_questions_must_be_positive" xml:space="preserve">
+    <value>A quantidade de questões por simulado deve ser maior que zero.</value>
+  </data>
+  <data name="planning.period.days_must_be_positive" xml:space="preserve">
+    <value>A quantidade de dias deve ser maior que zero.</value>
+  </data>
+  <data name="planning.period.invalid_date_range" xml:space="preserve">
+    <value>A data inicial deve ser anterior ou igual à data final.</value>
+  </data>
+  <data name="planning.period.invalid_kind" xml:space="preserve">
+    <value>Tipo de período inválido.</value>
+  </data>
+  <data name="planning.bands.low_out_of_range" xml:space="preserve">
+    <value>O limite inferior deve estar entre 0 e 100.</value>
+  </data>
+  <data name="planning.bands.high_out_of_range" xml:space="preserve">
+    <value>O limite superior deve estar entre 0 e 100.</value>
+  </data>
+  <data name="planning.bands.low_must_be_less_than_high" xml:space="preserve">
+    <value>O limite inferior deve ser menor que o limite superior.</value>
+  </data>
+  <data name="planning.section.not_found" xml:space="preserve">
+    <value>Bloco não encontrado.</value>
+  </data>
+  <data name="planning.section.name_required" xml:space="preserve">
+    <value>O nome do bloco é obrigatório.</value>
+  </data>
+  <data name="planning.section.name_too_long" xml:space="preserve">
+    <value>O nome do bloco excede o limite de caracteres.</value>
+  </data>
+  <data name="planning.section.duplicate_name" xml:space="preserve">
+    <value>Já existe um bloco com esse nome neste plano.</value>
+  </data>
+  <data name="planning.section.invalid_reorder" xml:space="preserve">
+    <value>A ordenação dos blocos é inválida.</value>
+  </data>
+  <data name="planning.outline.duplicate_subject" xml:space="preserve">
+    <value>A disciplina já está presente no plano.</value>
+  </data>
+  <data name="planning.outline.subject_not_found" xml:space="preserve">
+    <value>Disciplina não encontrada na estrutura do plano.</value>
+  </data>
+  <data name="planning.outline.invalid_reorder" xml:space="preserve">
+    <value>A ordenação das disciplinas é inválida.</value>
+  </data>
+  <data name="planning.subject.not_found" xml:space="preserve">
+    <value>Disciplina não encontrada.</value>
+  </data>
+  <data name="planning.subject.name_required" xml:space="preserve">
+    <value>O nome da disciplina é obrigatório.</value>
+  </data>
+  <data name="planning.subject.name_too_long" xml:space="preserve">
+    <value>O nome da disciplina excede o limite de caracteres.</value>
+  </data>
+  <data name="planning.topic.not_found" xml:space="preserve">
+    <value>Tópico não encontrado.</value>
+  </data>
+  <data name="planning.topic.title_required" xml:space="preserve">
+    <value>O título do tópico é obrigatório.</value>
+  </data>
+  <data name="planning.topic.title_too_long" xml:space="preserve">
+    <value>O título do tópico excede o limite de caracteres.</value>
+  </data>
+  <data name="planning.topic.invalid_code" xml:space="preserve">
+    <value>O código do tópico é inválido.</value>
+  </data>
+  <data name="planning.topic.duplicate_code" xml:space="preserve">
+    <value>Já existe um tópico com esse código nesta disciplina.</value>
+  </data>
+  <data name="planning.topic.parent_not_found" xml:space="preserve">
+    <value>Tópico pai não encontrado.</value>
+  </data>
+  <data name="planning.topic.cycle_detected" xml:space="preserve">
+    <value>Não é possível mover um tópico para dentro de si mesmo ou de seus descendentes.</value>
+  </data>
+  <data name="planning.topic.invalid_reorder" xml:space="preserve">
+    <value>A ordenação dos tópicos é inválida.</value>
+  </data>
+  <data name="planning.note.too_long" xml:space="preserve">
+    <value>A anotação excede o limite de caracteres.</value>
+  </data>
+  <data name="planning.deletion.invalid_target_kind" xml:space="preserve">
+    <value>Alvo de exclusão inválido.</value>
+  </data>
+  <data name="planning.deletion.section_required" xml:space="preserve">
+    <value>O bloco é obrigatório para exclusão.</value>
+  </data>
+  <data name="planning.deletion.subject_required" xml:space="preserve">
+    <value>A disciplina é obrigatória para exclusão.</value>
+  </data>
+  <data name="planning.deletion.topic_required" xml:space="preserve">
+    <value>O tópico é obrigatório para exclusão.</value>
+  </data>
+  <data name="NewParentTopic" xml:space="preserve">
+    <value>Novo tópico pai</value>
+  </data>
+  <data name="auth.unauthenticated" xml:space="preserve">
+    <value>É necessário entrar para continuar.</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>Aplicar</value>
+  </data>
+  <data name="Topic" xml:space="preserve">
+    <value>Tópico</value>
+  </data>
+  <data name="ParentTopic" xml:space="preserve">
+    <value>Tópico pai</value>
+  </data>
+  <data name="SubjectSection" xml:space="preserve">
+    <value>Bloco da disciplina</value>
+  </data>
+  <data name="SearchTopicsLabel" xml:space="preserve">
+    <value>Buscar tópico</value>
+  </data>
+  <data name="TopicStatusFor" xml:space="preserve">
+    <value>Status do tópico {0}</value>
+  </data>
 </root>

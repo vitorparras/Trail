@@ -1,0 +1,11 @@
+@model Trail.Web.Pages.Plans.FormErrorList
+
+@if (Model.Errors.Count > 0)
+{
+    <ul id="@Model.Id" class="w-full text-xs text-error">
+        @foreach (var error in Model.Errors)
+        {
+            <li>@error</li>
+        }
+    </ul>
+}

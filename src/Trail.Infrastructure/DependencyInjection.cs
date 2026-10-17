@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Trail.Application.Abstractions;
 using Trail.Application.Accounts;
+using Trail.Application.Planning;
 using Trail.Domain.Common;
 using Trail.Infrastructure.Email;
 using Trail.Infrastructure.Identity;
@@ -161,6 +162,7 @@ public static class DependencyInjection
         services.Replace(ServiceDescriptor.Scoped<IAccountIdentityGateway, AccountIdentityGateway>());
         services.Replace(ServiceDescriptor.Scoped<IEmailSender, MailKitEmailSender>());
         services.Replace(ServiceDescriptor.Scoped<IUserSettingsStore, EfUserSettingsStore>());
+        services.Replace(ServiceDescriptor.Scoped<IPlanningStore, EfPlanningStore>());
 
         services.AddSingleton<DatabaseInitializer>();
         services.AddSingleton<IDatabaseInitializer>(sp => sp.GetRequiredService<DatabaseInitializer>());

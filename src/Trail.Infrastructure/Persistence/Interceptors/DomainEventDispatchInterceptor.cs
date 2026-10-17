@@ -94,7 +94,7 @@ public sealed partial class DomainEventDispatchInterceptor : SaveChangesIntercep
 
     private static void UpdateAggregateVersions(DbContext context)
     {
-        var rootsToIncrement = new HashSet<EntityEntry>();
+        var rootsToIncrement = new HashSet<IAggregateRoot>(ReferenceEqualityComparer.Instance);
 
         foreach (var entry in context.ChangeTracker.Entries())
         {
@@ -103,26 +103,27 @@ public sealed partial class DomainEventDispatchInterceptor : SaveChangesIntercep
                 continue;
             }
 
-            if (entry.Entity is IAggregateRoot)
+            if (entry.Entity is IAggregateRoot aggregateRoot)
             {
                 if (entry.State == EntityState.Modified)
                 {
-                    rootsToIncrement.Add(entry);
+                    rootsToIncrement.Add(aggregateRoot);
                 }
             }
             else
             {
                 var root = FindAggregateRootEntry(context, entry);
-                if (root is { State: EntityState.Unchanged or EntityState.Modified })
+                if (root is { State: EntityState.Unchanged or EntityState.Modified } && root.Entity is IAggregateRoot parentRoot)
                 {
-                    rootsToIncrement.Add(root);
+                    rootsToIncrement.Add(parentRoot);
                 }
             }
         }
 
         foreach (var root in rootsToIncrement)
         {
-            var versionProperty = root.Property(nameof(IAggregateRoot.Version));
+            var entry = context.Entry(root);
+            var versionProperty = entry.Property(nameof(IAggregateRoot.Version));
             var currentVersion = (int)(versionProperty.CurrentValue ?? 0);
             versionProperty.OriginalValue = currentVersion;
             versionProperty.CurrentValue = currentVersion + 1;
@@ -132,12 +133,11 @@ public sealed partial class DomainEventDispatchInterceptor : SaveChangesIntercep
 
     private static EntityEntry? FindAggregateRootEntry(DbContext context, EntityEntry entry)
     {
-        var ownership = entry.Metadata.FindOwnership();
-        if (ownership is not null)
+        foreach (var foreignKey in entry.Metadata.GetForeignKeys())
         {
-            var principalType = ownership.PrincipalEntityType;
-            var fkProps = ownership.Properties;
-            var pkProps = ownership.PrincipalKey.Properties;
+            var principalType = foreignKey.PrincipalEntityType;
+            var fkProps = foreignKey.Properties;
+            var pkProps = foreignKey.PrincipalKey.Properties;
 
             foreach (var potentialRoot in context.ChangeTracker.Entries())
             {
@@ -149,8 +149,10 @@ public sealed partial class DomainEventDispatchInterceptor : SaveChangesIntercep
                 var matches = true;
                 for (var i = 0; i < fkProps.Count; i++)
                 {
-                    var fkVal = entry.Property(fkProps[i].Name).CurrentValue;
-                    var pkVal = potentialRoot.Property(pkProps[i].Name).CurrentValue;
+                    var fkProp = entry.Property(fkProps[i].Name);
+                    var fkVal = fkProp.CurrentValue ?? fkProp.OriginalValue;
+                    var pkProp = potentialRoot.Property(pkProps[i].Name);
+                    var pkVal = pkProp.CurrentValue ?? pkProp.OriginalValue;
                     if (!Equals(fkVal, pkVal))
                     {
                         matches = false;

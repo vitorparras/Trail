@@ -9,6 +9,9 @@ Caddyfile text eol=lf
 *.cmd text eol=crlf
 *.bat text eol=crlf
 
+src/Trail.Web/Styles/daisyui*.mjs -text
+src/Trail.Web/Styles/daisyui.LICENSE -text
+
 *.png binary
 *.ico binary
 *.xlsx binary

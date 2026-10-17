@@ -3,4 +3,5 @@
     <ProjectReference Include="..\Trail.Application\Trail.Application.csproj" />
     <ProjectReference Include="..\Trail.Infrastructure\Trail.Infrastructure.csproj" />
   </ItemGroup>
+  <Import Project="..\..\eng\frontend.targets" />
 </Project>

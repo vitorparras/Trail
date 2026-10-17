@@ -61,7 +61,11 @@ testes, e estende o CI com as suas verificações. A fase inteira vira um único
 - Projetos `Domain`, `Application`, `Infrastructure` e `Web`, com as referências da
   [seção 3.5](../03-arquitetura.md#35-camadas-módulos-e-padrões-internos).
 - Projetos de teste `Domain.Tests`, `Application.Tests`, `Web.Tests`,
-  `Architecture.Tests` e `E2E.Tests`.
+  `Architecture.Tests` e `E2E.Tests`. Cada um nasce na tarefa que traz o seu primeiro
+  teste: um projeto sem testes faz o `dotnet test` falhar e não verifica nada.
+- `nuget.config` com o nuget.org como única origem e mapeamento de pacotes. O build não
+  depende de feeds configurados na máquina e fica protegido contra confusão de pacotes
+  entre origens.
 - As pastas dos módulos nascem com o primeiro arquivo de cada um, porque o Git não guarda
   pastas vazias.
 - CI inicial: formatação, build e testes.

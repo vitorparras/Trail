@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Trail.Domain\Trail.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Trail.Application\Trail.Application.csproj" />
+  </ItemGroup>
+</Project>

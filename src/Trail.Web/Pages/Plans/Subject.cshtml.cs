@@ -1,4 +1,6 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Trail.Application.Planning;
 using Trail.Domain.Common;
@@ -91,43 +93,64 @@ public sealed class SubjectModel : PageModel
 
     public string? ConflictTopicCode { get; set; }
 
+    public override async Task OnPageHandlerExecutionAsync(
+        PageHandlerExecutingContext context,
+        PageHandlerExecutionDelegate next)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(next);
+
+        if (context.HandlerMethod is null)
+        {
+            await next();
+            return;
+        }
+
+        var planId = StudyPlanId.From(ReadRouteGuid(context, "planId"));
+        var subjectId = SubjectId.From(ReadRouteGuid(context, "subjectId"));
+
+        var subjectResult = await _getSubjectTopicsHandler.HandleAsync(
+            new GetSubjectTopicsQuery(subjectId),
+            context.HttpContext.RequestAborted);
+
+        if (!subjectResult.IsOk)
+        {
+            context.Result = this.Respond(subjectResult, "planning.get_subject");
+            return;
+        }
+
+        if (subjectResult.Data.StudyPlanId != planId)
+        {
+            context.Result = this.Respond(Result.NotFound(Message.Error("planning.subject.not_found")), "planning.get_subject");
+            return;
+        }
+
+        ShowSubject(subjectResult.Data);
+        await next();
+    }
+
     public async Task<IActionResult> OnGetAsync(
         Guid planId,
         Guid subjectId,
         Guid? noteTopicId,
         CancellationToken cancellationToken = default)
     {
-        var result = await _getSubjectTopicsHandler.HandleAsync(new GetSubjectTopicsQuery(SubjectId.From(subjectId)), cancellationToken);
-        if (!result.IsOk)
+        var targetTopicId = noteTopicId ?? (Subject.Topics.Count > 0 ? Subject.Topics[0].Id.Value : null);
+        if (!targetTopicId.HasValue)
         {
-            return this.Respond(result, "planning.get_subject");
+            return Page();
         }
 
-        Subject = result.Data;
-        SubjectExpectedVersion = Subject.Version;
-        SubjectNameInput = Subject.Name;
+        var noteResult = await _getTopicNoteHandler.HandleAsync(
+            new GetTopicNoteQuery(Subject.Id, TopicId.From(targetTopicId.Value)),
+            cancellationToken);
 
-        var targetTopicId = noteTopicId;
-        if (!targetTopicId.HasValue && Subject.Topics.Count > 0)
+        if (!noteResult.IsOk)
         {
-            targetTopicId = Subject.Topics[0].Id.Value;
+            return this.Respond(noteResult, "planning.get_topic_note");
         }
 
-        if (targetTopicId.HasValue)
-        {
-            var noteResult = await _getTopicNoteHandler.HandleAsync(
-                new GetTopicNoteQuery(Subject.Id, TopicId.From(targetTopicId.Value)),
-                cancellationToken);
-
-            if (noteResult.IsOk)
-            {
-                SelectedNote = noteResult.Data;
-                NoteMarkdown = SelectedNote.Markdown;
-                NoteExpectedVersion = SelectedNote.Version;
-                RenderedMarkdownHtml = _markdownRenderer.RenderToHtml(SelectedNote.Markdown);
-            }
-        }
-
+        ShowNote(noteResult.Data);
         return Page();
     }
 
@@ -138,29 +161,18 @@ public sealed class SubjectModel : PageModel
         CancellationToken cancellationToken = default)
     {
         var noteResult = await _getTopicNoteHandler.HandleAsync(
-            new GetTopicNoteQuery(SubjectId.From(subjectId), TopicId.From(topicId)),
+            new GetTopicNoteQuery(Subject.Id, TopicId.From(topicId)),
             cancellationToken);
 
-        if (!noteResult.IsOk)
+        if (noteResult.IsOk)
         {
-            return this.Respond(noteResult, "planning.get_topic_note");
+            ShowNote(noteResult.Data);
         }
 
-        SelectedNote = noteResult.Data;
-        NoteMarkdown = SelectedNote.Markdown;
-        NoteExpectedVersion = SelectedNote.Version;
-        RenderedMarkdownHtml = _markdownRenderer.RenderToHtml(SelectedNote.Markdown);
-
-        if (Request.IsHtmxPartialRequest())
+        return this.Respond(noteResult, "planning.get_topic_note", options =>
         {
-            return Partial("_TopicNote", this);
-        }
-
-        return RedirectToPage("/Plans/Subject", new
-        {
-            planId,
-            subjectId,
-            noteTopicId = topicId
+            options.PartialViewName = "_TopicNote";
+            options.PartialModelFactory = _ => this;
         });
     }
 
@@ -184,17 +196,6 @@ public sealed class SubjectModel : PageModel
             var latestNoteResult = await _getTopicNoteHandler.HandleAsync(
                 new GetTopicNoteQuery(SubjectId.From(subjectId), TopicId.From(topicId)),
                 cancellationToken);
-
-            var subResult = await _getSubjectTopicsHandler.HandleAsync(
-                new GetSubjectTopicsQuery(SubjectId.From(subjectId)),
-                cancellationToken);
-
-            if (subResult.IsOk)
-            {
-                Subject = subResult.Data;
-                SubjectExpectedVersion = Subject.Version;
-                SubjectNameInput = Subject.Name;
-            }
 
             HasNoteConflict = true;
             NoteMarkdown = markdown ?? string.Empty;
@@ -243,13 +244,7 @@ public sealed class SubjectModel : PageModel
 
         if (result.Status == ResultStatus.Conflict)
         {
-            var subResult = await _getSubjectTopicsHandler.HandleAsync(new GetSubjectTopicsQuery(SubjectId.From(subjectId)), cancellationToken);
-            if (subResult.IsOk)
-            {
-                Subject = subResult.Data;
-                SubjectExpectedVersion = subResult.Data.Version;
-            }
-
+            await RefreshSubjectAsync(subjectId, cancellationToken);
             HasSubjectConflict = true;
             SubjectNameInput = name;
             Response.StatusCode = StatusCodes.Status409Conflict;
@@ -337,13 +332,7 @@ public sealed class SubjectModel : PageModel
         var result = await _updateTopicHandler.HandleAsync(command, cancellationToken);
         if (result.Status == ResultStatus.Conflict)
         {
-            var subResult = await _getSubjectTopicsHandler.HandleAsync(new GetSubjectTopicsQuery(SubjectId.From(subjectId)), cancellationToken);
-            if (subResult.IsOk)
-            {
-                Subject = subResult.Data;
-                SubjectExpectedVersion = subResult.Data.Version;
-            }
-
+            await RefreshSubjectAsync(subjectId, cancellationToken);
             HasTopicConflict = true;
             ConflictTopicId = topicId;
             ConflictTopicTitle = title;
@@ -391,45 +380,36 @@ public sealed class SubjectModel : PageModel
         int expectedSubjectVersion,
         CancellationToken cancellationToken = default)
     {
-        var subResult = await _getSubjectTopicsHandler.HandleAsync(new GetSubjectTopicsQuery(SubjectId.From(subjectId)), cancellationToken);
-        if (!subResult.IsOk)
+        var currentTopic = Subject.Topics.FirstOrDefault(t => t.Id.Value == topicId);
+        if (currentTopic is null)
         {
-            return this.Respond(subResult, "planning.get_subject");
+            return this.Respond(Result.NotFound(Message.Error("planning.topic.not_found")), "planning.reorder_topics");
         }
 
-        var currentTopic = subResult.Data.Topics.FirstOrDefault(t => t.Id.Value == topicId);
-        if (currentTopic == null)
-        {
-            return RedirectToPage("/Plans/Subject", new { planId, subjectId });
-        }
-
-        var siblings = subResult.Data.Topics
+        var siblings = Subject.Topics
             .Where(t => t.ParentId == currentTopic.ParentId)
             .OrderBy(t => t.Order)
             .ToList();
 
         var index = siblings.FindIndex(t => t.Id.Value == topicId);
-        if (index >= 0)
+        var newIndex = string.Equals(direction, "up", StringComparison.OrdinalIgnoreCase) ? index - 1 : index + 1;
+        if (newIndex >= 0 && newIndex < siblings.Count)
         {
-            var newIndex = string.Equals(direction, "up", StringComparison.OrdinalIgnoreCase) ? index - 1 : index + 1;
-            if (newIndex >= 0 && newIndex < siblings.Count)
+            var item = siblings[index];
+            siblings.RemoveAt(index);
+            siblings.Insert(newIndex, item);
+
+            var orderedIds = siblings.Select(t => t.Id).ToList();
+            var reorderCommand = new ReorderTopicsCommand(
+                SubjectId.From(subjectId),
+                currentTopic.ParentId,
+                orderedIds,
+                expectedSubjectVersion);
+
+            var reorderResult = await _reorderTopicsHandler.HandleAsync(reorderCommand, cancellationToken);
+            if (!reorderResult.IsOk)
             {
-                var item = siblings[index];
-                siblings.RemoveAt(index);
-                siblings.Insert(newIndex, item);
-
-                var orderedIds = siblings.Select(t => t.Id).ToList();
-                var reorderCommand = new ReorderTopicsCommand(
-                    SubjectId.From(subjectId),
-                    currentTopic.ParentId,
-                    orderedIds,
-                    expectedSubjectVersion);
-
-                var reorderResult = await _reorderTopicsHandler.HandleAsync(reorderCommand, cancellationToken);
-                if (!reorderResult.IsOk)
-                {
-                    return this.Respond(reorderResult, "planning.reorder_topics");
-                }
+                return this.Respond(reorderResult, "planning.reorder_topics");
             }
         }
 
@@ -472,5 +452,36 @@ public sealed class SubjectModel : PageModel
         }
 
         return new JsonResult(result.Data);
+    }
+
+    private static Guid ReadRouteGuid(PageHandlerExecutingContext context, string routeKey) =>
+        Guid.Parse(Convert.ToString(context.RouteData.Values[routeKey], CultureInfo.InvariantCulture)!, CultureInfo.InvariantCulture);
+
+    private async Task RefreshSubjectAsync(Guid subjectId, CancellationToken cancellationToken)
+    {
+        var subjectResult = await _getSubjectTopicsHandler.HandleAsync(
+            new GetSubjectTopicsQuery(SubjectId.From(subjectId)),
+            cancellationToken);
+
+        if (subjectResult.IsOk)
+        {
+            Subject = subjectResult.Data;
+            SubjectExpectedVersion = subjectResult.Data.Version;
+        }
+    }
+
+    private void ShowSubject(SubjectDetailView subject)
+    {
+        Subject = subject;
+        SubjectExpectedVersion = subject.Version;
+        SubjectNameInput = subject.Name;
+    }
+
+    private void ShowNote(TopicNoteView note)
+    {
+        SelectedNote = note;
+        NoteMarkdown = note.Markdown;
+        NoteExpectedVersion = note.Version;
+        RenderedMarkdownHtml = _markdownRenderer.RenderToHtml(note.Markdown);
     }
 }

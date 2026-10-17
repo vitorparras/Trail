@@ -1,6 +1,9 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Trail.Application.Planning;
+using Trail.Domain.Common;
 using Trail.Domain.Planning;
 using Trail.Web.Htmx;
 using Trail.Web.Results;
@@ -75,6 +78,46 @@ public sealed class DetailsModel : PageModel
 
     public string? SearchQuery { get; set; }
 
+    public override async Task OnPageHandlerExecutionAsync(
+        PageHandlerExecutingContext context,
+        PageHandlerExecutionDelegate next)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(next);
+
+        if (context.HandlerMethod is null)
+        {
+            await next();
+            return;
+        }
+
+        var planId = StudyPlanId.From(Guid.Parse(
+            Convert.ToString(context.RouteData.Values["planId"], CultureInfo.InvariantCulture)!,
+            CultureInfo.InvariantCulture));
+
+        var planResult = await _getStudyPlanHandler.HandleAsync(new GetStudyPlanQuery(planId), context.HttpContext.RequestAborted);
+        if (!planResult.IsOk)
+        {
+            context.Result = this.Respond(planResult, "planning.get_plan");
+            return;
+        }
+
+        Plan = planResult.Data;
+
+        var executedContext = await next();
+        if (executedContext.Result is PageResult)
+        {
+            var impactResult = await _getDeletionImpactHandler.HandleAsync(
+                new GetDeletionImpactQuery(DeletionTargetKind.StudyPlan, Plan.Id),
+                context.HttpContext.RequestAborted);
+
+            if (impactResult.IsOk)
+            {
+                PlanImpact = impactResult.Data;
+            }
+        }
+    }
+
     public async Task<IActionResult> OnGetAsync(
         Guid planId,
         Guid? filterSubjectId,
@@ -82,13 +125,6 @@ public sealed class DetailsModel : PageModel
         string? q,
         CancellationToken cancellationToken = default)
     {
-        var planResult = await _getStudyPlanHandler.HandleAsync(new GetStudyPlanQuery(StudyPlanId.From(planId)), cancellationToken);
-        if (!planResult.IsOk)
-        {
-            return this.Respond(planResult, "planning.get_plan");
-        }
-
-        Plan = planResult.Data;
         FilterSubjectId = filterSubjectId;
         FilterStatus = filterStatus;
         SearchQuery = q;
@@ -102,19 +138,12 @@ public sealed class DetailsModel : PageModel
                 q);
 
             var searchResult = await _searchPlanTopicsHandler.HandleAsync(searchQuery, cancellationToken);
-            if (searchResult.IsOk)
+            if (!searchResult.IsOk)
             {
-                SearchResults = searchResult.Data;
+                return this.Respond(searchResult, "planning.search_topics");
             }
-        }
 
-        var impactResult = await _getDeletionImpactHandler.HandleAsync(
-            new GetDeletionImpactQuery(DeletionTargetKind.StudyPlan, Plan.Id),
-            cancellationToken);
-
-        if (impactResult.IsOk)
-        {
-            PlanImpact = impactResult.Data;
+            SearchResults = searchResult.Data;
         }
 
         return Page();
@@ -194,17 +223,11 @@ public sealed class DetailsModel : PageModel
         int expectedPlanVersion,
         CancellationToken cancellationToken = default)
     {
-        var planResult = await _getStudyPlanHandler.HandleAsync(new GetStudyPlanQuery(StudyPlanId.From(planId)), cancellationToken);
-        if (!planResult.IsOk)
-        {
-            return this.Respond(planResult, "planning.get_plan");
-        }
-
-        var sections = planResult.Data.Sections.OrderBy(s => s.Order).ToList();
+        var sections = Plan.Sections.OrderBy(s => s.Order).ToList();
         var index = sections.FindIndex(s => s.Id.Value == sectionId);
         if (index < 0)
         {
-            return RedirectToPage("/Plans/Details", new { planId });
+            return this.Respond(Result.NotFound(Message.Error("planning.section.not_found")), "planning.reorder_sections");
         }
 
         var newIndex = string.Equals(direction, "up", StringComparison.OrdinalIgnoreCase) ? index - 1 : index + 1;
@@ -297,14 +320,8 @@ public sealed class DetailsModel : PageModel
         int expectedPlanVersion,
         CancellationToken cancellationToken = default)
     {
-        var planResult = await _getStudyPlanHandler.HandleAsync(new GetStudyPlanQuery(StudyPlanId.From(planId)), cancellationToken);
-        if (!planResult.IsOk)
-        {
-            return this.Respond(planResult, "planning.get_plan");
-        }
-
         var targetSectionId = sectionId.HasValue ? SectionId.From(sectionId.Value) : (SectionId?)null;
-        var subjects = planResult.Data.Subjects
+        var subjects = Plan.Subjects
             .Where(s => s.SectionId == targetSectionId)
             .OrderBy(s => s.Order)
             .ToList();
@@ -312,7 +329,7 @@ public sealed class DetailsModel : PageModel
         var index = subjects.FindIndex(s => s.SubjectId.Value == subjectId);
         if (index < 0)
         {
-            return RedirectToPage("/Plans/Details", new { planId });
+            return this.Respond(Result.NotFound(Message.Error("planning.subject.not_found")), "planning.reorder_subjects");
         }
 
         var newIndex = string.Equals(direction, "up", StringComparison.OrdinalIgnoreCase) ? index - 1 : index + 1;

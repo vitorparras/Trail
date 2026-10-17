@@ -14,6 +14,7 @@ using Trail.Web.Cli;
 using Trail.Web.Htmx;
 using Trail.Web.Markdown;
 using Trail.Web.Observability;
+using Trail.Web.Results;
 using Trail.Web.Security;
 
 if (args is ["--healthcheck", ..])
@@ -44,6 +45,7 @@ builder.Services.AddRazorPages(options =>
 {
     options.Conventions.AddPageApplicationModelConvention("/Account/Login", page => page.EndpointMetadata.Add(new EnableRateLimitingAttribute(RateLimitingExtensions.AuthPolicyName)));
     options.Conventions.AddPageApplicationModelConvention("/Account/ForgotPassword", page => page.EndpointMetadata.Add(new EnableRateLimitingAttribute(RateLimitingExtensions.AuthPolicyName)));
+    options.Conventions.ConfigureFilter(new UnknownPageHandlerFilter());
 });
 
 var htmlEncoderSettings = new TextEncoderSettings(

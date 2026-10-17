@@ -12,6 +12,8 @@ namespace Trail.Web.Results;
 
 public static class ResultResponder
 {
+    private const string PageHandlerQueryKey = "handler";
+
     public static IActionResult Respond(
         PageModel page,
         Result result,
@@ -181,7 +183,10 @@ public static class ResultResponder
 
     private static IActionResult HandleConflict(PageModel page, bool isHtmx, string? message, IReadOnlyList<Toast> toasts)
     {
-        var reloadUrl = $"{page.Request.PathBase}{page.Request.Path}{page.Request.QueryString}";
+        var reloadQuery = QueryString.Create(page.Request.Query
+            .Where(parameter => !string.Equals(parameter.Key, PageHandlerQueryKey, StringComparison.OrdinalIgnoreCase))
+            .SelectMany(parameter => parameter.Value.Select(value => new KeyValuePair<string, string?>(parameter.Key, value))));
+        var reloadUrl = $"{page.Request.PathBase}{page.Request.Path}{reloadQuery}";
         return isHtmx
             ? new HtmxPartialResult("_Conflict", StatusCodes.Status409Conflict, new ConflictViewModel(message, reloadUrl), toasts)
             : new StatusViewResult("Conflict", StatusCodes.Status409Conflict, new ConflictViewModel(message, reloadUrl), toasts);

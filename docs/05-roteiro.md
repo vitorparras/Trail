@@ -88,7 +88,9 @@ nos dois bancos e as regras de arquitetura já verificadas.
 - Chaves do Data Protection persistidas.
 - Layout responsivo com tema claro e escuro.
 - Filtro global por dono.
-- Rate limiting no login, cabeçalhos de segurança e CSP.
+- Rate limiting no login, cabeçalhos de segurança e CSP sem `'unsafe-inline'` nem
+  `'unsafe-eval'`, com a extensão `hx-csp` do HTMX e nonce por requisição (middleware e
+  tag helper que marca os elementos com `hx-*`).
 - Rodapé com o link "Código-fonte" (AGPL).
 - Fuso horário e preferências do usuário.
 

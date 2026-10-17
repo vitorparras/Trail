@@ -298,7 +298,7 @@ O que é estável não ganha abstração:
 | Camada | Tecnologia | Situação |
 |---|---|---|
 | Runtime | .NET 10 (LTS, suporte até nov/2028) | Aceita ([0002](adr/0002-stack-aspnetcore-razor-htmx.md)) |
-| Web | ASP.NET Core Razor Pages + HTMX | Aceita ([0002](adr/0002-stack-aspnetcore-razor-htmx.md)) |
+| Web | ASP.NET Core Razor Pages + HTMX 4 | Aceita ([0002](adr/0002-stack-aspnetcore-razor-htmx.md)) |
 | Interface | Tailwind CSS 4 + daisyUI 5 (build pelo executável standalone, sem Node) e Chart.js, servidos pelo app | Aceita ([0013](adr/0013-frontend-tailwind-daisyui.md)) |
 | Ícones | Lucide, em sprite SVG | Aceita ([0013](adr/0013-frontend-tailwind-daisyui.md)) |
 | Textos da interface | Arquivos `.resx` (pt-BR) acessados por `IStringLocalizer` | Aceita ([0007](adr/0007-idiomas.md)) |
@@ -337,17 +337,21 @@ sequenceDiagram
 
 Convenções:
 
-- **Mesma rota, duas respostas:** se a requisição tem o cabeçalho `HX-Request`, a página
-  devolve só o trecho (parcial). Sem ele, devolve a página inteira. Assim os formulários
-  continuam funcionando sem JavaScript.
+- **Mesma rota, duas respostas:** se a requisição tem o cabeçalho
+  `HX-Request-Type: partial`, a página devolve só o trecho (parcial). Sem ele, devolve a
+  página inteira. Assim os formulários continuam funcionando sem JavaScript, e os links
+  reforçados e a restauração do histórico recebem a página inteira. Respostas que forem
+  para cache levam `Vary: HX-Request-Type`.
 - **Ponto único de saída:** toda página responde pelo mesmo método, que converte o
   `Result` em status HTTP, parcial e mensagens (tabela na
-  [ADR 0015](adr/0015-resultado-padrao.md)). Por padrão, o HTMX não troca o conteúdo em
-  respostas 4xx, e o `responseHandling` passa a trocar em 422 e 409.
-- **Antifalsificação:** o token vai em `hx-headers` no `<body>`, e o Razor Pages valida
-  por padrão.
-- **CSP estrita:** `htmx.config.allowEval = false` e
-  `htmx.config.includeIndicatorStyles = false`.
+  [ADR 0015](adr/0015-resultado-padrao.md)). O HTMX 4 troca o conteúdo em todas as
+  respostas, exceto 204 e 304.
+- **Antifalsificação:** o token vai em `hx-headers:inherited` no `<body>`, no cabeçalho
+  `X-CSRF-TOKEN`, e o Razor Pages valida por padrão.
+- **CSP estrita:** o projeto não usa `hx-on:*`, valores `js:` nem filtros de gatilho, os
+  únicos recursos do HTMX 4 que avaliam código. Assim a CSP dispensa `'unsafe-eval'`. A
+  extensão `hx-csp`, com nonce por requisição, entra na Fase 1
+  ([ADR 0013](adr/0013-frontend-tailwind-daisyui.md)).
 - **Componentes só em CSS (daisyUI):** nada precisa ser reinicializado depois das trocas.
   Modais e o menu lateral do celular usam o `<dialog>` nativo
   ([ADR 0013](adr/0013-frontend-tailwind-daisyui.md)).

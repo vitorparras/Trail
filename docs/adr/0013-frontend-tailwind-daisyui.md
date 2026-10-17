@@ -4,7 +4,8 @@
 - **Data:** 2026-10-16
 - **Origem:** o autor pediu bibliotecas consolidadas ("fazer todo o CSS é extremo para
   dar manutenção, principalmente na responsividade") e escolheu entre três opções:
-  Bootstrap 5.3, Tabler e Tailwind CSS 4 + daisyUI 5
+  Bootstrap 5.3, Tabler e Tailwind CSS 4 + daisyUI 5. Depois, escolheu o HTMX 4 em vez do
+  HTMX 2
 
 ## Contexto
 
@@ -27,10 +28,32 @@ começasse no Bootstrap 5.3 teria uma migração garantida pela frente.
     próprio.
 - **Build sem Node:** o executável standalone do Tailwind, com o bundle do daisyUI
   (`daisyui.mjs`), gera um único `app.css` minificado.
-- **HTMX** para a interatividade e **Chart.js** para os gráficos.
+- **HTMX 4** para a interatividade e **Chart.js** para os gráficos.
 - **Sem CDN:** tudo é servido pelo próprio app, com versão fixa. Funciona na rede local,
   sem rastreamento de terceiros e com CSP estrita.
 - **Componentes só em CSS:** nada precisa ser reinicializado depois das trocas do HTMX.
+
+### HTMX 4
+
+Escolhido pelo autor: a versão 4.0.0 já era estável (agosto de 2026), e começar na 2.x
+seria começar numa linha com sucessora. Fatos verificados na documentação e no código da
+versão 4.0.0:
+
+- **Configuração:** `<meta name="htmx-config" content='{"includeIndicatorCSS":true,"noSwap":[204,304]}'>`
+  no `<head>`, antes do script.
+- **Respostas:** o HTMX 4 troca o conteúdo em todas as respostas, inclusive 4xx e 5xx,
+  exceto 204 e 304. Isso combina com o ponto único de saída, que sempre devolve um
+  parcial adequado ([ADR 0015](0015-resultado-padrao.md)).
+- **Parcial ou página inteira:** decidido pelo cabeçalho `HX-Request-Type: partial`. O
+  `HX-Request` não serve para isso, porque também vem em links reforçados (`hx-boost`) e
+  na restauração do histórico, que precisam da página inteira.
+- **Antifalsificação:** a herança de atributos é explícita no HTMX 4, então o token vai em
+  `hx-headers:inherited` no `<body>`, no cabeçalho `X-CSRF-TOKEN`.
+- **CSP:** o HTMX 4 só avalia código em `hx-on:*`, em valores `js:` e em filtros de
+  gatilho. Sem esses recursos, que o projeto não usa, a CSP dispensa `'unsafe-eval'`. O CSS
+  do indicador usa Constructable Stylesheets, que a CSP não restringe.
+- **Fase 1:** a extensão `hx-csp`, com nonce por requisição, entra junto com os
+  cabeçalhos de CSP, como defesa adicional.
 
 ### Detalhes
 
@@ -84,3 +107,4 @@ começasse no Bootstrap 5.3 teria uma migração garantida pela frente.
 | Bulma | Comunidade menor e sem componentes interativos |
 | CSS próprio | Rejeitado pelo autor: manutenção cara, principalmente da responsividade |
 | Bibliotecas via CDN | Dependem de internet e expõem os usuários a terceiros |
+| HTMX 2.0.10 | Madura e mantida, mas já tem sucessora estável. Escolhido o HTMX 4 pelo autor |

@@ -112,10 +112,11 @@ zero passam nos dois bancos.
   [ADR 0015](../adr/0015-resultado-padrao.md). As mensagens são traduzidas pelo `.resx`, e
   a página de erro mostra o código de rastreio.
 - Localização pt-BR com `.resx`.
-- HTMX:
-  - `allowEval = false` e `includeIndicatorStyles = false`;
-  - `responseHandling` trocando o conteúdo em 422 e 409;
-  - token antifalsificação em `hx-headers`.
+- HTMX 4:
+  - configuração `{"includeIndicatorCSS":true,"noSwap":[204,304]}`;
+  - parcial decidido por `HX-Request-Type: partial`;
+  - token antifalsificação em `hx-headers:inherited`, no cabeçalho `X-CSRF-TOKEN`;
+  - nenhum recurso que avalia código (`hx-on:*`, valores `js:`, filtros de gatilho).
 - Frontend:
   - build do Tailwind + daisyUI pelo target do MSBuild, com download verificado por
     SHA-256, e um script de `--watch` para o desenvolvimento;

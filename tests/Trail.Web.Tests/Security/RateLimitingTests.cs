@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Net;
-using Microsoft.AspNetCore.RateLimiting;
 using Trail.Web.Security;
 
 namespace Trail.Web.Tests.Security;
@@ -78,24 +77,12 @@ public sealed class RateLimitingTests(TrailWebApplicationFactory baseFactory) : 
         {
             return app =>
             {
-                app.Use(async (context, nextMiddleware) =>
-                {
-                    if (context.Request.Path == "/test-auth-endpoint")
-                    {
-                        context.SetEndpoint(new Endpoint(
-                            httpContext =>
-                            {
-                                httpContext.Response.StatusCode = StatusCodes.Status200OK;
-                                return Task.CompletedTask;
-                            },
-                            new EndpointMetadataCollection(new EnableRateLimitingAttribute(RateLimitingExtensions.AuthPolicyName)),
-                            "AuthRateLimitTestEndpoint"));
-                    }
-
-                    await nextMiddleware(context);
-                });
-
                 next(app);
+                app.UseEndpoints(endpoints =>
+                {
+                    endpoints.MapGet("/test-auth-endpoint", () => "ok")
+                        .RequireRateLimiting(RateLimitingExtensions.AuthPolicyName);
+                });
             };
         }
     }

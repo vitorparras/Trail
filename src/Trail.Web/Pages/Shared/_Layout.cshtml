@@ -12,7 +12,7 @@
     <title>@(string.IsNullOrEmpty(pageTitle) ? productName : SharedLocalizer["PageTitle", pageTitle, productName])</title>
     <script src="~/js/theme.js"></script>
     <link rel="stylesheet" href="~/css/app.css" />
-    <meta name="htmx-config" content='{"includeIndicatorCSS":false,"noSwap":[204,304],"inlineScriptNonce":"@CspNonce.GetNonce()","inlineStyleNonce":"@CspNonce.GetNonce()"}' />
+    <meta name="htmx-config" content='{"includeIndicatorCSS":true,"noSwap":[204,304],"inlineScriptNonce":"@CspNonce.GetNonce()","inlineStyleNonce":"@CspNonce.GetNonce()"}' />
     <partial name="_Htmx" />
     <script src="~/js/dialogs.js" defer></script>
     <script src="~/js/toasts.js" defer></script>

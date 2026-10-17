@@ -13,8 +13,6 @@ public static class RateLimitingExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        var permitLimit = configuration.GetValue<int?>("Security:AuthRateLimitPermitLimit") ?? 10;
-
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -40,6 +38,8 @@ public static class RateLimitingExtensions
 
             options.AddPolicy(AuthPolicyName, httpContext =>
             {
+                var config = httpContext.RequestServices.GetService<IConfiguration>() ?? configuration;
+                var permitLimit = config.GetValue<int?>("Security:AuthRateLimitPermitLimit") ?? 10;
                 var remoteIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
                 return RateLimitPartition.GetFixedWindowLimiter(remoteIp, _ => new FixedWindowRateLimiterOptions

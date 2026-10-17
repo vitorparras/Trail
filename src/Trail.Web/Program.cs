@@ -65,6 +65,7 @@ var app = builder.Build();
 app.UseExceptionHandler("/Error");
 app.UseSecurityHeaders();
 app.UseRequestLocalization();
+app.UseRouting();
 app.UseRateLimiter();
 app.MapStaticAssets();
 app.MapRazorPages().WithStaticAssets();

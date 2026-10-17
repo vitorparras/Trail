@@ -24,7 +24,9 @@ public sealed class CspNonceTagHelper(ICspNonceService nonceService) : TagHelper
         ArgumentNullException.ThrowIfNull(output);
 
         var isScriptOrStyle = string.Equals(context.TagName, "script", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(context.TagName, "style", StringComparison.OrdinalIgnoreCase);
+            || string.Equals(context.TagName, "style", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(output.TagName, "script", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(output.TagName, "style", StringComparison.OrdinalIgnoreCase);
 
         if (isScriptOrStyle)
         {

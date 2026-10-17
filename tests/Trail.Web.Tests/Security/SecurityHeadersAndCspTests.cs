@@ -65,7 +65,7 @@ public sealed class SecurityHeadersAndCspTests(TrailWebApplicationFactory factor
 
         using var configDoc = JsonDocument.Parse(configJson);
         var root = configDoc.RootElement;
-        Assert.False(root.GetProperty("includeIndicatorCSS").GetBoolean());
+        Assert.True(root.GetProperty("includeIndicatorCSS").GetBoolean());
         Assert.Equal(expectedNonce, root.GetProperty("inlineScriptNonce").GetString());
         Assert.Equal(expectedNonce, root.GetProperty("inlineStyleNonce").GetString());
 
@@ -244,6 +244,7 @@ public sealed class SecurityHeadersAndCspTests(TrailWebApplicationFactory factor
     {
         var list = attributes ?? [];
         return new TagHelperContext(
+            tagName: tagName,
             allAttributes: list,
             items: new Dictionary<object, object>(),
             uniqueId: Guid.NewGuid().ToString("N"));

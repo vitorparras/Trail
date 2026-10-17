@@ -1,0 +1,67 @@
+@model Trail.Web.Pages.Plans.SubjectModel
+
+<div id="topic-notes-container" class="card bg-base-100 border border-base-300 p-4 sm:p-6 space-y-4">
+    <div class="flex items-center justify-between border-b border-base-300 pb-3">
+        <h3 class="font-bold text-base text-base-content flex items-center gap-2">
+            <span>@SharedLocalizer["TopicNotes"]</span>
+            @if (Model.SelectedNote != null)
+            {
+                <span class="text-sm font-normal text-base-content/70">
+                    @(Model.SelectedNote.TopicCode != null ? $"[{Model.SelectedNote.TopicCode}] " : string.Empty)@Model.SelectedNote.TopicTitle
+                </span>
+            }
+        </h3>
+    </div>
+
+    @if (Model.HasNoteConflict)
+    {
+        <div role="alert" class="alert alert-warning">
+            <span>@SharedLocalizer["ConcurrencyConflictBanner"]</span>
+        </div>
+    }
+
+    @if (Model.SelectedNote == null)
+    {
+        <p class="text-xs text-base-content/60">@SharedLocalizer["NoTopics"]</p>
+    }
+    else
+    {
+        <div class="space-y-4">
+            <div class="space-y-1">
+                <h4 class="text-xs font-semibold uppercase tracking-wider text-base-content/60">@SharedLocalizer["MarkdownPreview"]</h4>
+                <div class="prose max-w-none p-4 rounded-box bg-base-200 text-sm">
+                    @if (string.IsNullOrWhiteSpace(Model.RenderedMarkdownHtml))
+                    {
+                        <p class="text-base-content/50 italic">(@SharedLocalizer["None"])</p>
+                    }
+                    else
+                    {
+                        @Html.Raw(Model.RenderedMarkdownHtml)
+                    }
+                </div>
+            </div>
+
+            <form method="post"
+                  asp-page-handler="SaveNote"
+                  asp-route-planId="@Model.Subject.StudyPlanId.Value"
+                  asp-route-subjectId="@Model.Subject.Id.Value"
+                  class="space-y-3">
+                <input type="hidden" name="topicId" value="@Model.SelectedNote.TopicId.Value" />
+                <input type="hidden" name="expectedVersion" value="@Model.NoteExpectedVersion" />
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium text-xs uppercase tracking-wider text-base-content/60">@SharedLocalizer["MarkdownSource"]</span>
+                    </label>
+                    <textarea name="markdown" rows="6" class="textarea textarea-bordered w-full font-mono text-sm">@Model.NoteMarkdown</textarea>
+                </div>
+
+                <div>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        @SharedLocalizer["SaveNotes"]
+                    </button>
+                </div>
+            </form>
+        </div>
+    }
+</div>

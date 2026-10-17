@@ -1,0 +1,98 @@
+@page "/planos"
+@model Trail.Web.Pages.Plans.IndexModel
+@{
+    ViewData["Title"] = SharedLocalizer["StudyPlans"];
+}
+
+<div class="space-y-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight text-base-content sm:text-3xl">
+                @SharedLocalizer["StudyPlans"]
+            </h1>
+        </div>
+        <div>
+            <a asp-page="/Plans/Create" class="btn btn-primary">
+                @SharedLocalizer["NewStudyPlan"]
+            </a>
+        </div>
+    </div>
+
+    @if (Model.StudyPlans.Count == 0)
+    {
+        <div class="card bg-base-200 p-8 text-center">
+            <p class="text-base-content/70">@SharedLocalizer["NoStudyPlans"]</p>
+            <div class="mt-4">
+                <a asp-page="/Plans/Create" class="btn btn-primary btn-sm">
+                    @SharedLocalizer["NewStudyPlan"]
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="table w-full" aria-label="@SharedLocalizer["StudyPlans"]">
+                <thead>
+                    <tr>
+                        <th scope="col">@SharedLocalizer["PlanName"]</th>
+                        <th scope="col">@SharedLocalizer["ScoringRule"]</th>
+                        <th scope="col">@SharedLocalizer["ExamDate"]</th>
+                        <th scope="col">@SharedLocalizer["Sections"]</th>
+                        <th scope="col">@SharedLocalizer["Subjects"]</th>
+                        <th scope="col">@SharedLocalizer["Topics"]</th>
+                        <th scope="col"><span class="sr-only">@SharedLocalizer["Actions"]</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var plan in Model.StudyPlans)
+                    {
+                        <tr>
+                            <td class="font-medium">
+                                <a asp-page="/Plans/Details" asp-route-planId="@plan.Id.Value" class="link link-hover text-primary font-semibold">
+                                    @plan.Name
+                                </a>
+                                @if (!string.IsNullOrWhiteSpace(plan.Description))
+                                {
+                                    <div class="text-xs text-base-content/60 truncate max-w-xs">@plan.Description</div>
+                                }
+                            </td>
+                            <td>
+                                @switch (plan.ScoringRule)
+                                {
+                                    case Trail.Domain.Planning.ScoringRule.Cebraspe:
+                                        <span class="badge badge-outline">@SharedLocalizer["ScoringRule_Cebraspe"]</span>
+                                        break;
+                                    case Trail.Domain.Planning.ScoringRule.Standard:
+                                        <span class="badge badge-outline">@SharedLocalizer["ScoringRule_Standard"]</span>
+                                        break;
+                                    case Trail.Domain.Planning.ScoringRule.None:
+                                        <span class="badge badge-outline">@SharedLocalizer["ScoringRule_None"]</span>
+                                        break;
+                                }
+                            </td>
+                            <td>
+                                @(plan.ExamDate?.ToString("dd/MM/yyyy") ?? "-")
+                            </td>
+                            <td>@plan.SectionCount</td>
+                            <td>@plan.SubjectCount</td>
+                            <td>
+                                <span>@plan.StudiedTopicCount / @plan.TopicCount</span>
+                            </td>
+                            <td class="text-right">
+                                <div class="flex items-center justify-end gap-2">
+                                    <a asp-page="/Plans/Details" asp-route-planId="@plan.Id.Value" class="btn btn-ghost btn-sm">
+                                        @SharedLocalizer["Details"]
+                                    </a>
+                                    <a asp-page="/Plans/Edit" asp-route-planId="@plan.Id.Value" class="btn btn-ghost btn-sm">
+                                        @SharedLocalizer["Edit"]
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

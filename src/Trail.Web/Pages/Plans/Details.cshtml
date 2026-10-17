@@ -1,0 +1,366 @@
+@page "/planos/{planId:guid}"
+@model Trail.Web.Pages.Plans.DetailsModel
+@{
+    ViewData["Title"] = Model.Plan.Name;
+}
+
+<div class="space-y-8">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <div class="text-sm breadcrumbs mb-1">
+                <ul>
+                    <li><a asp-page="/Plans/Index" class="link link-hover text-base-content/70">@SharedLocalizer["StudyPlans"]</a></li>
+                    <li class="font-medium text-base-content">@Model.Plan.Name</li>
+                </ul>
+            </div>
+            <h1 class="text-2xl font-bold tracking-tight text-base-content sm:text-3xl">
+                @Model.Plan.Name
+            </h1>
+            @if (!string.IsNullOrWhiteSpace(Model.Plan.Description))
+            {
+                <p class="text-sm text-base-content/70 mt-1 max-w-2xl">@Model.Plan.Description</p>
+            }
+        </div>
+        <div class="flex items-center gap-2">
+            <a asp-page="/Plans/Edit" asp-route-planId="@Model.Plan.Id.Value" class="btn btn-outline btn-sm">
+                @SharedLocalizer["Edit"]
+            </a>
+            <button type="button" data-dialog-open="delete-plan-dialog" class="btn btn-error btn-outline btn-sm">
+                @SharedLocalizer["Delete"]
+            </button>
+        </div>
+    </div>
+
+    <div class="card bg-base-200 p-4 sm:p-6 space-y-4">
+        <div class="flex flex-wrap items-center gap-3">
+            <span class="text-xs font-semibold uppercase tracking-wider text-base-content/60">@SharedLocalizer["Details"]:</span>
+            @switch (Model.Plan.ScoringRule)
+            {
+                case Trail.Domain.Planning.ScoringRule.Cebraspe:
+                    <span class="badge badge-outline">@SharedLocalizer["ScoringRule_Cebraspe"]</span>
+                    break;
+                case Trail.Domain.Planning.ScoringRule.Standard:
+                    <span class="badge badge-outline">@SharedLocalizer["ScoringRule_Standard"]</span>
+                    break;
+                case Trail.Domain.Planning.ScoringRule.None:
+                    <span class="badge badge-outline">@SharedLocalizer["ScoringRule_None"]</span>
+                    break;
+            }
+            @if (Model.Plan.ExamDate.HasValue)
+            {
+                <span class="badge badge-outline">@SharedLocalizer["ExamDate"]: @Model.Plan.ExamDate.Value.ToString("dd/MM/yyyy")</span>
+            }
+            @if (Model.Plan.FitnessTestEnabled)
+            {
+                <span class="badge badge-outline">@SharedLocalizer["FitnessTestEnabled"]</span>
+            }
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-base-300">
+            <span class="text-xs font-semibold uppercase tracking-wider text-base-content/60 mr-2">@SharedLocalizer["Summary"]:</span>
+            <span class="badge badge-ghost">@SharedLocalizer["TotalTopics"]: @Model.Plan.TotalTopicCount</span>
+            <span class="badge badge-status-to-study">@SharedLocalizer["TopicStatus_ToStudy"]: @Model.Plan.ToStudyCount</span>
+            <span class="badge badge-status-studying">@SharedLocalizer["TopicStatus_Studying"]: @Model.Plan.StudyingCount</span>
+            <span class="badge badge-status-studied">@SharedLocalizer["TopicStatus_Studied"]: @Model.Plan.StudiedCount</span>
+            <span class="badge badge-status-reviewing">@SharedLocalizer["TopicStatus_Reviewing"]: @Model.Plan.ReviewingCount</span>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 border border-base-300 p-4 sm:p-6 space-y-4">
+        <h2 class="text-lg font-bold text-base-content">@SharedLocalizer["Search"]</h2>
+        <form method="get"
+              asp-page-handler="SearchTopics"
+              asp-route-planId="@Model.Plan.Id.Value"
+              hx-get="/planos/@Model.Plan.Id.Value?handler=SearchTopics"
+              hx-target="#search-results-container"
+              hx-headers='{"HX-Request-Type": "partial"}'
+              class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div>
+                <select name="filterSubjectId" class="select select-bordered select-sm w-full">
+                    <option value="">@SharedLocalizer["FilterBySubject"] (@SharedLocalizer["All"])</option>
+                    @foreach (var subject in Model.Plan.Subjects)
+                    {
+                        <!option value="@subject.SubjectId.Value" @(Model.FilterSubjectId == subject.SubjectId.Value ? "selected" : null)>@subject.Name</!option>
+                    }
+                </select>
+            </div>
+            <div>
+                <select name="filterStatus" class="select select-bordered select-sm w-full">
+                    <option value="">@SharedLocalizer["FilterByStatus"] (@SharedLocalizer["All"])</option>
+                    <!option value="@Trail.Domain.Planning.TopicStatus.ToStudy" @(Model.FilterStatus == Trail.Domain.Planning.TopicStatus.ToStudy ? "selected" : null)>@SharedLocalizer["TopicStatus_ToStudy"]</!option>
+                    <!option value="@Trail.Domain.Planning.TopicStatus.Studying" @(Model.FilterStatus == Trail.Domain.Planning.TopicStatus.Studying ? "selected" : null)>@SharedLocalizer["TopicStatus_Studying"]</!option>
+                    <!option value="@Trail.Domain.Planning.TopicStatus.Studied" @(Model.FilterStatus == Trail.Domain.Planning.TopicStatus.Studied ? "selected" : null)>@SharedLocalizer["TopicStatus_Studied"]</!option>
+                    <!option value="@Trail.Domain.Planning.TopicStatus.Reviewing" @(Model.FilterStatus == Trail.Domain.Planning.TopicStatus.Reviewing ? "selected" : null)>@SharedLocalizer["TopicStatus_Reviewing"]</!option>
+                </select>
+            </div>
+            <div>
+                <input type="text" name="q" value="@Model.SearchQuery" placeholder="@SharedLocalizer["SearchTopicsPlaceholder"]" class="input input-bordered input-sm w-full" />
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary btn-sm w-full sm:w-auto">
+                    @SharedLocalizer["Filter"]
+                </button>
+            </div>
+        </form>
+
+        <div id="search-results-container">
+            @if (Model.SearchResults != null)
+            {
+                @await Html.PartialAsync("_SearchResults", Model.SearchResults)
+            }
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="card bg-base-200 p-4 space-y-3">
+            <h3 class="font-bold text-base-content text-sm">@SharedLocalizer["AddSection"]</h3>
+            <form method="post" asp-page-handler="AddSection" asp-route-planId="@Model.Plan.Id.Value" class="flex items-center gap-2">
+                <input type="hidden" name="expectedPlanVersion" value="@Model.Plan.Version" />
+                <input type="text" name="name" placeholder="@SharedLocalizer["SectionName"]" class="input input-bordered input-sm flex-1" required />
+                <button type="submit" class="btn btn-sm btn-primary">@SharedLocalizer["AddSection"]</button>
+            </form>
+        </div>
+
+        <div class="card bg-base-200 p-4 space-y-3">
+            <h3 class="font-bold text-base-content text-sm">@SharedLocalizer["AddSubject"]</h3>
+            <form method="post" asp-page-handler="AddSubject" asp-route-planId="@Model.Plan.Id.Value" class="flex flex-wrap items-center gap-2">
+                <input type="hidden" name="expectedPlanVersion" value="@Model.Plan.Version" />
+                <input type="text" name="name" placeholder="@SharedLocalizer["SubjectName"]" class="input input-bordered input-sm flex-1 min-w-[140px]" required />
+                <select name="sectionId" class="select select-bordered select-sm">
+                    <option value="">@SharedLocalizer["UnassignedSubjects"]</option>
+                    @foreach (var sec in Model.Plan.Sections)
+                    {
+                        <option value="@sec.Id.Value">@sec.Name</option>
+                    }
+                </select>
+                <button type="submit" class="btn btn-sm btn-primary">@SharedLocalizer["AddSubject"]</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="space-y-6">
+        @foreach (var planSection in Model.Plan.Sections.OrderBy(s => s.Order))
+        {
+            var sectionSubjects = Model.Plan.Subjects.Where(s => s.SectionId == planSection.Id).OrderBy(s => s.Order).ToList();
+            <div class="card bg-base-100 border border-base-300 p-4 sm:p-6 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-base-300 pb-3">
+                    <form method="post" asp-page-handler="UpdateSection" asp-route-planId="@Model.Plan.Id.Value" class="flex items-center gap-2">
+                        <input type="hidden" name="sectionId" value="@planSection.Id.Value" />
+                        <input type="hidden" name="expectedPlanVersion" value="@Model.Plan.Version" />
+                        <input type="text" name="name" value="@planSection.Name" class="input input-bordered input-sm font-bold text-base" required />
+                        <button type="submit" class="btn btn-ghost btn-xs">@SharedLocalizer["Save"]</button>
+                    </form>
+
+                    <div class="flex items-center gap-1">
+                        <form method="post" asp-page-handler="ReorderSections" asp-route-planId="@Model.Plan.Id.Value">
+                            <input type="hidden" name="sectionId" value="@planSection.Id.Value" />
+                            <input type="hidden" name="direction" value="up" />
+                            <input type="hidden" name="expectedPlanVersion" value="@Model.Plan.Version" />
+                            <button type="submit" class="btn btn-ghost btn-xs" aria-label="@SharedLocalizer["MoveUp"]">↑</button>
+                        </form>
+                        <form method="post" asp-page-handler="ReorderSections" asp-route-planId="@Model.Plan.Id.Value">
+                            <input type="hidden" name="sectionId" value="@planSection.Id.Value" />
+                            <input type="hidden" name="direction" value="down" />
+                            <input type="hidden" name="expectedPlanVersion" value="@Model.Plan.Version" />
+                            <button type="submit" class="btn btn-ghost btn-xs" aria-label="@SharedLocalizer["MoveDown"]">↓</button>
+                        </form>
+                        <form method="post" asp-page-handler="DeleteSection" asp-route-planId="@Model.Plan.Id.Value">
+                            <input type="hidden" name="sectionId" value="@planSection.Id.Value" />
+                            <input type="hidden" name="expectedPlanVersion" value="@Model.Plan.Version" />
+                            <button type="submit" class="btn btn-ghost btn-xs text-error">@SharedLocalizer["Delete"]</button>
+                        </form>
+                    </div>
+                </div>
+
+                @if (sectionSubjects.Count == 0)
+                {
+                    <p class="text-xs text-base-content/60">@SharedLocalizer["NoSubjects"]</p>
+                }
+                else
+                {
+                    <div class="overflow-x-auto">
+                        <table class="table w-full text-sm" aria-label="@planSection.Name">
+                            <thead>
+                                <tr>
+                                    <th scope="col">@SharedLocalizer["Subjects"]</th>
+                                    <th scope="col">@SharedLocalizer["Topics"]</th>
+                                    <th scope="col">@SharedLocalizer["MoveToSection"]</th>
+                                    <th scope="col"><span class="sr-only">@SharedLocalizer["Actions"]</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var subject in sectionSubjects)
+                                {
+                                    <tr>
+                                        <td>
+                                            <a asp-page="/Plans/Subject" asp-route-planId="@Model.Plan.Id.Value" asp-route-subjectId="@subject.SubjectId.Value" class="link link-hover font-semibold text-primary">
+                                                @subject.Name
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <div class="flex items-center gap-1 text-xs">
+                                                <span>@subject.TopicCount</span>
+                                                <span class="text-base-content/40">·</span>
+                                                <span class="text-info font-medium">@subject.StudyingCount</span>
+                                                <span class="text-base-content/40">·</span>
+                                                <span class="text-success font-medium">@subject.StudiedCount</span>
+                                                <span class="text-base-content/40">·</span>
+                                                <span class="text-warning font-medium">@subject.ReviewingCount</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <form method="post" asp-page-handler="MoveSubject" asp-route-planId="@Model.Plan.Id.Value" class="flex items-center gap-1">
+                                                <input type="hidden" name="subjectId" value="@subject.SubjectId.Value" />
+                                                <input type="hidden" name="expectedPlanVersion" value="@Model.Plan.Version" />
+                                                <select name="newSectionId" class="select select-bordered select-xs">
+                                                    <option value="">@SharedLocalizer["UnassignedSubjects"]</option>
+                                                    @foreach (var s in Model.Plan.Sections)
+                                                    {
+                                                        <!option value="@s.Id.Value" @(s.Id == planSection.Id ? "selected" : null)>@s.Name</!option>
+                                                    }
+                                                </select>
+                                                <button type="submit" class="btn btn-ghost btn-xs">OK</button>
+                                            </form>
+                                        </td>
+                                        <td class="text-right">
+                                            <div class="flex items-center justify-end gap-1">
+                                                <form method="post" asp-page-handler="ReorderSubjects" asp-route-planId="@Model.Plan.Id.Value">
+                                                    <input type="hidden" name="sectionId" value="@planSection.Id.Value" />
+                                                    <input type="hidden" name="subjectId" value="@subject.SubjectId.Value" />
+                                                    <input type="hidden" name="direction" value="up" />
+                                                    <input type="hidden" name="expectedPlanVersion" value="@Model.Plan.Version" />
+                                                    <button type="submit" class="btn btn-ghost btn-xs" aria-label="@SharedLocalizer["MoveUp"]">↑</button>
+                                                </form>
+                                                <form method="post" asp-page-handler="ReorderSubjects" asp-route-planId="@Model.Plan.Id.Value">
+                                                    <input type="hidden" name="sectionId" value="@planSection.Id.Value" />
+                                                    <input type="hidden" name="subjectId" value="@subject.SubjectId.Value" />
+                                                    <input type="hidden" name="direction" value="down" />
+                                                    <input type="hidden" name="expectedPlanVersion" value="@Model.Plan.Version" />
+                                                    <button type="submit" class="btn btn-ghost btn-xs" aria-label="@SharedLocalizer["MoveDown"]">↓</button>
+                                                </form>
+                                                <form method="post" asp-page-handler="DeleteSubject" asp-route-planId="@Model.Plan.Id.Value">
+                                                    <input type="hidden" name="subjectId" value="@subject.SubjectId.Value" />
+                                                    <button type="submit" class="btn btn-ghost btn-xs text-error">@SharedLocalizer["Delete"]</button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        }
+
+        @{
+            var unassignedSubjects = Model.Plan.Subjects.Where(s => s.SectionId == null).OrderBy(s => s.Order).ToList();
+        }
+        <div class="card bg-base-100 border border-base-300 p-4 sm:p-6 space-y-4">
+            <div class="border-b border-base-300 pb-3">
+                <h3 class="font-bold text-base text-base-content">@SharedLocalizer["UnassignedSubjects"]</h3>
+            </div>
+
+            @if (unassignedSubjects.Count == 0)
+            {
+                <p class="text-xs text-base-content/60">@SharedLocalizer["NoSubjects"]</p>
+            }
+            else
+            {
+                <div class="overflow-x-auto">
+                    <table class="table w-full text-sm" aria-label="@SharedLocalizer["UnassignedSubjects"]">
+                        <thead>
+                            <tr>
+                                <th scope="col">@SharedLocalizer["Subjects"]</th>
+                                <th scope="col">@SharedLocalizer["Topics"]</th>
+                                <th scope="col">@SharedLocalizer["MoveToSection"]</th>
+                                <th scope="col"><span class="sr-only">@SharedLocalizer["Actions"]</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var subject in unassignedSubjects)
+                            {
+                                <tr>
+                                    <td>
+                                        <a asp-page="/Plans/Subject" asp-route-planId="@Model.Plan.Id.Value" asp-route-subjectId="@subject.SubjectId.Value" class="link link-hover font-semibold text-primary">
+                                            @subject.Name
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <div class="flex items-center gap-1 text-xs">
+                                            <span>@subject.TopicCount</span>
+                                            <span class="text-base-content/40">·</span>
+                                            <span class="text-info font-medium">@subject.StudyingCount</span>
+                                            <span class="text-base-content/40">·</span>
+                                            <span class="text-success font-medium">@subject.StudiedCount</span>
+                                            <span class="text-base-content/40">·</span>
+                                            <span class="text-warning font-medium">@subject.ReviewingCount</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <form method="post" asp-page-handler="MoveSubject" asp-route-planId="@Model.Plan.Id.Value" class="flex items-center gap-1">
+                                            <input type="hidden" name="subjectId" value="@subject.SubjectId.Value" />
+                                            <input type="hidden" name="expectedPlanVersion" value="@Model.Plan.Version" />
+                                            <select name="newSectionId" class="select select-bordered select-xs">
+                                                <option value="" selected>@SharedLocalizer["UnassignedSubjects"]</option>
+                                                @foreach (var s in Model.Plan.Sections)
+                                                {
+                                                    <option value="@s.Id.Value">@s.Name</option>
+                                                }
+                                            </select>
+                                            <button type="submit" class="btn btn-ghost btn-xs">OK</button>
+                                        </form>
+                                    </td>
+                                    <td class="text-right">
+                                        <div class="flex items-center justify-end gap-1">
+                                            <form method="post" asp-page-handler="ReorderSubjects" asp-route-planId="@Model.Plan.Id.Value">
+                                                <input type="hidden" name="subjectId" value="@subject.SubjectId.Value" />
+                                                <input type="hidden" name="direction" value="up" />
+                                                <input type="hidden" name="expectedPlanVersion" value="@Model.Plan.Version" />
+                                                <button type="submit" class="btn btn-ghost btn-xs" aria-label="@SharedLocalizer["MoveUp"]">↑</button>
+                                            </form>
+                                            <form method="post" asp-page-handler="ReorderSubjects" asp-route-planId="@Model.Plan.Id.Value">
+                                                <input type="hidden" name="subjectId" value="@subject.SubjectId.Value" />
+                                                <input type="hidden" name="direction" value="down" />
+                                                <input type="hidden" name="expectedPlanVersion" value="@Model.Plan.Version" />
+                                                <button type="submit" class="btn btn-ghost btn-xs" aria-label="@SharedLocalizer["MoveDown"]">↓</button>
+                                            </form>
+                                            <form method="post" asp-page-handler="DeleteSubject" asp-route-planId="@Model.Plan.Id.Value">
+                                                <input type="hidden" name="subjectId" value="@subject.SubjectId.Value" />
+                                                <button type="submit" class="btn btn-ghost btn-xs text-error">@SharedLocalizer["Delete"]</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<dialog id="delete-plan-dialog" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg text-error">@SharedLocalizer["DeleteStudyPlan"]</h3>
+        <p class="py-4 text-sm text-base-content/80">
+            @SharedLocalizer["DeletionImpactWarning"]
+        </p>
+        @if (Model.PlanImpact != null)
+        {
+            <ul class="list-disc list-inside text-sm text-base-content/70 space-y-1 mb-4">
+                <li>@SharedLocalizer["Sections"]: @Model.PlanImpact.SectionCount</li>
+                <li>@SharedLocalizer["Subjects"]: @Model.PlanImpact.SubjectCount</li>
+                <li>@SharedLocalizer["Topics"]: @Model.PlanImpact.TopicCount</li>
+                <li>@SharedLocalizer["Notes"]: @Model.PlanImpact.NoteCount</li>
+            </ul>
+        }
+        <div class="modal-action">
+            <form method="post" asp-page-handler="DeletePlan" asp-route-planId="@Model.Plan.Id.Value">
+                <button type="submit" class="btn btn-error">@SharedLocalizer["ConfirmDelete"]</button>
+                <button type="button" data-dialog-close class="btn btn-ghost">@SharedLocalizer["Cancel"]</button>
+            </form>
+        </div>
+    </div>
+</dialog>

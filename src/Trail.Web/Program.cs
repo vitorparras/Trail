@@ -12,6 +12,7 @@ using Trail.Infrastructure;
 using Trail.Web.Auth;
 using Trail.Web.Cli;
 using Trail.Web.Htmx;
+using Trail.Web.Markdown;
 using Trail.Web.Observability;
 using Trail.Web.Security;
 
@@ -57,6 +58,7 @@ builder.Services.Replace(ServiceDescriptor.Singleton(HtmlEncoder.Create(htmlEnco
 
 builder.Services.AddAntiforgery(options => options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest);
 builder.Services.AddHtmx();
+builder.Services.AddSingleton<IMarkdownRenderer, MarkdigMarkdownRenderer>();
 
 builder.Services.AddScoped<ICspNonceService, CspNonceService>();
 builder.Services.AddTrailRateLimiting(builder.Configuration);

@@ -1,0 +1,162 @@
+@page "/planos/{planId:guid}/disciplinas/{subjectId:guid}"
+@model Trail.Web.Pages.Plans.SubjectModel
+@{
+    ViewData["Title"] = $"{Model.Subject.Name} · {Model.Subject.StudyPlanName}";
+}
+
+<div class="space-y-8">
+    <div class="space-y-2">
+        <div class="text-sm breadcrumbs">
+            <ul>
+                <li><a asp-page="/Plans/Index" class="link link-hover text-base-content/70">@SharedLocalizer["StudyPlans"]</a></li>
+                <li><a asp-page="/Plans/Details" asp-route-planId="@Model.Subject.StudyPlanId.Value" class="link link-hover text-base-content/70">@Model.Subject.StudyPlanName</a></li>
+                <li class="font-medium text-base-content">@Model.Subject.Name</li>
+            </ul>
+        </div>
+
+        @if (Model.HasSubjectConflict)
+        {
+            <div role="alert" class="alert alert-warning">
+                <span>@SharedLocalizer["ConcurrencyConflictBanner"]</span>
+            </div>
+        }
+
+        @if (Model.HasTopicConflict)
+        {
+            <div role="alert" class="alert alert-warning">
+                <span>@SharedLocalizer["ConcurrencyConflictBanner"]</span>
+            </div>
+        }
+
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <form method="post" asp-page-handler="UpdateSubject" asp-route-planId="@Model.Subject.StudyPlanId.Value" asp-route-subjectId="@Model.Subject.Id.Value" class="flex items-center gap-2">
+                <input type="hidden" name="expectedVersion" value="@Model.SubjectExpectedVersion" />
+                <input type="text" name="name" value="@(Model.SubjectNameInput ?? Model.Subject.Name)" class="input input-bordered input-sm text-xl font-bold max-w-md" required />
+                <button type="submit" class="btn btn-sm btn-ghost">@SharedLocalizer["Rename"]</button>
+            </form>
+            <div>
+                <a asp-page="/Plans/Details" asp-route-planId="@Model.Subject.StudyPlanId.Value" class="btn btn-ghost btn-sm">
+                    @SharedLocalizer["Back"]
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-200 p-4 space-y-3">
+        <h3 class="font-bold text-base-content text-sm">@SharedLocalizer["AddTopic"]</h3>
+        <form method="post"
+              asp-page-handler="AddTopic"
+              asp-route-planId="@Model.Subject.StudyPlanId.Value"
+              asp-route-subjectId="@Model.Subject.Id.Value"
+              class="grid grid-cols-1 sm:grid-cols-5 gap-3">
+            <input type="hidden" name="expectedSubjectVersion" value="@Model.SubjectExpectedVersion" />
+            <div>
+                <input type="text" name="code" placeholder="@SharedLocalizer["TopicCode"]" class="input input-bordered input-sm w-full font-mono text-xs" />
+            </div>
+            <div class="sm:col-span-2">
+                <input type="text" name="title" placeholder="@SharedLocalizer["TopicTitle"]" class="input input-bordered input-sm w-full" required />
+            </div>
+            <div>
+                <select name="parentId" aria-label="@SharedLocalizer["Topics"]" class="select select-bordered select-sm w-full">
+                    <option value="">(@SharedLocalizer["Topics"])</option>
+                    @foreach (var topic in Model.Subject.Topics)
+                    {
+                        <option value="@topic.Id.Value">@(topic.Code != null ? $"{topic.Code} - " : string.Empty)@topic.Title</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary btn-sm w-full">
+                    @SharedLocalizer["AddTopic"]
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card bg-base-100 border border-base-300 p-4 sm:p-6 space-y-4">
+        <h2 class="text-lg font-bold text-base-content">@SharedLocalizer["Topics"]</h2>
+        @await Html.PartialAsync("_TopicTree", Model.Subject)
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <details class="collapse collapse-arrow bg-base-200" @(Model.HasTopicConflict ? "open" : null)>
+            <summary class="collapse-title font-bold text-sm">@SharedLocalizer["Edit"] @SharedLocalizer["Topics"]</summary>
+            <div class="collapse-content space-y-3 pt-2">
+                <form method="post"
+                      asp-page-handler="UpdateTopic"
+                      asp-route-planId="@Model.Subject.StudyPlanId.Value"
+                      asp-route-subjectId="@Model.Subject.Id.Value"
+                      class="space-y-3">
+                    <input type="hidden" name="expectedSubjectVersion" value="@Model.SubjectExpectedVersion" />
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">@SharedLocalizer["Topics"]</span>
+                        </label>
+                        <select name="topicId" class="select select-bordered select-sm w-full" required>
+                            @foreach (var topic in Model.Subject.Topics)
+                            {
+                                <!option value="@topic.Id.Value" @(Model.ConflictTopicId == topic.Id.Value ? "selected" : null)>@(topic.Code != null ? $"{topic.Code} - " : string.Empty)@topic.Title</!option>
+                            }
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text text-xs">@SharedLocalizer["TopicCode"]</span>
+                            </label>
+                            <input type="text" name="code" value="@Model.ConflictTopicCode" class="input input-bordered input-sm font-mono text-xs" />
+                        </div>
+                        <div class="form-control col-span-2">
+                            <label class="label">
+                                <span class="label-text text-xs">@SharedLocalizer["TopicTitle"]</span>
+                            </label>
+                            <input type="text" name="title" value="@Model.ConflictTopicTitle" class="input input-bordered input-sm" required />
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">@SharedLocalizer["Save"]</button>
+                </form>
+            </div>
+        </details>
+
+        <details class="collapse collapse-arrow bg-base-200">
+            <summary class="collapse-title font-bold text-sm">@SharedLocalizer["MoveUp"] / @SharedLocalizer["MoveDown"] (@SharedLocalizer["Topics"])</summary>
+            <div class="collapse-content space-y-3 pt-2">
+                <form method="post"
+                      asp-page-handler="MoveTopic"
+                      asp-route-planId="@Model.Subject.StudyPlanId.Value"
+                      asp-route-subjectId="@Model.Subject.Id.Value"
+                      class="space-y-3">
+                    <input type="hidden" name="expectedSubjectVersion" value="@Model.SubjectExpectedVersion" />
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">@SharedLocalizer["Topics"]</span>
+                        </label>
+                        <select name="topicId" class="select select-bordered select-sm w-full" required>
+                            @foreach (var topic in Model.Subject.Topics)
+                            {
+                                <option value="@topic.Id.Value">@(topic.Code != null ? $"{topic.Code} - " : string.Empty)@topic.Title</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">@SharedLocalizer["NewParentTopic"]</span>
+                        </label>
+                        <select name="newParentId" class="select select-bordered select-sm w-full">
+                            <option value="">(@SharedLocalizer["Topics"])</option>
+                            @foreach (var topic in Model.Subject.Topics)
+                            {
+                                <option value="@topic.Id.Value">@(topic.Code != null ? $"{topic.Code} - " : string.Empty)@topic.Title</option>
+                            }
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">@SharedLocalizer["Save"]</button>
+                </form>
+            </div>
+        </details>
+    </div>
+
+    <div id="notes">
+        @await Html.PartialAsync("_TopicNote", Model)
+    </div>
+</div>

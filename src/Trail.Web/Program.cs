@@ -3,12 +3,15 @@ using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using Trail.Application;
 using Trail.Infrastructure;
 using Trail.Web.Cli;
 using Trail.Web.Htmx;
 using Trail.Web.Observability;
+using Trail.Web.Security;
 
 if (args is ["--healthcheck", ..])
 {
@@ -31,7 +34,11 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     options.SupportedUICultures = [culture];
     options.RequestCultureProviders.Clear();
 });
-builder.Services.AddRazorPages();
+builder.Services.AddRazorPages(options =>
+{
+    options.Conventions.AddPageApplicationModelConvention("/Account/Login", page => page.EndpointMetadata.Add(new EnableRateLimitingAttribute(RateLimitingExtensions.AuthPolicyName)));
+    options.Conventions.AddPageApplicationModelConvention("/Account/ForgotPassword", page => page.EndpointMetadata.Add(new EnableRateLimitingAttribute(RateLimitingExtensions.AuthPolicyName)));
+});
 
 var htmlEncoderSettings = new TextEncoderSettings(
     UnicodeRanges.BasicLatin,
@@ -46,10 +53,19 @@ builder.Services.Replace(ServiceDescriptor.Singleton(HtmlEncoder.Create(htmlEnco
 builder.Services.AddAntiforgery(options => options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest);
 builder.Services.AddHtmx();
 
+builder.Services.AddScoped<ICspNonceService, CspNonceService>();
+builder.Services.AddTrailRateLimiting(builder.Configuration);
+builder.Services.AddOptions<RepositoryOptions>()
+    .BindConfiguration(RepositoryOptions.SectionName)
+    .ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<RepositoryOptions>, RepositoryOptionsValidator>();
+
 var app = builder.Build();
 
 app.UseExceptionHandler("/Error");
+app.UseSecurityHeaders();
 app.UseRequestLocalization();
+app.UseRateLimiter();
 app.MapStaticAssets();
 app.MapRazorPages().WithStaticAssets();
 

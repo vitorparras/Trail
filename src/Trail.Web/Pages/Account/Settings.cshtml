@@ -1,0 +1,29 @@
+@page
+@model Trail.Web.Pages.Account.SettingsModel
+@{
+    ViewData["Title"] = SharedLocalizer["SettingsTitle"];
+}
+
+<div class="mx-auto max-w-2xl flex flex-col gap-8">
+    <div>
+        <h1 class="text-3xl font-bold">@SharedLocalizer["SettingsHeading"]</h1>
+    </div>
+
+    <section class="card border border-base-300 bg-base-100 shadow-sm" aria-labelledby="general-settings-heading">
+        <div class="card-body">
+            <h2 id="general-settings-heading" class="card-title text-xl font-semibold">@SharedLocalizer["GeneralSettings"]</h2>
+            <div class="mt-2">
+                <partial name="_SettingsForm" model="Model.SettingsInput" />
+            </div>
+        </div>
+    </section>
+
+    <section class="card border border-base-300 bg-base-100 shadow-sm" aria-labelledby="security-settings-heading">
+        <div class="card-body">
+            <h2 id="security-settings-heading" class="card-title text-xl font-semibold">@SharedLocalizer["SecuritySettings"]</h2>
+            <div class="mt-2">
+                <partial name="_PasswordForm" model="Model.PasswordInput" />
+            </div>
+        </div>
+    </section>
+</div>

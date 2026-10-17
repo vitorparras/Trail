@@ -5,6 +5,10 @@ public abstract class AggregateRoot<TId> : IAggregateRoot
 {
     private readonly List<IDomainEvent> _domainEvents = [];
 
+    protected AggregateRoot()
+    {
+    }
+
     protected AggregateRoot(TId id, UserId ownerId)
     {
         if (id.Value == Guid.Empty)

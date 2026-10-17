@@ -1,4 +1,5 @@
 using System.Diagnostics.Metrics;
+using Trail.Application.Abstractions;
 using Trail.Application.Telemetry;
 using Trail.Domain.Common;
 
@@ -84,6 +85,123 @@ public sealed class ApplicationTelemetryTests
         var metrics = new ApplicationMetrics(meterFactory);
 
         Assert.ThrowsAny<ArgumentException>(() => metrics.RecordResult(useCase!, ResultStatus.Ok));
+    }
+
+    [Fact]
+    public void RecordEmailSent_IncrementsEmailsSentCounterWithKindTag()
+    {
+        using var meterFactory = new RecordingMeterFactory();
+        var metrics = new ApplicationMetrics(meterFactory);
+
+        long? recordedValue = null;
+        string? recordedKind = null;
+
+        using var listener = new MeterListener();
+        listener.InstrumentPublished = (instrument, meterListener) =>
+        {
+            if (instrument.Meter.Name == ApplicationTelemetry.Name
+                && instrument.Name == ApplicationMetrics.EmailsSentInstrumentName)
+            {
+                meterListener.EnableMeasurementEvents(instrument);
+            }
+        };
+
+        listener.SetMeasurementEventCallback<long>((instrument, measurement, tags, state) =>
+        {
+            recordedValue = measurement;
+            foreach (var tag in tags)
+            {
+                if (tag.Key == "kind")
+                {
+                    recordedKind = tag.Value as string;
+                }
+            }
+        });
+
+        listener.Start();
+
+        metrics.RecordEmailSent("Confirmation");
+
+        Assert.Equal(1L, recordedValue);
+        Assert.Equal("Confirmation", recordedKind);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void RecordEmailSent_WithNullOrWhitespaceKind_ThrowsArgumentException(string? kind)
+    {
+        using var meterFactory = new RecordingMeterFactory();
+        var metrics = new ApplicationMetrics(meterFactory);
+
+        Assert.ThrowsAny<ArgumentException>(() => metrics.RecordEmailSent(kind!));
+    }
+
+    [Fact]
+    public void RecordEmailFailed_IncrementsEmailsFailedCounterWithKindTag()
+    {
+        using var meterFactory = new RecordingMeterFactory();
+        var metrics = new ApplicationMetrics(meterFactory);
+
+        long? recordedValue = null;
+        string? recordedKind = null;
+
+        using var listener = new MeterListener();
+        listener.InstrumentPublished = (instrument, meterListener) =>
+        {
+            if (instrument.Meter.Name == ApplicationTelemetry.Name
+                && instrument.Name == ApplicationMetrics.EmailsFailedInstrumentName)
+            {
+                meterListener.EnableMeasurementEvents(instrument);
+            }
+        };
+
+        listener.SetMeasurementEventCallback<long>((instrument, measurement, tags, state) =>
+        {
+            recordedValue = measurement;
+            foreach (var tag in tags)
+            {
+                if (tag.Key == "kind")
+                {
+                    recordedKind = tag.Value as string;
+                }
+            }
+        });
+
+        listener.Start();
+
+        metrics.RecordEmailFailed("PasswordReset");
+
+        Assert.Equal(1L, recordedValue);
+        Assert.Equal("PasswordReset", recordedKind);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void RecordEmailFailed_WithNullOrWhitespaceKind_ThrowsArgumentException(string? kind)
+    {
+        using var meterFactory = new RecordingMeterFactory();
+        var metrics = new ApplicationMetrics(meterFactory);
+
+        Assert.ThrowsAny<ArgumentException>(() => metrics.RecordEmailFailed(kind!));
+    }
+
+    [Fact]
+    public void ICurrentUser_DefaultIsAdmin_ReturnsFalse()
+    {
+        ICurrentUser user = new DefaultCurrentUserStub();
+
+        Assert.False(user.IsAdmin);
+    }
+
+    private sealed class DefaultCurrentUserStub : ICurrentUser
+    {
+        public bool IsAuthenticated => true;
+
+        public UserId Id => UserId.New();
     }
 
     private sealed class RecordingMeterFactory : IMeterFactory

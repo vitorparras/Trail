@@ -2,6 +2,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Trail.Application\Trail.Application.csproj" />
     <ProjectReference Include="..\..\src\Trail.Infrastructure\Trail.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Trail.Web\Trail.Web.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" />

@@ -80,30 +80,58 @@ public sealed class DockerAppFixture : IAsyncLifetime
         }
     }
 
+    private static readonly SemaphoreSlim BuildLock = new(1, 1);
+    private static bool _imageBuilt;
+
     private static async Task EnsureImageBuiltAsync()
     {
-        var repositoryRoot = FindRepositoryRoot();
-        var buildStartInfo = new ProcessStartInfo
+        if (_imageBuilt)
         {
-            FileName = "docker",
-            Arguments = $"build --file Dockerfile --tag {ImageName} .",
-            WorkingDirectory = repositoryRoot,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false
-        };
-
-        using var buildProcess = Process.Start(buildStartInfo);
-        if (buildProcess is null)
-        {
-            throw new InvalidOperationException("Failed to start docker build process.");
+            return;
         }
 
-        await buildProcess.WaitForExitAsync();
-        if (buildProcess.ExitCode != 0)
+        await BuildLock.WaitAsync();
+        try
         {
-            var error = await buildProcess.StandardError.ReadToEndAsync();
-            throw new InvalidOperationException($"docker build failed with exit code {buildProcess.ExitCode}: {error}");
+            if (_imageBuilt)
+            {
+                return;
+            }
+
+            var repositoryRoot = FindRepositoryRoot();
+            var buildStartInfo = new ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = $"build --file Dockerfile --tag {ImageName} .",
+                WorkingDirectory = repositoryRoot,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false
+            };
+
+            using var buildProcess = Process.Start(buildStartInfo);
+            if (buildProcess is null)
+            {
+                throw new InvalidOperationException("Failed to start docker build process.");
+            }
+
+            var outputTask = buildProcess.StandardOutput.ReadToEndAsync();
+            var errorTask = buildProcess.StandardError.ReadToEndAsync();
+
+            await buildProcess.WaitForExitAsync();
+            _ = await outputTask;
+            var error = await errorTask;
+
+            if (buildProcess.ExitCode != 0)
+            {
+                throw new InvalidOperationException($"docker build failed with exit code {buildProcess.ExitCode}: {error}");
+            }
+
+            _imageBuilt = true;
+        }
+        finally
+        {
+            BuildLock.Release();
         }
     }
 

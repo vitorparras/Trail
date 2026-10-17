@@ -2,6 +2,7 @@ using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Trail.Application.Abstractions;
+using Trail.Application.Accounts;
 using Trail.Application.Telemetry;
 
 namespace Trail.Application;
@@ -14,6 +15,9 @@ public static class DependencyInjection
     {
         services.AddHandlersFrom(typeof(DependencyInjection).Assembly);
         services.TryAddSingleton<ApplicationMetrics>();
+        services.TryAddScoped<IAccountIdentityGateway, FallbackAccountIdentityGateway>();
+        services.TryAddScoped<IEmailSender, FallbackEmailSender>();
+        services.TryAddScoped<IUserSettingsStore, FallbackUserSettingsStore>();
 
         return services;
     }

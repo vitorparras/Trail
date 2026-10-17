@@ -1,0 +1,47 @@
+@page
+@model Trail.Web.Pages.Account.ConfirmEmailModel
+@{
+    ViewData["Title"] = SharedLocalizer["ConfirmEmailTitle"];
+}
+
+<div class="mx-auto max-w-md">
+    <div class="card border border-base-300 bg-base-100 shadow-sm">
+        <div class="card-body">
+            @if (Model.IsSuccess)
+            {
+                <div class="alert alert-success" role="status">
+                    <icon name="check-circle" class="size-6 shrink-0" />
+                    <div>
+                        <h1 class="font-bold">@SharedLocalizer["ConfirmEmailSuccessTitle"]</h1>
+                        <p class="text-sm">@SharedLocalizer["ConfirmEmailSuccessMessage"]</p>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <a asp-page="/Account/Login" class="btn btn-primary w-full">
+                        @SharedLocalizer["GoToLogin"]
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-error" role="alert">
+                    <icon name="alert-circle" class="size-6 shrink-0" />
+                    <div>
+                        <h1 class="font-bold">@SharedLocalizer["ConfirmEmailErrorTitle"]</h1>
+                        <p class="text-sm">@SharedLocalizer["ConfirmEmailErrorMessage"]</p>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex flex-col gap-2">
+                    <a asp-page="/Account/ResendConfirmation" class="btn btn-outline w-full">
+                        @SharedLocalizer["ResendConfirmation"]
+                    </a>
+                    <a asp-page="/Account/Login" class="btn btn-ghost w-full">
+                        @SharedLocalizer["GoToLogin"]
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>

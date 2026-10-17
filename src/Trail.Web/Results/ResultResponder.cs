@@ -92,7 +92,7 @@ public static class ResultResponder
                 toasts);
         }
 
-        if (HttpMethods.IsGet(page.Request.Method))
+        if (HttpMethods.IsGet(page.Request.Method) && options?.RedirectGetRequests != true)
         {
             ToastExtensions.SetToasts(page.ViewData, toasts);
             return page.Page();
@@ -122,7 +122,7 @@ public static class ResultResponder
                 toasts);
         }
 
-        if (HttpMethods.IsGet(page.Request.Method))
+        if (HttpMethods.IsGet(page.Request.Method) && options?.RedirectGetRequests != true)
         {
             ToastExtensions.SetToasts(page.ViewData, toasts);
             return page.Page();

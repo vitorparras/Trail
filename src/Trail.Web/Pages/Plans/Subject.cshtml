@@ -75,7 +75,9 @@
 
     <div class="card bg-base-100 border border-base-300 p-4 sm:p-6 space-y-4">
         <h2 class="text-lg font-bold text-base-content">@SharedLocalizer["Topics"]</h2>
-        @await Html.PartialAsync("_TopicTree", Model.Subject)
+        <div id="topic-tree-container" class="space-y-4">
+            @await Html.PartialAsync("_TopicTree", Model.Subject)
+        </div>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

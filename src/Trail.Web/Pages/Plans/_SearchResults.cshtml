@@ -1,9 +1,9 @@
 @model IReadOnlyList<Trail.Application.Planning.TopicTreeItemView>
 @{
-    var planId = ViewContext.RouteData.Values["planId"] as string ?? ViewData["PlanId"]?.ToString() ?? string.Empty;
+    var planId = Convert.ToString(ViewContext.RouteData.Values["planId"], CultureInfo.InvariantCulture);
 }
 
-<div id="search-results-container" class="mt-4">
+<div class="mt-4">
     @if (Model == null || Model.Count == 0)
     {
         <div class="card bg-base-200 p-4 text-center">

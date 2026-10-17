@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Trail.Application.Planning;
 using Trail.Domain.Common;
 using Trail.Domain.Planning;
-using Trail.Web.Htmx;
 using Trail.Web.Results;
 
 namespace Trail.Web.Pages.Plans;
@@ -163,23 +162,13 @@ public sealed class DetailsModel : PageModel
             q);
 
         var searchResult = await _searchPlanTopicsHandler.HandleAsync(searchQuery, cancellationToken);
-        if (!searchResult.IsOk)
-        {
-            return this.Respond(searchResult, "planning.search_topics");
-        }
 
-        if (Request.IsHtmxPartialRequest())
+        return this.Respond(searchResult, "planning.search_topics", options =>
         {
-            ViewData["PlanId"] = planId.ToString();
-            return Partial("_SearchResults", searchResult.Data);
-        }
-
-        return RedirectToPage("/Plans/Details", new
-        {
-            planId,
-            filterSubjectId,
-            filterStatus,
-            q
+            options.PartialViewName = "_SearchResults";
+            options.RedirectPage = "/Plans/Details";
+            options.RedirectRouteValues = new { planId, filterSubjectId, filterStatus, q };
+            options.RedirectGetRequests = true;
         });
     }
 

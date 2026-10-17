@@ -296,21 +296,25 @@ public sealed class SubjectModel : PageModel
         var command = new ChangeTopicStatusCommand(SubjectId.From(subjectId), TopicId.From(topicId), newStatus);
         var result = await _changeTopicStatusHandler.HandleAsync(command, cancellationToken);
 
-        if (!result.IsOk)
+        var updatedSubject = Subject;
+        if (result.IsOk && Request.IsHtmxPartialRequest())
         {
-            return this.Respond(result, "planning.change_topic_status");
-        }
-
-        if (Request.IsHtmxPartialRequest())
-        {
-            var subResult = await _getSubjectTopicsHandler.HandleAsync(new GetSubjectTopicsQuery(SubjectId.From(subjectId)), cancellationToken);
-            if (subResult.IsOk)
+            var subjectResult = await _getSubjectTopicsHandler.HandleAsync(new GetSubjectTopicsQuery(SubjectId.From(subjectId)), cancellationToken);
+            if (!subjectResult.IsOk)
             {
-                return Partial("_TopicTree", subResult.Data);
+                return this.Respond(subjectResult, "planning.get_subject");
             }
+
+            updatedSubject = subjectResult.Data;
         }
 
-        return RedirectToPage("/Plans/Subject", new { planId, subjectId });
+        return this.Respond(result, "planning.change_topic_status", options =>
+        {
+            options.PartialViewName = "_TopicTree";
+            options.PartialModel = updatedSubject;
+            options.RedirectPage = "/Plans/Subject";
+            options.RedirectRouteValues = new { planId, subjectId };
+        });
     }
 
     public async Task<IActionResult> OnPostUpdateTopicAsync(

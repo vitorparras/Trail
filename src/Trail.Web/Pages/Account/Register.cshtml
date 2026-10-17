@@ -1,0 +1,93 @@
+@page
+@model Trail.Web.Pages.Account.RegisterModel
+@{
+    ViewData["Title"] = SharedLocalizer["RegisterTitle"];
+}
+
+<div class="mx-auto max-w-md">
+    <div class="card border border-base-300 bg-base-100 shadow-sm">
+        <div class="card-body">
+            @if (Model.ConfirmationSent)
+            {
+                <h1 class="card-title text-2xl font-bold">@SharedLocalizer["RegistrationConfirmationSentTitle"]</h1>
+                <p class="mt-2 text-sm text-base-content/80">@SharedLocalizer["RegistrationConfirmationSentMessage"]</p>
+
+                <div class="mt-6 flex flex-col gap-2">
+                    <a asp-page="/Account/ResendConfirmation" class="btn btn-outline w-full">
+                        @SharedLocalizer["ResendConfirmation"]
+                    </a>
+                    <a asp-page="/Account/Login" class="btn btn-primary w-full">
+                        @SharedLocalizer["GoToLogin"]
+                    </a>
+                </div>
+            }
+            else
+            {
+                <h1 class="card-title text-2xl font-bold">@SharedLocalizer["RegisterHeading"]</h1>
+
+                <form method="post" class="mt-4 flex flex-col gap-4">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-error text-sm" role="alert"></div>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.Input.InviteToken))
+                    {
+                        <input type="hidden" asp-for="Input.InviteToken" />
+                    }
+
+                    <div class="form-control">
+                        <label asp-for="Input.Email" class="label">
+                            <span class="label-text font-medium">@SharedLocalizer["Email"]</span>
+                        </label>
+                        <input asp-for="Input.Email"
+                               type="email"
+                               class="input input-bordered w-full"
+                               placeholder="@SharedLocalizer["EmailPlaceholder"]"
+                               autocomplete="email"
+                               required />
+                        <span asp-validation-for="Input.Email" class="text-xs text-error mt-1"></span>
+                    </div>
+
+                    <div class="form-control">
+                        <label asp-for="Input.Password" class="label">
+                            <span class="label-text font-medium">@SharedLocalizer["Password"]</span>
+                        </label>
+                        <input asp-for="Input.Password"
+                               type="password"
+                               class="input input-bordered w-full"
+                               placeholder="@SharedLocalizer["PasswordPlaceholder"]"
+                               autocomplete="new-password"
+                               required />
+                        <span asp-validation-for="Input.Password" class="text-xs text-error mt-1"></span>
+                    </div>
+
+                    <div class="form-control">
+                        <label asp-for="Input.ConfirmPassword" class="label">
+                            <span class="label-text font-medium">@SharedLocalizer["ConfirmPassword"]</span>
+                        </label>
+                        <input asp-for="Input.ConfirmPassword"
+                               type="password"
+                               class="input input-bordered w-full"
+                               placeholder="@SharedLocalizer["ConfirmPasswordPlaceholder"]"
+                               autocomplete="new-password"
+                               required />
+                        <span asp-validation-for="Input.ConfirmPassword" class="text-xs text-error mt-1"></span>
+                    </div>
+
+                    <div class="form-control mt-2">
+                        <button type="submit" class="btn btn-primary w-full">
+                            @SharedLocalizer["Register"]
+                        </button>
+                    </div>
+                </form>
+
+                <div class="divider my-4"></div>
+
+                <p class="text-center text-sm text-base-content/80">
+                    @SharedLocalizer["AlreadyHaveAccount"]
+                    <a asp-page="/Account/Login" class="link link-primary font-medium">
+                        @SharedLocalizer["Login"]
+                    </a>
+                </p>
+            }
+        </div>
+    </div>
+</div>

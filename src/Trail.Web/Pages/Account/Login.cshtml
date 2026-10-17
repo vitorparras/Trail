@@ -1,0 +1,68 @@
+@page
+@model Trail.Web.Pages.Account.LoginModel
+@{
+    ViewData["Title"] = SharedLocalizer["LoginTitle"];
+}
+
+<div class="mx-auto max-w-md">
+    <div class="card border border-base-300 bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h1 class="card-title text-2xl font-bold">@SharedLocalizer["LoginHeading"]</h1>
+
+            <form method="post" class="mt-4 flex flex-col gap-4">
+                <div asp-validation-summary="ModelOnly" class="alert alert-error text-sm" role="alert"></div>
+
+                <div class="form-control">
+                    <label asp-for="Input.Email" class="label">
+                        <span class="label-text font-medium">@SharedLocalizer["Email"]</span>
+                    </label>
+                    <input asp-for="Input.Email"
+                           type="email"
+                           class="input input-bordered w-full"
+                           placeholder="@SharedLocalizer["EmailPlaceholder"]"
+                           autocomplete="username"
+                           required />
+                    <span asp-validation-for="Input.Email" class="text-xs text-error mt-1"></span>
+                </div>
+
+                <div class="form-control">
+                    <label asp-for="Input.Password" class="label">
+                        <span class="label-text font-medium">@SharedLocalizer["Password"]</span>
+                    </label>
+                    <input asp-for="Input.Password"
+                           type="password"
+                           class="input input-bordered w-full"
+                           placeholder="@SharedLocalizer["PasswordPlaceholder"]"
+                           autocomplete="current-password"
+                           required />
+                    <span asp-validation-for="Input.Password" class="text-xs text-error mt-1"></span>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <label asp-for="Input.RememberMe" class="label cursor-pointer gap-2">
+                        <input asp-for="Input.RememberMe" type="checkbox" class="checkbox checkbox-primary checkbox-sm" />
+                        <span class="label-text text-sm">@SharedLocalizer["RememberMe"]</span>
+                    </label>
+                    <a asp-page="/Account/ForgotPassword" class="link link-primary text-sm">
+                        @SharedLocalizer["ForgotPassword"]
+                    </a>
+                </div>
+
+                <div class="form-control mt-2">
+                    <button type="submit" class="btn btn-primary w-full">
+                        @SharedLocalizer["Login"]
+                    </button>
+                </div>
+            </form>
+
+            <div class="divider my-4"></div>
+
+            <p class="text-center text-sm text-base-content/80">
+                @SharedLocalizer["DoNotHaveAccount"]
+                <a asp-page="/Account/Register" class="link link-primary font-medium">
+                    @SharedLocalizer["Register"]
+                </a>
+            </p>
+        </div>
+    </div>
+</div>

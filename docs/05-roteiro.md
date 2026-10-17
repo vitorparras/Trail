@@ -79,6 +79,8 @@ nos dois bancos e as regras de arquitetura já verificadas.
 
 ### Fase 1 — Contas, e-mail e isolamento
 
+**Detalhamento:** [tarefas da Fase 1](fases/fase-1-contas-email-isolamento.md).
+
 **Entregas:**
 
 - Cadastro com confirmação por e-mail, login, logout, troca e recuperação de senha.

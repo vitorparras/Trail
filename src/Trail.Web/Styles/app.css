@@ -92,3 +92,32 @@
 :root {
   --fx-noise: none;
 }
+
+.label-text,
+.label,
+.table :where(thead, tfoot) {
+  color: var(--color-base-content);
+}
+
+.alert .label,
+.alert .label-text {
+  color: inherit;
+}
+
+.input,
+.select,
+.textarea {
+  color: var(--color-base-content);
+}
+
+.htmx-indicator {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 200ms ease-in;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+  opacity: 1;
+  visibility: visible;
+}

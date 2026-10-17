@@ -96,4 +96,406 @@
   <data name="BackToHome" xml:space="preserve">
     <value>Voltar ao início</value>
   </data>
+  <data name="RateLimitExceeded" xml:space="preserve">
+    <value>Muitas tentativas. Tente novamente mais tarde.</value>
+  </data>
+  <data name="accounts.auth.unauthenticated" xml:space="preserve">
+    <value>Sessão expirada ou não autenticada. Faça login novamente.</value>
+  </data>
+  <data name="accounts.change_password.current_password_required" xml:space="preserve">
+    <value>A senha atual é obrigatória.</value>
+  </data>
+  <data name="accounts.change_password.new_password_required" xml:space="preserve">
+    <value>A nova senha é obrigatória.</value>
+  </data>
+  <data name="accounts.change_password.passwords_do_not_match" xml:space="preserve">
+    <value>A confirmação da nova senha não confere.</value>
+  </data>
+  <data name="accounts.confirm_email.invalid_token" xml:space="preserve">
+    <value>O link de confirmação de e-mail é inválido ou expirou.</value>
+  </data>
+  <data name="accounts.admin.forbidden" xml:space="preserve">
+    <value>Acesso restrito a administradores.</value>
+  </data>
+  <data name="accounts.admin.user_not_found" xml:space="preserve">
+    <value>Usuário não encontrado.</value>
+  </data>
+  <data name="accounts.admin.cannot_deactivate_self" xml:space="preserve">
+    <value>Não é possível desativar a própria conta de administrador.</value>
+  </data>
+  <data name="accounts.invitation.email_required" xml:space="preserve">
+    <value>O e-mail para convite é obrigatório.</value>
+  </data>
+  <data name="accounts.invitation.user_already_exists" xml:space="preserve">
+    <value>Já existe um usuário cadastrado com este e-mail.</value>
+  </data>
+  <data name="accounts.login.email_required" xml:space="preserve">
+    <value>O e-mail é obrigatório.</value>
+  </data>
+  <data name="accounts.login.password_required" xml:space="preserve">
+    <value>A senha é obrigatória.</value>
+  </data>
+  <data name="accounts.login.invalid_credentials" xml:space="preserve">
+    <value>E-mail ou senha incorretos.</value>
+  </data>
+  <data name="accounts.login.locked_out" xml:space="preserve">
+    <value>Conta temporariamente bloqueada por excesso de tentativas. Tente novamente mais tarde.</value>
+  </data>
+  <data name="accounts.login.email_not_confirmed" xml:space="preserve">
+    <value>E-mail ainda não confirmado. Verifique sua caixa de entrada.</value>
+  </data>
+  <data name="accounts.login.deactivated" xml:space="preserve">
+    <value>Esta conta foi desativada pelo administrador.</value>
+  </data>
+  <data name="accounts.registration.email_required" xml:space="preserve">
+    <value>O e-mail é obrigatório.</value>
+  </data>
+  <data name="accounts.registration.email_invalid" xml:space="preserve">
+    <value>Informe um endereço de e-mail válido.</value>
+  </data>
+  <data name="accounts.registration.password_required" xml:space="preserve">
+    <value>A senha é obrigatória.</value>
+  </data>
+  <data name="accounts.registration.passwords_do_not_match" xml:space="preserve">
+    <value>A confirmação de senha não confere.</value>
+  </data>
+  <data name="accounts.registration.closed" xml:space="preserve">
+    <value>O cadastro de novos usuários está temporariamente fechado.</value>
+  </data>
+  <data name="accounts.registration.invite_required" xml:space="preserve">
+    <value>O cadastro exige um convite válido.</value>
+  </data>
+  <data name="accounts.registration.invite_invalid" xml:space="preserve">
+    <value>O convite informado é inválido ou já foi utilizado.</value>
+  </data>
+  <data name="accounts.password_reset.email_required" xml:space="preserve">
+    <value>O e-mail é obrigatório.</value>
+  </data>
+  <data name="accounts.resend_confirmation.email_required" xml:space="preserve">
+    <value>O e-mail é obrigatório.</value>
+  </data>
+  <data name="accounts.password_reset.invalid_user" xml:space="preserve">
+    <value>Usuário inválido para redefinição de senha.</value>
+  </data>
+  <data name="accounts.password_reset.invalid_token" xml:space="preserve">
+    <value>O link de redefinição de senha é inválido ou expirou.</value>
+  </data>
+  <data name="accounts.password_reset.password_required" xml:space="preserve">
+    <value>A nova senha é obrigatória.</value>
+  </data>
+  <data name="accounts.password_reset.passwords_do_not_match" xml:space="preserve">
+    <value>A confirmação de senha não confere.</value>
+  </data>
+  <data name="accounts.test_email.email_required" xml:space="preserve">
+    <value>O e-mail de destino é obrigatório.</value>
+  </data>
+  <data name="accounts.test_email.smtp_not_configured" xml:space="preserve">
+    <value>O servidor SMTP não está configurado.</value>
+  </data>
+  <data name="accounts.settings.timezone_required" xml:space="preserve">
+    <value>O fuso horário é obrigatório.</value>
+  </data>
+  <data name="accounts.settings.timezone_invalid" xml:space="preserve">
+    <value>Fuso horário inválido.</value>
+  </data>
+  <data name="accounts.settings.focus_minutes_out_of_range" xml:space="preserve">
+    <value>O tempo de foco deve estar entre 1 e 180 minutos.</value>
+  </data>
+  <data name="accounts.settings.break_minutes_out_of_range" xml:space="preserve">
+    <value>O tempo de intervalo deve estar entre 1 e 60 minutos.</value>
+  </data>
+  <data name="accounts.email.send_failed" xml:space="preserve">
+    <value>Falha ao enviar e-mail. Tente novamente.</value>
+  </data>
+  <data name="Login" xml:space="preserve">
+    <value>Entrar</value>
+  </data>
+  <data name="LoginTitle" xml:space="preserve">
+    <value>Entrar</value>
+  </data>
+  <data name="LoginHeading" xml:space="preserve">
+    <value>Acesse sua conta</value>
+  </data>
+  <data name="Email" xml:space="preserve">
+    <value>E-mail</value>
+  </data>
+  <data name="EmailPlaceholder" xml:space="preserve">
+    <value>seu@email.com</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Senha</value>
+  </data>
+  <data name="PasswordPlaceholder" xml:space="preserve">
+    <value>Sua senha</value>
+  </data>
+  <data name="RememberMe" xml:space="preserve">
+    <value>Lembrar de mim</value>
+  </data>
+  <data name="ForgotPassword" xml:space="preserve">
+    <value>Esqueci minha senha</value>
+  </data>
+  <data name="Register" xml:space="preserve">
+    <value>Criar conta</value>
+  </data>
+  <data name="RegisterTitle" xml:space="preserve">
+    <value>Criar conta</value>
+  </data>
+  <data name="RegisterHeading" xml:space="preserve">
+    <value>Crie sua conta</value>
+  </data>
+  <data name="ConfirmPassword" xml:space="preserve">
+    <value>Confirmar senha</value>
+  </data>
+  <data name="ConfirmPasswordPlaceholder" xml:space="preserve">
+    <value>Repita a senha</value>
+  </data>
+  <data name="AlreadyHaveAccount" xml:space="preserve">
+    <value>Já tem uma conta?</value>
+  </data>
+  <data name="DoNotHaveAccount" xml:space="preserve">
+    <value>Não tem uma conta?</value>
+  </data>
+  <data name="RegistrationConfirmationSentTitle" xml:space="preserve">
+    <value>Confirme seu e-mail</value>
+  </data>
+  <data name="RegistrationConfirmationSentMessage" xml:space="preserve">
+    <value>Enviamos um link de confirmação para o seu e-mail. Por favor, acesse o link para ativar sua conta.</value>
+  </data>
+  <data name="ResendConfirmation" xml:space="preserve">
+    <value>Reenviar confirmação</value>
+  </data>
+  <data name="ResendConfirmationTitle" xml:space="preserve">
+    <value>Reenviar e-mail de confirmação</value>
+  </data>
+  <data name="ResendConfirmationHeading" xml:space="preserve">
+    <value>Reenviar confirmação de e-mail</value>
+  </data>
+  <data name="ResendConfirmationInstructions" xml:space="preserve">
+    <value>Informe seu e-mail para receber um novo link de confirmação de conta.</value>
+  </data>
+  <data name="ResendConfirmationSent" xml:space="preserve">
+    <value>Se o e-mail estiver cadastrado e pendente de confirmação, um novo link foi enviado.</value>
+  </data>
+  <data name="SendConfirmationEmail" xml:space="preserve">
+    <value>Enviar e-mail de confirmação</value>
+  </data>
+  <data name="ConfirmEmail" xml:space="preserve">
+    <value>Confirmação de e-mail</value>
+  </data>
+  <data name="ConfirmEmailTitle" xml:space="preserve">
+    <value>Confirmação de e-mail</value>
+  </data>
+  <data name="ConfirmEmailSuccessTitle" xml:space="preserve">
+    <value>E-mail confirmado com sucesso!</value>
+  </data>
+  <data name="ConfirmEmailSuccessMessage" xml:space="preserve">
+    <value>Sua conta foi ativada. Você já pode fazer login.</value>
+  </data>
+  <data name="ConfirmEmailErrorTitle" xml:space="preserve">
+    <value>Falha na confirmação</value>
+  </data>
+  <data name="ConfirmEmailErrorMessage" xml:space="preserve">
+    <value>Não foi possível confirmar seu e-mail. O link pode ter expirado ou ser inválido.</value>
+  </data>
+  <data name="GoToLogin" xml:space="preserve">
+    <value>Ir para o login</value>
+  </data>
+  <data name="ForgotPasswordTitle" xml:space="preserve">
+    <value>Recuperar senha</value>
+  </data>
+  <data name="ForgotPasswordHeading" xml:space="preserve">
+    <value>Esqueceu sua senha?</value>
+  </data>
+  <data name="ForgotPasswordInstructions" xml:space="preserve">
+    <value>Informe seu e-mail cadastrado. Se houver uma conta associada, enviaremos instruções para redefinir sua senha.</value>
+  </data>
+  <data name="SendPasswordResetLink" xml:space="preserve">
+    <value>Enviar link de recuperação</value>
+  </data>
+  <data name="PasswordResetSent" xml:space="preserve">
+    <value>Se houver uma conta associada a este e-mail, as instruções de recuperação foram enviadas.</value>
+  </data>
+  <data name="ResetPassword" xml:space="preserve">
+    <value>Redefinir senha</value>
+  </data>
+  <data name="ResetPasswordTitle" xml:space="preserve">
+    <value>Redefinir senha</value>
+  </data>
+  <data name="ResetPasswordHeading" xml:space="preserve">
+    <value>Crie uma nova senha</value>
+  </data>
+  <data name="NewPassword" xml:space="preserve">
+    <value>Nova senha</value>
+  </data>
+  <data name="NewPasswordPlaceholder" xml:space="preserve">
+    <value>Digite a nova senha</value>
+  </data>
+  <data name="ConfirmNewPassword" xml:space="preserve">
+    <value>Confirmar nova senha</value>
+  </data>
+  <data name="ConfirmNewPasswordPlaceholder" xml:space="preserve">
+    <value>Repita a nova senha</value>
+  </data>
+  <data name="ResetPasswordSuccessTitle" xml:space="preserve">
+    <value>Senha alterada com sucesso!</value>
+  </data>
+  <data name="ResetPasswordSuccessMessage" xml:space="preserve">
+    <value>Sua senha foi redefinida com sucesso. Faça login com suas novas credenciais.</value>
+  </data>
+  <data name="ResetPasswordSubmit" xml:space="preserve">
+    <value>Salvar nova senha</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Preferências</value>
+  </data>
+  <data name="SettingsTitle" xml:space="preserve">
+    <value>Preferências</value>
+  </data>
+  <data name="SettingsHeading" xml:space="preserve">
+    <value>Preferências da conta</value>
+  </data>
+  <data name="SettingsSaved" xml:space="preserve">
+    <value>Preferências salvas com sucesso.</value>
+  </data>
+  <data name="GeneralSettings" xml:space="preserve">
+    <value>Configurações gerais</value>
+  </data>
+  <data name="TimeZone" xml:space="preserve">
+    <value>Fuso horário</value>
+  </data>
+  <data name="TimeZoneSelect" xml:space="preserve">
+    <value>Selecione seu fuso horário</value>
+  </data>
+  <data name="PomodoroSettings" xml:space="preserve">
+    <value>Temporizador Pomodoro</value>
+  </data>
+  <data name="PomodoroFocusMinutes" xml:space="preserve">
+    <value>Tempo de foco (minutos)</value>
+  </data>
+  <data name="PomodoroBreakMinutes" xml:space="preserve">
+    <value>Tempo de intervalo (minutos)</value>
+  </data>
+  <data name="SaveSettings" xml:space="preserve">
+    <value>Salvar preferências</value>
+  </data>
+  <data name="SecuritySettings" xml:space="preserve">
+    <value>Segurança e senha</value>
+  </data>
+  <data name="CurrentPassword" xml:space="preserve">
+    <value>Senha atual</value>
+  </data>
+  <data name="CurrentPasswordPlaceholder" xml:space="preserve">
+    <value>Digite sua senha atual</value>
+  </data>
+  <data name="ChangePassword" xml:space="preserve">
+    <value>Alterar senha</value>
+  </data>
+  <data name="PasswordChanged" xml:space="preserve">
+    <value>Senha alterada com sucesso.</value>
+  </data>
+  <data name="Administration" xml:space="preserve">
+    <value>Administração</value>
+  </data>
+  <data name="AdministrationTitle" xml:space="preserve">
+    <value>Administração de Usuários</value>
+  </data>
+  <data name="AdministrationHeading" xml:space="preserve">
+    <value>Gestão de Usuários</value>
+  </data>
+  <data name="Users" xml:space="preserve">
+    <value>Usuários</value>
+  </data>
+  <data name="Invitations" xml:space="preserve">
+    <value>Convites</value>
+  </data>
+  <data name="Active" xml:space="preserve">
+    <value>Ativo</value>
+  </data>
+  <data name="Inactive" xml:space="preserve">
+    <value>Inativo</value>
+  </data>
+  <data name="Confirmed" xml:space="preserve">
+    <value>Confirmado</value>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>Pendente</value>
+  </data>
+  <data name="Admin" xml:space="preserve">
+    <value>Administrador</value>
+  </data>
+  <data name="StandardUser" xml:space="preserve">
+    <value>Usuário padrão</value>
+  </data>
+  <data name="CreatedAt" xml:space="preserve">
+    <value>Criado em</value>
+  </data>
+  <data name="ExpiresAt" xml:space="preserve">
+    <value>Expira em</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>Ações</value>
+  </data>
+  <data name="Deactivate" xml:space="preserve">
+    <value>Desativar</value>
+  </data>
+  <data name="Activate" xml:space="preserve">
+    <value>Ativar</value>
+  </data>
+  <data name="GenerateManualLink" xml:space="preserve">
+    <value>Gerar link manual</value>
+  </data>
+  <data name="GenerateConfirmationLink" xml:space="preserve">
+    <value>Link de confirmação</value>
+  </data>
+  <data name="GenerateResetPasswordLink" xml:space="preserve">
+    <value>Link de redefinição</value>
+  </data>
+  <data name="InviteUser" xml:space="preserve">
+    <value>Convidar usuário</value>
+  </data>
+  <data name="InviteEmailPlaceholder" xml:space="preserve">
+    <value>email@exemplo.com</value>
+  </data>
+  <data name="SendInvitation" xml:space="preserve">
+    <value>Enviar convite</value>
+  </data>
+  <data name="InvitationCreated" xml:space="preserve">
+    <value>Convite gerado com sucesso.</value>
+  </data>
+  <data name="InvitationLinkGenerated" xml:space="preserve">
+    <value>Link do convite gerado:</value>
+  </data>
+  <data name="ManualLinkGenerated" xml:space="preserve">
+    <value>Link gerado para entrega manual:</value>
+  </data>
+  <data name="CopyLink" xml:space="preserve">
+    <value>Copiar link</value>
+  </data>
+  <data name="SendTestEmail" xml:space="preserve">
+    <value>Enviar e-mail de teste</value>
+  </data>
+  <data name="TestEmailRecipient" xml:space="preserve">
+    <value>E-mail de destino do teste</value>
+  </data>
+  <data name="TestEmailSent" xml:space="preserve">
+    <value>E-mail de teste enviado com sucesso.</value>
+  </data>
+  <data name="TestEmailFailed" xml:space="preserve">
+    <value>Falha ao enviar o e-mail de teste.</value>
+  </data>
+  <data name="Retry" xml:space="preserve">
+    <value>Tentar novamente</value>
+  </data>
+  <data name="Logout" xml:space="preserve">
+    <value>Sair</value>
+  </data>
+  <data name="User" xml:space="preserve">
+    <value>Usuário</value>
+  </data>
+  <data name="Role" xml:space="preserve">
+    <value>Função</value>
+  </data>
 </root>

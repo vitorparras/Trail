@@ -1,3 +1,6 @@
+@inject Trail.Web.Security.ICspNonceService CspNonce
+@inject Microsoft.Extensions.Options.IOptions<Trail.Web.Security.RepositoryOptions> RepositoryOptions
+@inject Trail.Application.Abstractions.ICurrentUser CurrentUser
 @{
     var productName = SharedLocalizer["ProductName"];
     var pageTitle = ViewData["Title"] as string;
@@ -10,11 +13,12 @@
     <title>@(string.IsNullOrEmpty(pageTitle) ? productName : SharedLocalizer["PageTitle", pageTitle, productName])</title>
     <script src="~/js/theme.js"></script>
     <link rel="stylesheet" href="~/css/app.css" />
+    <meta name="htmx-config" content='{"includeIndicatorCSS":true,"noSwap":[204,304],"inlineScriptNonce":"@CspNonce.GetNonce()","inlineStyleNonce":"@CspNonce.GetNonce()"}' />
     <partial name="_Htmx" />
     <script src="~/js/dialogs.js" defer></script>
     <script src="~/js/toasts.js" defer></script>
 </head>
-<body class="flex min-h-dvh flex-col bg-base-200 text-base-content">
+<body class="flex min-h-dvh flex-col bg-base-200 text-base-content" hx-ext="hx-csp">
     <a href="#main-content" class="btn btn-primary sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:px-4 focus:py-2">@SharedLocalizer["SkipToContent"]</a>
     <header class="navbar sticky top-0 z-30 gap-2 border-b border-base-300 bg-base-100 px-4">
         <button type="button" class="btn btn-ghost btn-square lg:hidden" aria-haspopup="dialog" aria-controls="mobile-nav-dialog" data-dialog-open="mobile-nav-dialog">
@@ -22,7 +26,33 @@
             <span class="sr-only">@SharedLocalizer["OpenMenu"]</span>
         </button>
         <a asp-page="/Index" class="rounded-field px-2 text-xl font-bold text-primary">@productName</a>
-        <div class="ms-auto">
+        <div class="ms-auto flex items-center gap-2">
+            @if (CurrentUser.IsAuthenticated)
+            {
+                <a asp-page="/Account/Settings" class="btn btn-ghost btn-sm hidden lg:inline-flex">
+                    @SharedLocalizer["Settings"]
+                </a>
+                @if (CurrentUser.IsAdmin)
+                {
+                    <a asp-page="/Admin/Users" class="btn btn-ghost btn-sm hidden lg:inline-flex">
+                        @SharedLocalizer["Administration"]
+                    </a>
+                }
+                <form method="post" asp-page="/Account/Logout" class="hidden lg:inline">
+                    <button type="submit" class="btn btn-ghost btn-sm">
+                        @SharedLocalizer["Logout"]
+                    </button>
+                </form>
+            }
+            else
+            {
+                <a asp-page="/Account/Login" class="btn btn-ghost btn-sm hidden lg:inline-flex">
+                    @SharedLocalizer["Login"]
+                </a>
+                <a asp-page="/Account/Register" class="btn btn-primary btn-sm hidden lg:inline-flex">
+                    @SharedLocalizer["Register"]
+                </a>
+            }
             <button type="button" class="btn btn-ghost btn-square" aria-pressed="false" data-theme-toggle>
                 <icon name="sun-moon" class="size-5" />
                 <span class="sr-only">@SharedLocalizer["DarkTheme"]</span>
@@ -38,7 +68,7 @@
         </main>
     </div>
     <footer class="border-t border-base-300 bg-base-100 px-4 py-3 text-center text-sm text-base-content/80">
-        <a href="https://github.com/vitorparras/trail" target="_blank" rel="noopener noreferrer" class="link link-hover" data-footer-source>@SharedLocalizer["SourceCode"]</a>
+        <a href="@RepositoryOptions.Value.SourceCodeUrl" target="_blank" rel="noopener noreferrer" class="link link-hover" data-footer-source>@SharedLocalizer["SourceCode"]</a>
     </footer>
     <dialog id="mobile-nav-dialog" class="modal modal-start" aria-labelledby="mobile-nav-dialog-title" data-close-when="(min-width: 64rem)">
         <div class="modal-box flex w-72 max-w-[85vw] flex-col gap-4 p-4">
@@ -52,6 +82,34 @@
                 </form>
             </div>
             <partial name="_Navigation" />
+            <div class="border-t border-base-300 pt-3 flex flex-col gap-1">
+                @if (CurrentUser.IsAuthenticated)
+                {
+                    <a asp-page="/Account/Settings" class="btn btn-ghost btn-sm justify-start">
+                        @SharedLocalizer["Settings"]
+                    </a>
+                    @if (CurrentUser.IsAdmin)
+                    {
+                        <a asp-page="/Admin/Users" class="btn btn-ghost btn-sm justify-start">
+                            @SharedLocalizer["Administration"]
+                        </a>
+                    }
+                    <form method="post" asp-page="/Account/Logout" class="w-full">
+                        <button type="submit" class="btn btn-ghost btn-sm justify-start w-full">
+                            @SharedLocalizer["Logout"]
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <a asp-page="/Account/Login" class="btn btn-ghost btn-sm justify-start">
+                        @SharedLocalizer["Login"]
+                    </a>
+                    <a asp-page="/Account/Register" class="btn btn-primary btn-sm justify-start">
+                        @SharedLocalizer["Register"]
+                    </a>
+                }
+            </div>
         </div>
         <form method="dialog" class="modal-backdrop" asp-antiforgery="false">
             <button type="submit" tabindex="-1" data-dialog-close>@SharedLocalizer["CloseMenu"]</button>

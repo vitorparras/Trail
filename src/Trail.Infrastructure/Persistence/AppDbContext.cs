@@ -1,12 +1,16 @@
 using System.Reflection;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Trail.Application.Abstractions;
+using Trail.Domain.Accounts;
 using Trail.Domain.Common;
+using Trail.Infrastructure.Identity;
 
 namespace Trail.Infrastructure.Persistence;
 
-public class AppDbContext : DbContext, IAppDbContext
+public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>, IAppDbContext
 {
     private static readonly MethodInfo ConfigureTypedIdConventionMethod = typeof(AppDbContext)
         .GetMethod(nameof(ConfigureTypedIdConvention), BindingFlags.NonPublic | BindingFlags.Static)!;
@@ -23,6 +27,10 @@ public class AppDbContext : DbContext, IAppDbContext
         _currentUser = currentUser;
     }
 
+    public DbSet<UserSettings> UserSettings => Set<UserSettings>();
+
+    public DbSet<AccountInvitation> AccountInvitations => Set<AccountInvitation>();
+
     internal UserId CurrentUserId => _currentUser.IsAuthenticated ? _currentUser.Id : default;
 
     internal bool IsAuthenticated => _currentUser.IsAuthenticated;
@@ -37,22 +45,59 @@ public class AppDbContext : DbContext, IAppDbContext
         configurationBuilder.Properties<DateTime?>().HaveConversion<NullableUtcDateTimeConverter>();
     }
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnModelCreating(ModelBuilder builder)
     {
-        ArgumentNullException.ThrowIfNull(modelBuilder);
-        base.OnModelCreating(modelBuilder);
+        ArgumentNullException.ThrowIfNull(builder);
+        base.OnModelCreating(builder);
 
-        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        builder.Entity<UserSettings>(b =>
+        {
+            b.HasKey(x => x.Id);
+            b.Property(x => x.TimeZoneId)
+                .HasMaxLength(100)
+                .IsRequired();
+            b.Property(x => x.PomodoroFocusMinutes)
+                .IsRequired();
+            b.Property(x => x.PomodoroBreakMinutes)
+                .IsRequired();
+            b.Property(x => x.OwnerId)
+                .IsRequired();
+        });
+
+        builder.Entity<AccountInvitation>(b =>
+        {
+            b.HasKey(x => x.Id);
+            b.Property(x => x.Email)
+                .HasMaxLength(256)
+                .IsRequired();
+            b.Property(x => x.NormalizedEmail)
+                .HasMaxLength(256)
+                .IsRequired();
+            b.Property(x => x.Token)
+                .HasMaxLength(256)
+                .IsRequired();
+            b.Property(x => x.InvitedByUserId)
+                .IsRequired();
+            b.Property(x => x.CreatedAt)
+                .IsRequired();
+            b.Property(x => x.ExpiresAt)
+                .IsRequired();
+
+            b.HasIndex(x => x.Token).IsUnique();
+            b.HasIndex(x => x.NormalizedEmail);
+        });
+
+        foreach (var entityType in builder.Model.GetEntityTypes())
         {
             if (entityType.BaseType == null && typeof(IAggregateRoot).IsAssignableFrom(entityType.ClrType))
             {
-                modelBuilder.Entity(entityType.ClrType)
+                builder.Entity(entityType.ClrType)
                     .Property(nameof(IAggregateRoot.Version))
                     .IsConcurrencyToken();
 
                 ConfigureGlobalQueryFilterMethod
                     .MakeGenericMethod(entityType.ClrType)
-                    .Invoke(this, [modelBuilder]);
+                    .Invoke(this, [builder]);
             }
 
             foreach (var property in entityType.GetProperties())

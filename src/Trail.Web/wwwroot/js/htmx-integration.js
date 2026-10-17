@@ -1,6 +1,21 @@
 (() => {
     'use strict';
 
+    const htmxInstance = typeof htmx !== 'undefined' ? htmx : window.htmx;
+    if (htmxInstance?.registerExtension) {
+        htmxInstance.registerExtension('hx-csp', {
+            init: (api) => {
+                if (api?.initSecurity) {
+                    const forbidEval = () => {
+                        throw new Error('Eval is disabled under CSP.');
+                    };
+                    api.initSecurity(null, forbidEval, forbidEval);
+                }
+            },
+            htmx_before_on_init: () => false
+        });
+    }
+
     document.addEventListener('htmx:config:request', (event) => {
         const token = document.querySelector('meta[name="csrf-token"]');
         const headerName = token?.dataset.headerName;

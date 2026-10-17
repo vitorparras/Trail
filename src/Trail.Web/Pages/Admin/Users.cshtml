@@ -1,0 +1,233 @@
+@page
+@using Trail.Application.Accounts
+@model Trail.Web.Pages.Admin.UsersModel
+@{
+    ViewData["Title"] = SharedLocalizer["AdministrationTitle"];
+}
+
+<div class="mx-auto max-w-6xl flex flex-col gap-8">
+    <div>
+        <h1 class="text-3xl font-bold">@SharedLocalizer["AdministrationHeading"]</h1>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.GeneratedInviteLink))
+    {
+        <div class="alert alert-info" role="status">
+            <icon name="info" class="size-6 shrink-0" />
+            <div class="w-full">
+                <p class="font-bold">@SharedLocalizer["InvitationCreated"]</p>
+                <p class="text-sm">@SharedLocalizer["InvitationLinkGenerated"]</p>
+                <div class="mt-2">
+                    <input type="text"
+                           readonly
+                           value="@Model.GeneratedInviteLink"
+                           class="input input-bordered input-sm w-full font-mono"
+                           aria-label="@SharedLocalizer["InvitationLinkGenerated"]" />
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.GeneratedManualLink))
+    {
+        <div class="alert alert-info" role="status">
+            <icon name="info" class="size-6 shrink-0" />
+            <div class="w-full">
+                <p class="font-bold">@SharedLocalizer["ManualLinkGenerated"]</p>
+                <div class="mt-2">
+                    <input type="text"
+                           readonly
+                           value="@Model.GeneratedManualLink"
+                           class="input input-bordered input-sm w-full font-mono"
+                           aria-label="@SharedLocalizer["ManualLinkGenerated"]" />
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (Model.TestEmailSuccess)
+    {
+        <div class="alert alert-success" role="status">
+            <icon name="check-circle" class="size-6 shrink-0" />
+            <span>@SharedLocalizer["TestEmailSent"]</span>
+        </div>
+    }
+
+    <div asp-validation-summary="ModelOnly" class="alert alert-error text-sm" role="alert"></div>
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <section class="card border border-base-300 bg-base-100 shadow-sm" aria-labelledby="invite-heading">
+            <div class="card-body">
+                <h2 id="invite-heading" class="card-title text-lg font-semibold">@SharedLocalizer["InviteUser"]</h2>
+                <form method="post" asp-page-handler="Invite" class="mt-2 flex flex-col gap-3">
+                    <div class="form-control">
+                        <label for="invite-email" class="label">
+                            <span class="label-text font-medium">@SharedLocalizer["Email"]</span>
+                        </label>
+                        <input id="invite-email"
+                               name="email"
+                               type="email"
+                               required
+                               placeholder="@SharedLocalizer["InviteEmailPlaceholder"]"
+                               class="input input-bordered w-full input-sm" />
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm self-start">
+                        @SharedLocalizer["SendInvitation"]
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <section class="card border border-base-300 bg-base-100 shadow-sm" aria-labelledby="test-email-heading">
+            <div class="card-body">
+                <h2 id="test-email-heading" class="card-title text-lg font-semibold">@SharedLocalizer["SendTestEmail"]</h2>
+                <form method="post" asp-page-handler="TestEmail" class="mt-2 flex flex-col gap-3">
+                    <div class="form-control">
+                        <label for="test-email-recipient" class="label">
+                            <span class="label-text font-medium">@SharedLocalizer["TestEmailRecipient"]</span>
+                        </label>
+                        <input id="test-email-recipient"
+                               name="recipientEmail"
+                               type="email"
+                               required
+                               placeholder="@SharedLocalizer["InviteEmailPlaceholder"]"
+                               class="input input-bordered w-full input-sm" />
+                    </div>
+                    <button type="submit" class="btn btn-outline btn-sm self-start">
+                        @SharedLocalizer["SendTestEmail"]
+                    </button>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <section class="card border border-base-300 bg-base-100 shadow-sm" aria-labelledby="users-table-heading">
+        <div class="card-body">
+            <h2 id="users-table-heading" class="card-title text-xl font-semibold">@SharedLocalizer["Users"]</h2>
+            <div class="overflow-x-auto mt-2">
+                <table class="table table-zebra w-full" aria-label="@SharedLocalizer["Users"]">
+                    <thead>
+                        <tr>
+                            <th scope="col">@SharedLocalizer["User"]</th>
+                            <th scope="col">@SharedLocalizer["Role"]</th>
+                            <th scope="col">@SharedLocalizer["Status"]</th>
+                            <th scope="col">@SharedLocalizer["ConfirmEmail"]</th>
+                            <th scope="col">@SharedLocalizer["CreatedAt"]</th>
+                            <th scope="col">@SharedLocalizer["Actions"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model.Users)
+                        {
+                            <tr>
+                                <td class="font-medium">@user.Email</td>
+                                <td>
+                                    @if (user.IsAdmin)
+                                    {
+                                        <span class="badge badge-primary badge-sm">@SharedLocalizer["Admin"]</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-ghost badge-sm">@SharedLocalizer["StandardUser"]</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (user.IsActive)
+                                    {
+                                        <span class="badge badge-success badge-sm">@SharedLocalizer["Active"]</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-error badge-sm">@SharedLocalizer["Inactive"]</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (user.EmailConfirmed)
+                                    {
+                                        <span class="badge badge-info badge-sm">@SharedLocalizer["Confirmed"]</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-warning badge-sm">@SharedLocalizer["Pending"]</span>
+                                    }
+                                </td>
+                                <td class="text-sm">@user.CreatedAtUtc.ToString("g")</td>
+                                <td>
+                                    <div class="flex flex-wrap items-center gap-1">
+                                        <form method="post" asp-page-handler="ToggleActive" class="inline">
+                                            <input type="hidden" name="userId" value="@user.Id.Value" />
+                                            <input type="hidden" name="isActive" value="@(!user.IsActive)" />
+                                            <button type="submit" class="btn btn-xs @(user.IsActive ? "btn-outline btn-error" : "btn-outline btn-success")">
+                                                @(user.IsActive ? SharedLocalizer["Deactivate"] : SharedLocalizer["Activate"])
+                                            </button>
+                                        </form>
+
+                                        @if (!user.EmailConfirmed)
+                                        {
+                                            <form method="post" asp-page-handler="ManualLink" class="inline">
+                                                <input type="hidden" name="userId" value="@user.Id.Value" />
+                                                <input type="hidden" name="kind" value="@ManualLinkKind.EmailConfirmation" />
+                                                <button type="submit" class="btn btn-xs btn-ghost">
+                                                    @SharedLocalizer["GenerateConfirmationLink"]
+                                                </button>
+                                            </form>
+                                        }
+
+                                        <form method="post" asp-page-handler="ManualLink" class="inline">
+                                            <input type="hidden" name="userId" value="@user.Id.Value" />
+                                            <input type="hidden" name="kind" value="@ManualLinkKind.PasswordReset" />
+                                            <button type="submit" class="btn btn-xs btn-ghost">
+                                                @SharedLocalizer["GenerateResetPasswordLink"]
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    @if (Model.Invitations.Count > 0)
+    {
+        <section class="card border border-base-300 bg-base-100 shadow-sm" aria-labelledby="invitations-table-heading">
+            <div class="card-body">
+                <h2 id="invitations-table-heading" class="card-title text-xl font-semibold">@SharedLocalizer["Invitations"]</h2>
+                <div class="overflow-x-auto mt-2">
+                    <table class="table table-zebra w-full" aria-label="@SharedLocalizer["Invitations"]">
+                        <thead>
+                            <tr>
+                                <th scope="col">@SharedLocalizer["Email"]</th>
+                                <th scope="col">@SharedLocalizer["Status"]</th>
+                                <th scope="col">@SharedLocalizer["CreatedAt"]</th>
+                                <th scope="col">@SharedLocalizer["ExpiresAt"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var invite in Model.Invitations)
+                            {
+                                <tr>
+                                    <td class="font-medium">@invite.Email</td>
+                                    <td>
+                                        @if (invite.IsAccepted)
+                                        {
+                                            <span class="badge badge-success badge-sm">@SharedLocalizer["Confirmed"]</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-warning badge-sm">@SharedLocalizer["Pending"]</span>
+                                        }
+                                    </td>
+                                    <td class="text-sm">@invite.CreatedAtUtc.ToString("g")</td>
+                                    <td class="text-sm">@invite.ExpiresAtUtc.ToString("g")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    }
+</div>

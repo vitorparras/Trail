@@ -13,7 +13,7 @@ public static class HtmxIntegration
 
     public static string ClientConfiguration { get; } = JsonSerializer.Serialize(new
     {
-        includeIndicatorCSS = true,
+        includeIndicatorCSS = false,
         noSwap = new[] { 204, 304 },
     });
 

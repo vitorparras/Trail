@@ -92,3 +92,15 @@
 :root {
   --fx-noise: none;
 }
+
+.htmx-indicator {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 200ms ease-in;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+  opacity: 1;
+  visibility: visible;
+}

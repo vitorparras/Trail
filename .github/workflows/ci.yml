@@ -5,17 +5,23 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  TESTINGPLATFORM_TELEMETRY_OPTOUT: "1"
 
 jobs:
-  build:
-    name: Build and test
+  test:
+    name: Test
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -26,9 +32,15 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
+          cache: true
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .tools/tailwindcss
+          key: tailwindcss-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('eng/frontend.props') }}
 
       - name: Restore
-        run: dotnet restore "-warnaserror:NU1901;NU1902;NU1903;NU1904"
+        run: dotnet restore --locked-mode "-warnaserror:NU1901;NU1902;NU1903;NU1904"
 
       - name: Verify formatting
         run: dotnet format --verify-no-changes --no-restore
@@ -37,4 +49,52 @@ jobs:
         run: dotnet build --no-restore --configuration Release
 
       - name: Test
-        run: dotnet test --no-build --configuration Release
+        run: dotnet test --no-build --configuration Release --coverage --coverage-output-format cobertura --results-directory TestResults
+
+      - name: Verify coverage
+        run: |
+          python3 -I - <<'EOF'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          targets = ("Trail.Domain", "Trail.Application")
+          lines = {target: {} for target in targets}
+
+          for report in Path("TestResults").rglob("*.cobertura.xml"):
+              root = ET.parse(report).getroot()
+              for pkg in root.findall("./packages/package"):
+                  name = pkg.attrib.get("name")
+                  if name not in lines:
+                      continue
+                  pkg_lines = lines[name]
+                  for cls in pkg.findall("./classes/class"):
+                      filename = cls.attrib["filename"]
+                      for line in cls.findall("./lines/line"):
+                          key = (filename, int(line.attrib["number"]))
+                          hits = int(line.attrib["hits"])
+                          pkg_lines[key] = pkg_lines.get(key, 0) + hits
+
+          failed = False
+          for target in targets:
+              pkg_lines = lines[target]
+              total = len(pkg_lines)
+              covered = sum(1 for hits in pkg_lines.values() if hits > 0)
+              pct = (covered / total * 100.0) if total else 0.0
+              print(f"{target}: {covered}/{total} lines covered ({pct:.2f}%)")
+              if total == 0 or pct < 90.0:
+                  failed = True
+
+          if failed:
+              raise SystemExit(1)
+          EOF
+
+  build:
+    name: Build and test
+    needs: [test]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check job results
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}
+        run: exit 1

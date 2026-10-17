@@ -21,9 +21,15 @@ env:
 
 jobs:
   test:
-    name: Test
+    name: Test (${{ matrix.provider }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [sqlite, postgresql]
+    env:
+      TRAIL_TEST_DATABASE_PROVIDER: ${{ matrix.provider }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -47,6 +53,12 @@ jobs:
 
       - name: Build
         run: dotnet build --no-restore --configuration Release
+
+      - name: Verify migrations
+        run: |
+          dotnet tool install --global dotnet-ef
+          dotnet ef migrations has-pending-model-changes --project src/Trail.Infrastructure --context SqliteAppDbContext --no-build --configuration Release
+          dotnet ef migrations has-pending-model-changes --project src/Trail.Infrastructure --context PostgreSqlAppDbContext --no-build --configuration Release
 
       - name: Test
         run: dotnet test --no-build --configuration Release --coverage --coverage-output-format cobertura --results-directory TestResults

@@ -1,0 +1,78 @@
+using Trail.Application.Telemetry;
+using Trail.Domain.Common;
+
+namespace Trail.Application.Accounts;
+
+public sealed record ResendEmailConfirmationCommand(
+    string Email,
+    Func<UserId, string, string>? ConfirmationLinkBuilder = null);
+
+public sealed class ResendEmailConfirmationHandler
+{
+    private readonly IAccountIdentityGateway _identityGateway;
+    private readonly IEmailSender _emailSender;
+    private readonly ApplicationMetrics _metrics;
+
+    public ResendEmailConfirmationHandler(
+        IAccountIdentityGateway identityGateway,
+        IEmailSender emailSender,
+        ApplicationMetrics metrics)
+    {
+        ArgumentNullException.ThrowIfNull(identityGateway);
+        ArgumentNullException.ThrowIfNull(emailSender);
+        ArgumentNullException.ThrowIfNull(metrics);
+
+        _identityGateway = identityGateway;
+        _emailSender = emailSender;
+        _metrics = metrics;
+    }
+
+    public async Task<Result> HandleAsync(
+        ResendEmailConfirmationCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        if (string.IsNullOrWhiteSpace(command.Email))
+        {
+            return Result.Invalid(Message.Error("accounts.resend_confirmation.email_required", nameof(command.Email)));
+        }
+
+        var user = await _identityGateway.GetUserByEmailAsync(command.Email, cancellationToken);
+        if (user is null || user.EmailConfirmed || !user.IsActive)
+        {
+            return Result.Ok();
+        }
+
+        if (!_emailSender.IsSmtpConfigured)
+        {
+            return Result.Ok();
+        }
+
+        var tokenResult = await _identityGateway.GenerateEmailConfirmationTokenAsync(user.Id, cancellationToken);
+        if (!tokenResult.IsOk)
+        {
+            return tokenResult.Failure;
+        }
+
+        var confirmationUrl = command.ConfirmationLinkBuilder?.Invoke(user.Id, tokenResult.Data)
+            ?? $"/Account/ConfirmEmail?userId={user.Id}&token={Uri.EscapeDataString(tokenResult.Data)}";
+
+        var message = new EmailMessage(
+            command.Email,
+            "Confirm your account",
+            $"<p>Please confirm your account by clicking <a href=\"{confirmationUrl}\">here</a>.</p>",
+            $"Please confirm your account by visiting: {confirmationUrl}",
+            EmailKinds.Confirmation);
+
+        var sendResult = await _emailSender.SendAsync(message, cancellationToken);
+        if (!sendResult.IsOk)
+        {
+            _metrics.RecordEmailFailed(EmailKinds.Confirmation);
+            return sendResult;
+        }
+
+        _metrics.RecordEmailSent(EmailKinds.Confirmation);
+        return Result.Ok();
+    }
+}

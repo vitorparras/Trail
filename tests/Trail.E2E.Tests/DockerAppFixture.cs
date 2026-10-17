@@ -25,7 +25,7 @@ public sealed class DockerAppFixture : IAsyncLifetime
         }
         else
         {
-            await EnsureImageExistsAsync();
+            await EnsureImageBuiltAsync();
 
             _container = new ContainerBuilder(ImageName)
                 .WithEnvironment("Database__Provider", "Sqlite")
@@ -80,27 +80,8 @@ public sealed class DockerAppFixture : IAsyncLifetime
         }
     }
 
-    private static async Task EnsureImageExistsAsync()
+    private static async Task EnsureImageBuiltAsync()
     {
-        var inspectStartInfo = new ProcessStartInfo
-        {
-            FileName = "docker",
-            Arguments = $"image inspect {ImageName}",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false
-        };
-
-        using var inspectProcess = Process.Start(inspectStartInfo);
-        if (inspectProcess is not null)
-        {
-            await inspectProcess.WaitForExitAsync();
-            if (inspectProcess.ExitCode == 0)
-            {
-                return;
-            }
-        }
-
         var repositoryRoot = FindRepositoryRoot();
         var buildStartInfo = new ProcessStartInfo
         {

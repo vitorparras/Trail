@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, 'phase/**']
   workflow_dispatch:
 
 permissions:
@@ -103,18 +103,6 @@ jobs:
               raise SystemExit(1)
           EOF
 
-  docker:
-    name: Build Docker image
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Build image
-        run: docker build --file Dockerfile --tag trail:ci .
-
   e2e:
     name: End-to-end tests
     runs-on: ubuntu-latest
@@ -141,7 +129,7 @@ jobs:
         run: docker compose --file deploy/compose.sqlite.yml up --detach --wait
 
       - name: Restore
-        run: dotnet restore tests/Trail.E2E.Tests/Trail.E2E.Tests.csproj --locked-mode
+        run: dotnet restore tests/Trail.E2E.Tests/Trail.E2E.Tests.csproj --locked-mode "-warnaserror:NU1901;NU1902;NU1903;NU1904"
 
       - name: Build
         run: dotnet build tests/Trail.E2E.Tests/Trail.E2E.Tests.csproj --no-restore --configuration Release
@@ -152,7 +140,7 @@ jobs:
       - name: Run end-to-end tests
         env:
           TRAIL_E2E_BASE_URL: http://127.0.0.1:8080
-        run: dotnet test --project tests/Trail.E2E.Tests/Trail.E2E.Tests.csproj --no-build --configuration Release
+        run: dotnet test tests/Trail.E2E.Tests/Trail.E2E.Tests.csproj --no-build --configuration Release
 
       - name: Tear down compose
         if: always()
@@ -160,7 +148,7 @@ jobs:
 
   build:
     name: Build and test
-    needs: [test, docker, e2e]
+    needs: [test, e2e]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

@@ -304,6 +304,32 @@ public sealed class SearchAndImpactHandlersTests
     }
 
     [Fact]
+    public async Task SearchPlanTopics_SubjectFilterOutsidePlan_ReturnsNotFound()
+    {
+        var plan = StudyPlan.Create(_currentUser.Id, "Plan").Data;
+        var placedSubject = Subject.Create(_currentUser.Id, plan.Id, "Placed").Data;
+        plan.PlaceSubject(placedSubject.Id);
+
+        var otherPlan = StudyPlan.Create(_currentUser.Id, "Other plan").Data;
+        var foreignSubject = Subject.Create(_currentUser.Id, otherPlan.Id, "Foreign").Data;
+        otherPlan.PlaceSubject(foreignSubject.Id);
+
+        _store.Plans[plan.Id] = plan;
+        _store.Plans[otherPlan.Id] = otherPlan;
+        _store.Subjects[placedSubject.Id] = placedSubject;
+        _store.Subjects[foreignSubject.Id] = foreignSubject;
+
+        var handler = new SearchPlanTopicsHandler(_currentUser, _store);
+
+        var result = await handler.HandleAsync(
+            new SearchPlanTopicsQuery(plan.Id, SubjectId: foreignSubject.Id),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(ResultStatus.NotFound, result.Status);
+        Assert.Equal("planning.subject.not_found", Assert.Single(result.Messages).Code);
+    }
+
+    [Fact]
     public async Task SearchPlanTopics_Valid_ReturnsTopicsWithCorrectHierarchyAndFiltering()
     {
         var plan = StudyPlan.Create(_currentUser.Id, "Plan").Data;

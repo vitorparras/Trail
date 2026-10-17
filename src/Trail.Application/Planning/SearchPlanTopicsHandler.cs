@@ -44,6 +44,11 @@ public sealed class SearchPlanTopicsHandler
         var subjects = await _store.ListSubjectsByPlanIdAsync(query.PlanId, cancellationToken);
         var subjectsById = subjects.ToDictionary(s => s.Id);
 
+        if (query.SubjectId.HasValue && !subjectsById.ContainsKey(query.SubjectId.Value))
+        {
+            return Result.NotFound(Message.Error("planning.subject.not_found"));
+        }
+
         var orderedSubjects = new List<Subject>();
         foreach (var placement in plan.Outline.OrderBy(p => p.Order))
         {

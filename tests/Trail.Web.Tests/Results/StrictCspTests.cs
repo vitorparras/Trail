@@ -1,13 +1,12 @@
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Trail.Domain.Common;
 using Trail.Web.Results;
 
 namespace Trail.Web.Tests.Results;
 
-public sealed class StrictCspTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
+public sealed class StrictCspTests(TrailWebApplicationFactory factory) : IClassFixture<TrailWebApplicationFactory>
 {
     [Fact]
     public async Task StatusPartials_HaveNoStrictCspViolations()

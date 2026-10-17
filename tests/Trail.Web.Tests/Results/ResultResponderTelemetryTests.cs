@@ -1,13 +1,12 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Trail.Application.Telemetry;
 using Trail.Domain.Common;
 using Trail.Web.Results;
 
 namespace Trail.Web.Tests.Results;
 
-public sealed class ResultResponderTelemetryTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ResultResponderTelemetryTests(TrailWebApplicationFactory factory) : IClassFixture<TrailWebApplicationFactory>
 {
     [Fact]
     public async Task Respond_SetsActivityCurrentTags()

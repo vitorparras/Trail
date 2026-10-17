@@ -1,11 +1,10 @@
 using System.Net;
 using AngleSharp.Html.Parser;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Localization;
 
 namespace Trail.Web.Tests.Results;
 
-public sealed class ErrorHandlingTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ErrorHandlingTests(TrailWebApplicationFactory factory) : IClassFixture<TrailWebApplicationFactory>
 {
     private readonly IStringLocalizer<SharedResource> _localizer = factory.Services.GetRequiredService<IStringLocalizer<SharedResource>>();
 

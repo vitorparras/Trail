@@ -1,11 +1,10 @@
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Localization;
 using Trail.Domain.Common;
 using Trail.Web.Toasts;
 
 namespace Trail.Web.Tests;
 
-public sealed class ToastTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ToastTests(TrailWebApplicationFactory factory) : IClassFixture<TrailWebApplicationFactory>
 {
     [Fact]
     public async Task Toasts_Partial_AppendsToastsOutOfBandToTheContainer()

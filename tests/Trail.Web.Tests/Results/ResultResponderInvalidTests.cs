@@ -1,11 +1,10 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Trail.Domain.Common;
 using Trail.Web.Results;
 
 namespace Trail.Web.Tests.Results;
 
-public sealed class ResultResponderInvalidTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ResultResponderInvalidTests(TrailWebApplicationFactory factory) : IClassFixture<TrailWebApplicationFactory>
 {
     [Fact]
     public async Task Respond_Invalid_WithTargetedMessages_AddsErrorsToModelStateUnderTargetKey()

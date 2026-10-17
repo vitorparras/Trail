@@ -1,11 +1,10 @@
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Localization;
 using Trail.Domain.Common;
 using Trail.Web.Results;
 
 namespace Trail.Web.Tests.Results;
 
-public sealed class ResultResponderStatusTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ResultResponderStatusTests(TrailWebApplicationFactory factory) : IClassFixture<TrailWebApplicationFactory>
 {
     private readonly IStringLocalizer<SharedResource> _localizer = factory.Services.GetRequiredService<IStringLocalizer<SharedResource>>();
 

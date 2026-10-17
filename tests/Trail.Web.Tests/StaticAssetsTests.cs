@@ -1,9 +1,8 @@
 using System.Xml.Linq;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Trail.Web.Tests;
 
-public sealed class StaticAssetsTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
+public sealed class StaticAssetsTests(TrailWebApplicationFactory factory) : IClassFixture<TrailWebApplicationFactory>
 {
     [Fact]
     public async Task Get_AssetsReferencedByLayout_AreServed()

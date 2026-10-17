@@ -10,7 +10,7 @@ using Trail.Application.Telemetry;
 
 namespace Trail.Web.Tests.Observability;
 
-public sealed class ObservabilityTests(WebApplicationFactory<Program> baseFactory) : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ObservabilityTests(TrailWebApplicationFactory baseFactory) : IClassFixture<TrailWebApplicationFactory>
 {
     [Fact]
     public async Task Request_ProducesActivityAndIncrementsMetrics()

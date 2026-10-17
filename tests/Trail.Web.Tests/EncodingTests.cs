@@ -1,11 +1,10 @@
 using System.Globalization;
 using System.Text.Encodings.Web;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Localization;
 
 namespace Trail.Web.Tests;
 
-public sealed class EncodingTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
+public sealed class EncodingTests(TrailWebApplicationFactory factory) : IClassFixture<TrailWebApplicationFactory>
 {
     private const int CCedilla = 0x00E7;
 

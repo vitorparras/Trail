@@ -1,13 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Trail.Domain.Common;
 using Trail.Web.Results;
 using Trail.Web.Toasts;
 
 namespace Trail.Web.Tests.Results;
 
-public sealed class ResultResponderOkTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ResultResponderOkTests(TrailWebApplicationFactory factory) : IClassFixture<TrailWebApplicationFactory>
 {
     [Fact]
     public async Task Respond_Ok_WithHtmx_Returns200WithPartialView()

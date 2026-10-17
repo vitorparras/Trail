@@ -1,13 +1,12 @@
 using System.Globalization;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Localization;
 using Trail.Web.Pages;
 
 namespace Trail.Web.Tests;
 
-public sealed class LayoutTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
+public sealed class LayoutTests(TrailWebApplicationFactory factory) : IClassFixture<TrailWebApplicationFactory>
 {
     [Fact]
     public async Task Get_Home_RendersLayoutLandmarksAndControls()

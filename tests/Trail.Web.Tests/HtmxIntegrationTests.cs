@@ -8,7 +8,7 @@ using Trail.Web.Htmx;
 
 namespace Trail.Web.Tests;
 
-public sealed class HtmxIntegrationTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
+public sealed class HtmxIntegrationTests(TrailWebApplicationFactory factory) : IClassFixture<TrailWebApplicationFactory>
 {
     [Fact]
     public async Task Get_Home_ConfiguresHtmxBeforeLoadingItAndItsIntegration()

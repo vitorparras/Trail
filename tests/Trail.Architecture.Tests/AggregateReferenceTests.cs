@@ -10,11 +10,14 @@ namespace Trail.Architecture.Tests;
 public sealed class AggregateReferenceTests
 {
     public static readonly IArchRule AggregatesShouldOnlyReferenceOtherAggregatesByTypedIdRule =
-        Classes().That().AreAssignableTo(typeof(IAggregateRoot))
+        Classes().That().FollowCustomPredicate(
+                IsAggregateOrEntityInsideAggregate,
+                "are aggregates or entities inside aggregates")
             .Should().FollowCustomCondition(
                 VerifyAggregateReferences,
                 "only reference other aggregates by typed ID",
-                "references another aggregate directly");
+                "references another aggregate directly")
+            .WithoutRequiringPositiveResults();
 
     [Fact]
     public void Aggregates_ReferenceOtherAggregatesOnlyByTypedId()
@@ -26,18 +29,89 @@ public sealed class AggregateReferenceTests
     public void Aggregates_DetectsDirectReferenceToAnotherAggregate_AsViolation()
     {
         var violationArchitecture = ArchitectureModel.BuildArchitectureWithNamespaces(
-            "Trail.Domain.Violations.Aggregates");
+            "Trail.Domain.Violations.Aggregates.Common",
+            "Trail.Domain.Violations.Aggregates.DirectProperty");
 
         Assert.Throws<FailedArchRuleException>(() =>
             AggregatesShouldOnlyReferenceOtherAggregatesByTypedIdRule.Check(violationArchitecture));
     }
 
+    [Fact]
+    public void Aggregates_DetectsDirectReferenceInEntityInsideAggregate_AsViolation()
+    {
+        var violationArchitecture = ArchitectureModel.BuildArchitectureWithNamespaces(
+            "Trail.Domain.Violations.Aggregates.Common",
+            "Trail.Domain.Violations.Aggregates.EntityInsideAggregate");
+
+        Assert.Throws<FailedArchRuleException>(() =>
+            AggregatesShouldOnlyReferenceOtherAggregatesByTypedIdRule.Check(violationArchitecture));
+    }
+
+    [Fact]
+    public void Aggregates_DetectsConstructorParameterToAnotherAggregate_AsViolation()
+    {
+        var violationArchitecture = ArchitectureModel.BuildArchitectureWithNamespaces(
+            "Trail.Domain.Violations.Aggregates.Common",
+            "Trail.Domain.Violations.Aggregates.ConstructorParam");
+
+        Assert.Throws<FailedArchRuleException>(() =>
+            AggregatesShouldOnlyReferenceOtherAggregatesByTypedIdRule.Check(violationArchitecture));
+    }
+
+    [Fact]
+    public void Aggregates_DetectsMethodParameterToAnotherAggregate_AsViolation()
+    {
+        var violationArchitecture = ArchitectureModel.BuildArchitectureWithNamespaces(
+            "Trail.Domain.Violations.Aggregates.Common",
+            "Trail.Domain.Violations.Aggregates.MethodParam");
+
+        Assert.Throws<FailedArchRuleException>(() =>
+            AggregatesShouldOnlyReferenceOtherAggregatesByTypedIdRule.Check(violationArchitecture));
+    }
+
+    [Fact]
+    public void Aggregates_DetectsMethodReturnTypeOfAnotherAggregate_AsViolation()
+    {
+        var violationArchitecture = ArchitectureModel.BuildArchitectureWithNamespaces(
+            "Trail.Domain.Violations.Aggregates.Common",
+            "Trail.Domain.Violations.Aggregates.MethodReturn");
+
+        Assert.Throws<FailedArchRuleException>(() =>
+            AggregatesShouldOnlyReferenceOtherAggregatesByTypedIdRule.Check(violationArchitecture));
+    }
+
+    private static bool IsAggregateOrEntityInsideAggregate(Class cls)
+    {
+        var type = ResolveType(cls.FullName, cls.AssemblyQualifiedName);
+        if (type == null || type.IsAbstract || type.IsInterface)
+        {
+            return false;
+        }
+
+        if (typeof(IAggregateRoot).IsAssignableFrom(type))
+        {
+            return true;
+        }
+
+        var isDomainType = type.Assembly == ArchitectureModel.DomainAssembly
+            || type.Namespace?.StartsWith("Trail.Domain", StringComparison.Ordinal) == true;
+
+        if (!isDomainType)
+        {
+            return false;
+        }
+
+        if (type.Namespace == "Trail.Domain.Common")
+        {
+            return false;
+        }
+
+        return !typeof(IDomainEvent).IsAssignableFrom(type);
+    }
+
     private static bool VerifyAggregateReferences(Class cls)
     {
-        var type = Type.GetType(cls.AssemblyQualifiedName)
-            ?? ArchitectureModel.DomainAssembly.GetType(cls.FullName)
-            ?? ArchitectureModel.TestsAssembly.GetType(cls.FullName);
-
+        var type = ResolveType(cls.FullName, cls.AssemblyQualifiedName);
         if (type == null)
         {
             return true;
@@ -52,6 +126,12 @@ public sealed class AggregateReferenceTests
         var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
         if (fields.Any(field => !field.Name.Contains("BackingField", StringComparison.Ordinal)
             && IsOrContainsAggregateRoot(field.FieldType, type)))
+        {
+            return false;
+        }
+
+        var constructors = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+        if (constructors.Any(ctor => ctor.GetParameters().Any(parameter => IsOrContainsAggregateRoot(parameter.ParameterType, type))))
         {
             return false;
         }
@@ -87,4 +167,9 @@ public sealed class AggregateReferenceTests
 
         return false;
     }
+
+    private static Type? ResolveType(string fullName, string assemblyQualifiedName) =>
+        Type.GetType(assemblyQualifiedName)
+        ?? ArchitectureModel.DomainAssembly.GetType(fullName)
+        ?? ArchitectureModel.TestsAssembly.GetType(fullName);
 }

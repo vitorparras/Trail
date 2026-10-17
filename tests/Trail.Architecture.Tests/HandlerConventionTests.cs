@@ -36,6 +36,15 @@ public sealed class HandlerConventionTests
     }
 
     [Fact]
+    public void Handlers_AcceptsAllValidResultReturnTypes()
+    {
+        var architecture = ArchitectureModel.BuildArchitectureWithNamespaces(
+            "Trail.Application.Violations.Handlers.ValidVariants");
+
+        HandlersShouldFollowConventionsRule.Check(architecture);
+    }
+
+    [Fact]
     public void Handlers_DetectsUnsealedHandler_AsViolation()
     {
         var violationArchitecture = ArchitectureModel.BuildArchitectureWithNamespaces(
@@ -70,6 +79,16 @@ public sealed class HandlerConventionTests
     {
         var violationArchitecture = ArchitectureModel.BuildArchitectureWithNamespaces(
             "Trail.Application.Violations.Handlers.InvalidReturn");
+
+        Assert.Throws<FailedArchRuleException>(() =>
+            HandlersShouldFollowConventionsRule.Check(violationArchitecture));
+    }
+
+    [Fact]
+    public void Handlers_DetectsWrongMethodName_AsViolation()
+    {
+        var violationArchitecture = ArchitectureModel.BuildArchitectureWithNamespaces(
+            "Trail.Application.Violations.Handlers.WrongMethodName");
 
         Assert.Throws<FailedArchRuleException>(() =>
             HandlersShouldFollowConventionsRule.Check(violationArchitecture));

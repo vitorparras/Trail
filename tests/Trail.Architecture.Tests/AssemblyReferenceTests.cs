@@ -58,6 +58,27 @@ public sealed class AssemblyReferenceTests
         Assert.Contains(dependencies, name => name.StartsWith("xunit", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public void Infrastructure_DoesNotReferenceWeb()
+    {
+        var references = ReferencesOutsideFramework("Trail.Infrastructure");
+        Assert.DoesNotContain("Trail.Web", references);
+    }
+
+    [Fact]
+    public void Infrastructure_DoesNotDeclareWebDependency()
+    {
+        var dependencies = DeclaredDependencies("Trail.Infrastructure");
+        Assert.DoesNotContain("Trail.Web", dependencies);
+    }
+
+    [Fact]
+    public void Web_DoesNotDeclareDomainDependency()
+    {
+        var dependencies = DeclaredDependencies("Trail.Web");
+        Assert.DoesNotContain("Trail.Domain", dependencies);
+    }
+
     [Theory]
     [InlineData("Trail.Domain")]
     [InlineData("Microsoft.EntityFrameworkCore")]

@@ -10,8 +10,9 @@ namespace Trail.Architecture.Tests;
 public sealed class DomainConventionTests
 {
     public static readonly IArchRule EntitiesShouldNotHavePublicSettersRule =
-        Classes().That().ResideInNamespaceMatching(@"^Trail\.Domain(\..*)?$")
-            .And().AreAssignableTo(typeof(IAggregateRoot))
+        Classes().That().FollowCustomPredicate(
+                IsAggregateOrEntityInsideAggregate,
+                "are aggregates or entities inside aggregates")
             .Should().FollowCustomCondition(
                 VerifyEntityProperties,
                 "not have public property setters",
@@ -49,6 +50,26 @@ public sealed class DomainConventionTests
     {
         var violationArchitecture = ArchitectureModel.BuildArchitectureWithNamespaces(
             "Trail.Domain.Violations.Conventions.EntitySetter");
+
+        Assert.Throws<FailedArchRuleException>(() =>
+            EntitiesShouldNotHavePublicSettersRule.Check(violationArchitecture));
+    }
+
+    [Fact]
+    public void Entities_DetectsPublicInit_AsViolation()
+    {
+        var violationArchitecture = ArchitectureModel.BuildArchitectureWithNamespaces(
+            "Trail.Domain.Violations.Conventions.EntityInit");
+
+        Assert.Throws<FailedArchRuleException>(() =>
+            EntitiesShouldNotHavePublicSettersRule.Check(violationArchitecture));
+    }
+
+    [Fact]
+    public void Entities_DetectsEntityInsideAggregateWithPublicSetter_AsViolation()
+    {
+        var violationArchitecture = ArchitectureModel.BuildArchitectureWithNamespaces(
+            "Trail.Domain.Violations.Conventions.EntityInsideAggregate");
 
         Assert.Throws<FailedArchRuleException>(() =>
             EntitiesShouldNotHavePublicSettersRule.Check(violationArchitecture));
@@ -116,6 +137,16 @@ public sealed class DomainConventionTests
     }
 
     [Fact]
+    public void TypedIds_DetectsMissingFromMethod_AsViolation()
+    {
+        var violationArchitecture = ArchitectureModel.BuildArchitectureWithNamespaces(
+            "Trail.Domain.Violations.TypedIds.MissingFrom");
+
+        Assert.Throws<FailedArchRuleException>(() =>
+            TypedIdsShouldFollowConventionsRule.Check(violationArchitecture));
+    }
+
+    [Fact]
     public void TypedIds_DetectsMutableValue_AsViolation()
     {
         var violationArchitecture = ArchitectureModel.BuildArchitectureWithNamespaces(
@@ -125,12 +156,50 @@ public sealed class DomainConventionTests
             TypedIdsShouldFollowConventionsRule.Check(violationArchitecture));
     }
 
+    [Fact]
+    public void TypedIds_DetectsWrongValueType_AsViolation()
+    {
+        var violationArchitecture = ArchitectureModel.BuildIsolatedArchitecture(
+            "Trail.Domain.Violations.TypedIds.WrongValueType");
+
+        var wrongType = violationArchitecture.Types
+            .First(t => t.Name == "TypedIdWithWrongValueType");
+
+        Assert.False(VerifyTypedIdConvention(wrongType));
+    }
+
+    private static bool IsAggregateOrEntityInsideAggregate(Class cls)
+    {
+        var type = ResolveType(cls.FullName, cls.AssemblyQualifiedName);
+        if (type == null || type.IsAbstract || type.IsInterface)
+        {
+            return false;
+        }
+
+        if (typeof(IAggregateRoot).IsAssignableFrom(type))
+        {
+            return true;
+        }
+
+        var isDomainType = type.Assembly == ArchitectureModel.DomainAssembly
+            || type.Namespace?.StartsWith("Trail.Domain", StringComparison.Ordinal) == true;
+
+        if (!isDomainType)
+        {
+            return false;
+        }
+
+        if (type.Namespace == "Trail.Domain.Common")
+        {
+            return false;
+        }
+
+        return !typeof(IDomainEvent).IsAssignableFrom(type);
+    }
+
     private static bool VerifyEntityProperties(Class cls)
     {
-        var type = Type.GetType(cls.AssemblyQualifiedName)
-            ?? ArchitectureModel.DomainAssembly.GetType(cls.FullName)
-            ?? ArchitectureModel.TestsAssembly.GetType(cls.FullName);
-
+        var type = ResolveType(cls.FullName, cls.AssemblyQualifiedName);
         if (type == null)
         {
             return true;
@@ -142,10 +211,7 @@ public sealed class DomainConventionTests
 
     private static bool IsRecordClass(Class cls)
     {
-        var type = Type.GetType(cls.AssemblyQualifiedName)
-            ?? ArchitectureModel.DomainAssembly.GetType(cls.FullName)
-            ?? ArchitectureModel.TestsAssembly.GetType(cls.FullName);
-
+        var type = ResolveType(cls.FullName, cls.AssemblyQualifiedName);
         if (type == null)
         {
             return true;
@@ -157,10 +223,7 @@ public sealed class DomainConventionTests
 
     private static bool VerifyTypedIdConvention(IType archType)
     {
-        var type = Type.GetType(archType.AssemblyQualifiedName)
-            ?? ArchitectureModel.DomainAssembly.GetType(archType.FullName)
-            ?? ArchitectureModel.TestsAssembly.GetType(archType.FullName);
-
+        var type = ResolveType(archType.FullName, archType.AssemblyQualifiedName);
         if (type == null)
         {
             return true;
@@ -199,4 +262,9 @@ public sealed class DomainConventionTests
         var newMethod = type.GetMethod("New", BindingFlags.Static | BindingFlags.Public, Type.EmptyTypes);
         return newMethod != null && newMethod.ReturnType == type;
     }
+
+    private static Type? ResolveType(string fullName, string assemblyQualifiedName) =>
+        Type.GetType(assemblyQualifiedName)
+        ?? ArchitectureModel.DomainAssembly.GetType(fullName)
+        ?? ArchitectureModel.TestsAssembly.GetType(fullName);
 }

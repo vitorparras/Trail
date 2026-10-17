@@ -81,17 +81,17 @@ public sealed class TestDbContext : AppDbContext
 
     public DbSet<TestAggregateRoot> Aggregates => Set<TestAggregateRoot>();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnModelCreating(ModelBuilder builder)
     {
-        ArgumentNullException.ThrowIfNull(modelBuilder);
+        ArgumentNullException.ThrowIfNull(builder);
 
-        modelBuilder.Entity<TestAggregateRoot>(builder =>
+        builder.Entity<TestAggregateRoot>(b =>
         {
-            builder.HasKey(e => e.Id);
-            builder.OwnsOne(e => e.Child);
+            b.HasKey(e => e.Id);
+            b.OwnsOne(e => e.Child);
         });
 
-        base.OnModelCreating(modelBuilder);
+        base.OnModelCreating(builder);
     }
 }
 

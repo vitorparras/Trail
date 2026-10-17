@@ -210,4 +210,9 @@ internal sealed class FakeAccountIdentityGateway : IAccountIdentityGateway
 
     public Task<AccountUserDto?> GetUserByIdAsync(UserId userId, CancellationToken cancellationToken = default) =>
         Task.FromResult(Users.FirstOrDefault(u => u.Id == userId));
+
+    public Result ResetAdminPasswordResult { get; set; } = Result.Ok();
+
+    public Task<Result> ResetAdminPasswordAsync(string newPassword, CancellationToken cancellationToken = default) =>
+        Task.FromResult(ResetAdminPasswordResult);
 }

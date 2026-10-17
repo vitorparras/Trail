@@ -3,7 +3,13 @@ using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Trail.Web.Cli;
 using Trail.Web.Htmx;
+
+if (args is ["--healthcheck", ..])
+{
+    return await HealthCheckCommand.RunAsync(args);
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,3 +45,5 @@ app.MapStaticAssets();
 app.MapRazorPages().WithStaticAssets();
 
 app.Run();
+
+return 0;

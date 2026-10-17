@@ -1,23 +1,35 @@
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 using Microsoft.Playwright;
+using static Microsoft.Playwright.Assertions;
 
 namespace Trail.E2E.Tests;
 
-public sealed class DockerAppFixture : IAsyncLifetime
+public sealed partial class DockerAppFixture : IAsyncLifetime
 {
+    public const string AdminEmail = "admin@trail.local";
+    public const string AdminPassword = "AdminPass123!";
+
     private const string ImageName = "ghcr.io/vitorparras/trail:latest";
     private const int ContainerPort = 8080;
+    private const float ExpectTimeoutMilliseconds = 15_000;
+
+    private static readonly SemaphoreSlim BuildLock = new(1, 1);
+    private static bool _imageBuilt;
 
     private IContainer? _container;
     private IPlaywright? _playwright;
     private IBrowser? _browser;
+    private string? _adminStorageState;
 
     public string BaseUrl { get; private set; } = string.Empty;
 
     public async ValueTask InitializeAsync()
     {
+        SetDefaultExpectTimeout(ExpectTimeoutMilliseconds);
+
         var envBaseUrl = Environment.GetEnvironmentVariable("TRAIL_E2E_BASE_URL");
         if (!string.IsNullOrWhiteSpace(envBaseUrl))
         {
@@ -52,6 +64,8 @@ public sealed class DockerAppFixture : IAsyncLifetime
         {
             Headless = true
         });
+
+        _adminStorageState = await BootstrapAdminAsync(_browser);
     }
 
     public async Task<IPage> CreatePageAsync(BrowserNewContextOptions? options = null)
@@ -64,6 +78,13 @@ public sealed class DockerAppFixture : IAsyncLifetime
         var context = await _browser.NewContextAsync(options);
         return await context.NewPageAsync();
     }
+
+    public Task<IPage> CreateAdminPageAsync(int width, int height) =>
+        CreatePageAsync(new BrowserNewContextOptions
+        {
+            ViewportSize = new ViewportSize { Width = width, Height = height },
+            StorageState = _adminStorageState ?? throw new InvalidOperationException("The administrator has not been bootstrapped."),
+        });
 
     public async ValueTask DisposeAsync()
     {
@@ -80,8 +101,45 @@ public sealed class DockerAppFixture : IAsyncLifetime
         }
     }
 
-    private static readonly SemaphoreSlim BuildLock = new(1, 1);
-    private static bool _imageBuilt;
+    private async Task<string> BootstrapAdminAsync(IBrowser browser)
+    {
+        await using var context = await browser.NewContextAsync(new BrowserNewContextOptions
+        {
+            ViewportSize = new ViewportSize { Width = 1280, Height = 800 },
+        });
+
+        var page = await context.NewPageAsync();
+        await page.GotoAsync(BaseUrl + "/Account/Register");
+
+        var main = page.GetByRole(AriaRole.Main);
+        await main.GetByLabel(UiText.Get("Email"), new() { Exact = true }).FillAsync(AdminEmail);
+        await main.GetByLabel(UiText.Get("Password"), new() { Exact = true }).FillAsync(AdminPassword);
+        await main.GetByLabel(UiText.Get("ConfirmPassword"), new() { Exact = true }).FillAsync(AdminPassword);
+
+        var registration = await page.RunAndWaitForResponseAsync(
+            () => main.GetByRole(AriaRole.Button, new() { Name = UiText.Get("Register"), Exact = true }).ClickAsync(),
+            response => response.Request.Method == "POST" && response.Url.Contains("/Account/Register", StringComparison.Ordinal));
+
+        if (registration.Status != 302)
+        {
+            throw new InvalidOperationException(
+                $"The first account could not be registered (HTTP {registration.Status}). The end-to-end suite needs a fresh instance.");
+        }
+
+        await Expect(page).ToHaveURLAsync(LoginPathPattern());
+        await Expect(main.GetByRole(AriaRole.Heading, new() { Level = 1 })).ToHaveTextAsync(UiText.Get("LoginHeading"));
+
+        await main.GetByLabel(UiText.Get("Email"), new() { Exact = true }).FillAsync(AdminEmail);
+        await main.GetByLabel(UiText.Get("Password"), new() { Exact = true }).FillAsync(AdminPassword);
+        await main.GetByLabel(UiText.Get("RememberMe"), new() { Exact = true }).CheckAsync();
+        await main.GetByRole(AriaRole.Button, new() { Name = UiText.Get("Login"), Exact = true }).ClickAsync();
+
+        await Expect(page).Not.ToHaveURLAsync(LoginPathPattern());
+        await Expect(page.GetByRole(AriaRole.Banner).GetByRole(AriaRole.Link, new() { Name = UiText.Get("Administration"), Exact = true }))
+            .ToBeVisibleAsync();
+
+        return await context.StorageStateAsync();
+    }
 
     private static async Task EnsureImageBuiltAsync()
     {
@@ -98,22 +156,18 @@ public sealed class DockerAppFixture : IAsyncLifetime
                 return;
             }
 
-            var repositoryRoot = FindRepositoryRoot();
             var buildStartInfo = new ProcessStartInfo
             {
                 FileName = "docker",
                 Arguments = $"build --file Dockerfile --tag {ImageName} .",
-                WorkingDirectory = repositoryRoot,
+                WorkingDirectory = RepositoryPaths.Root,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false
             };
 
-            using var buildProcess = Process.Start(buildStartInfo);
-            if (buildProcess is null)
-            {
-                throw new InvalidOperationException("Failed to start docker build process.");
-            }
+            using var buildProcess = Process.Start(buildStartInfo)
+                ?? throw new InvalidOperationException("Failed to start docker build process.");
 
             var outputTask = buildProcess.StandardOutput.ReadToEndAsync();
             var errorTask = buildProcess.StandardError.ReadToEndAsync();
@@ -135,14 +189,6 @@ public sealed class DockerAppFixture : IAsyncLifetime
         }
     }
 
-    private static string FindRepositoryRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "Trail.slnx")))
-        {
-            directory = directory.Parent;
-        }
-
-        return directory?.FullName ?? throw new InvalidOperationException("Repository root containing Trail.slnx was not found.");
-    }
+    [GeneratedRegex("/Account/Login(\\?.*)?$")]
+    private static partial Regex LoginPathPattern();
 }

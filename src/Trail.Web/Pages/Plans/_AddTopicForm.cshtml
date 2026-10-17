@@ -1,0 +1,57 @@
+@model Trail.Web.Pages.Plans.AddTopicFormModel
+@{
+    const string errorsId = "add-topic-errors";
+    var errors = PlanFormErrors.For(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.CodeField, PlanFormErrors.TitleField);
+    var codeInvalid = PlanFormErrors.HasErrors(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.CodeField);
+    var titleInvalid = PlanFormErrors.HasErrors(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.TitleField);
+}
+
+<form id="add-topic-form" aria-labelledby="add-topic-heading"
+      method="post"
+      asp-page-handler="AddTopic"
+      asp-route-planId="@Model.PlanId"
+      asp-route-subjectId="@Model.SubjectId"
+      class="grid grid-cols-1 sm:grid-cols-5 gap-3">
+    <input type="hidden" name="expectedSubjectVersion" value="@Model.SubjectVersion" />
+    <div>
+        <input type="text"
+               name="code"
+               value="@Model.Code"
+               placeholder="@SharedLocalizer["TopicCode"]"
+               aria-label="@SharedLocalizer["TopicCode"]"
+               aria-invalid="@(codeInvalid ? "true" : null)"
+               aria-describedby="@(codeInvalid ? errorsId : null)"
+               class="input input-bordered input-sm w-full font-mono text-xs @(codeInvalid ? "input-error" : null)" />
+    </div>
+    <div class="sm:col-span-2">
+        <input type="text"
+               name="title"
+               value="@Model.Title"
+               placeholder="@SharedLocalizer["TopicTitle"]"
+               aria-label="@SharedLocalizer["TopicTitle"]"
+               aria-invalid="@(titleInvalid ? "true" : null)"
+               aria-describedby="@(titleInvalid ? errorsId : null)"
+               class="input input-bordered input-sm w-full @(titleInvalid ? "input-error" : null)"
+               required />
+    </div>
+    <div>
+        <select name="parentId" aria-label="@SharedLocalizer["ParentTopic"]" class="select select-bordered select-sm w-full">
+            <option value="">(@SharedLocalizer["None"])</option>
+            @foreach (var topic in Model.Topics)
+            {
+                <!option value="@topic.Id.Value" @(Model.ParentId == topic.Id.Value ? "selected" : null)>@(topic.Code != null ? $"{topic.Code} - " : string.Empty)@topic.Title</!option>
+            }
+        </select>
+    </div>
+    <div>
+        <button type="submit" class="btn btn-primary btn-sm w-full">
+            @SharedLocalizer["AddTopic"]
+        </button>
+    </div>
+    @if (errors.Count > 0)
+    {
+        <div class="sm:col-span-5">
+            <partial name="_FormErrors" model="new FormErrorList(errorsId, errors)" />
+        </div>
+    }
+</form>

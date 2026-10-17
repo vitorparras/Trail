@@ -144,6 +144,10 @@ jobs:
           TRAIL_E2E_BASE_URL: http://127.0.0.1:8080
         run: dotnet test tests/Trail.E2E.Tests/Trail.E2E.Tests.csproj --no-build --configuration Release
 
+      - name: Show application logs
+        if: failure()
+        run: docker compose --file deploy/compose.sqlite.yml logs --no-color
+
       - name: Tear down compose
         if: always()
         run: docker compose --file deploy/compose.sqlite.yml down --volumes

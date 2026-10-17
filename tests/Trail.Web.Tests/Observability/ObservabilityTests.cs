@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Console;
@@ -14,40 +15,54 @@ public sealed class ObservabilityTests(TrailWebApplicationFactory baseFactory) :
     [Fact]
     public async Task Request_ProducesActivityAndIncrementsMetrics()
     {
-        var activities = new List<Activity>();
         var metrics = new List<Metric>();
+        var serverSpans = new ServerSpanRecorder();
 
         using var factory = baseFactory.WithWebHostBuilder(builder =>
         {
             builder.ConfigureServices(services =>
             {
                 services.AddOpenTelemetry()
-                    .WithTracing(tracing => tracing.AddInMemoryExporter(activities))
+                    .WithTracing(tracing => tracing.AddProcessor(serverSpans))
                     .WithMetrics(meter => meter.AddInMemoryExporter(metrics));
             });
         });
 
         using var client = factory.CreateClient();
-        using var response = await client.GetAsync("/", TestContext.Current.CancellationToken);
-        response.EnsureSuccessStatusCode();
 
-        var tracerProvider = factory.Services.GetRequiredService<TracerProvider>();
-        tracerProvider.ForceFlush();
+        var hostMeterFactory = factory.Services.GetRequiredService<IMeterFactory>();
+        var requestDurations = 0;
+        using var hostMeterListener = new MeterListener
+        {
+            InstrumentPublished = (instrument, listener) =>
+            {
+                if (instrument.Meter.Scope == hostMeterFactory && instrument.Name == "http.server.request.duration")
+                {
+                    listener.EnableMeasurementEvents(instrument);
+                }
+            },
+        };
+        hostMeterListener.SetMeasurementEventCallback<double>((_, _, _, _) => Interlocked.Increment(ref requestDurations));
+        hostMeterListener.Start();
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/");
+        var trace = serverSpans.Trace(request);
+        using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+        response.EnsureSuccessStatusCode();
+        var requestActivity = await trace.ServerSpanEnded;
+        Assert.True(requestActivity.DisplayName.Contains('/') || requestActivity.OperationName.Contains("HttpRequestIn", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(1, Volatile.Read(ref requestDurations));
 
         var meterProvider = factory.Services.GetRequiredService<MeterProvider>();
         meterProvider.ForceFlush();
 
-        Assert.NotEmpty(activities);
-        Assert.Contains(activities, activity => activity.DisplayName.Contains('/') || activity.OperationName.Contains("HttpRequestIn", StringComparison.OrdinalIgnoreCase));
-
-        Assert.NotEmpty(metrics);
         Assert.Contains(metrics, metric => metric.Name.StartsWith("http.server", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
     public void ApplicationTelemetryAndMetrics_AreCapturedByPipeline()
     {
-        var activities = new List<Activity>();
+        var endedActivities = new EndedActivityRecorder();
         var metrics = new List<Metric>();
 
         using var factory = baseFactory.WithWebHostBuilder(builder =>
@@ -55,30 +70,31 @@ public sealed class ObservabilityTests(TrailWebApplicationFactory baseFactory) :
             builder.ConfigureServices(services =>
             {
                 services.AddOpenTelemetry()
-                    .WithTracing(tracing => tracing.AddInMemoryExporter(activities))
+                    .WithTracing(tracing => tracing.AddProcessor(endedActivities))
                     .WithMetrics(meter => meter.AddInMemoryExporter(metrics));
             });
         });
 
         _ = factory.CreateClient();
 
+        ActivityTraceId customTraceId;
         using (var activity = ApplicationTelemetry.ActivitySource.StartActivity("CustomTestActivity"))
         {
             Assert.NotNull(activity);
             activity.SetTag("test.tag", "custom-value");
+            customTraceId = activity.TraceId;
         }
 
         var appMetrics = factory.Services.GetRequiredService<ApplicationMetrics>();
         var counter = appMetrics.Meter.CreateCounter<long>("trail.application.test_counter");
         counter.Add(1);
 
-        var tracerProvider = factory.Services.GetRequiredService<TracerProvider>();
-        tracerProvider.ForceFlush();
-
         var meterProvider = factory.Services.GetRequiredService<MeterProvider>();
         meterProvider.ForceFlush();
 
-        var recordedActivity = Assert.Single(activities, a => a.OperationName == "CustomTestActivity");
+        var recordedActivity = Assert.Single(
+            endedActivities.Ended,
+            a => a.TraceId == customTraceId && a.OperationName == "CustomTestActivity");
         Assert.Equal("custom-value", recordedActivity.GetTagItem("test.tag"));
 
         Assert.Contains(metrics, m => m.Name == "trail.application.test_counter");

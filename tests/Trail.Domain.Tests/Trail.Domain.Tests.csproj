@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <PackageReference Include="CsCheck" />
     <ProjectReference Include="..\..\src\Trail.Domain\Trail.Domain.csproj" />
   </ItemGroup>
 </Project>

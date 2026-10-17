@@ -1,0 +1,43 @@
+@model Trail.Web.Pages.Plans.MoveTopicFormModel
+@{
+    const string errorsId = "move-topic-errors";
+    var errors = PlanFormErrors.For(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.ParentField);
+    var parentInvalid = PlanFormErrors.HasErrors(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.ParentField);
+}
+
+<form method="post"
+      asp-page-handler="MoveTopic"
+      asp-route-planId="@Model.PlanId"
+      asp-route-subjectId="@Model.SubjectId"
+      class="space-y-3">
+    <input type="hidden" name="expectedSubjectVersion" value="@Model.SubjectVersion" />
+    <div class="form-control">
+        <label class="label" for="move-topic-id">
+            <span class="label-text text-xs">@SharedLocalizer["Topic"]</span>
+        </label>
+        <select id="move-topic-id" name="topicId" class="select select-bordered select-sm w-full" required>
+            @foreach (var topic in Model.Topics)
+            {
+                <!option value="@topic.Id.Value" @(Model.TopicId == topic.Id.Value ? "selected" : null)>@(topic.Code != null ? $"{topic.Code} - " : string.Empty)@topic.Title</!option>
+            }
+        </select>
+    </div>
+    <div class="form-control">
+        <label class="label" for="move-topic-parent">
+            <span class="label-text text-xs">@SharedLocalizer["NewParentTopic"]</span>
+        </label>
+        <select id="move-topic-parent"
+                name="newParentId"
+                aria-invalid="@(parentInvalid ? "true" : null)"
+                aria-describedby="@(parentInvalid ? errorsId : null)"
+                class="select select-bordered select-sm w-full @(parentInvalid ? "select-error" : null)">
+            <option value="">(@SharedLocalizer["None"])</option>
+            @foreach (var topic in Model.Topics)
+            {
+                <!option value="@topic.Id.Value" @(Model.NewParentId == topic.Id.Value ? "selected" : null)>@(topic.Code != null ? $"{topic.Code} - " : string.Empty)@topic.Title</!option>
+            }
+        </select>
+    </div>
+    <partial name="_FormErrors" model="new FormErrorList(errorsId, errors)" />
+    <button type="submit" class="btn btn-primary btn-sm">@SharedLocalizer["Save"]</button>
+</form>

@@ -2,6 +2,7 @@ using System.Diagnostics.Metrics;
 using Trail.Application.Abstractions;
 using Trail.Application.Telemetry;
 using Trail.Domain.Common;
+using Trail.Domain.Planning;
 
 namespace Trail.Application.Tests.Telemetry;
 
@@ -187,6 +188,210 @@ public sealed class ApplicationTelemetryTests
         var metrics = new ApplicationMetrics(meterFactory);
 
         Assert.ThrowsAny<ArgumentException>(() => metrics.RecordEmailFailed(kind!));
+    }
+
+    [Fact]
+    public void RecordPlanCreated_IncrementsPlansCreatedCounterWithOriginTag()
+    {
+        using var meterFactory = new RecordingMeterFactory();
+        var metrics = new ApplicationMetrics(meterFactory);
+
+        long? recordedValue = null;
+        string? recordedOrigin = null;
+
+        using var listener = new MeterListener();
+        listener.InstrumentPublished = (instrument, meterListener) =>
+        {
+            if (instrument.Meter.Name == ApplicationTelemetry.Name
+                && instrument.Name == ApplicationMetrics.PlansCreatedInstrumentName)
+            {
+                meterListener.EnableMeasurementEvents(instrument);
+            }
+        };
+
+        listener.SetMeasurementEventCallback<long>((instrument, measurement, tags, state) =>
+        {
+            recordedValue = measurement;
+            foreach (var tag in tags)
+            {
+                if (tag.Key == "origin")
+                {
+                    recordedOrigin = tag.Value as string;
+                }
+            }
+        });
+
+        listener.Start();
+
+        metrics.RecordPlanCreated(StudyPlanOrigin.Import);
+
+        Assert.Equal(1L, recordedValue);
+        Assert.Equal("Import", recordedOrigin);
+    }
+
+    [Fact]
+    public void RecordTopicStatusChanged_IncrementsTopicStatusChangesCounterWithFromAndToTags()
+    {
+        using var meterFactory = new RecordingMeterFactory();
+        var metrics = new ApplicationMetrics(meterFactory);
+
+        long? recordedValue = null;
+        string? recordedFrom = null;
+        string? recordedTo = null;
+
+        using var listener = new MeterListener();
+        listener.InstrumentPublished = (instrument, meterListener) =>
+        {
+            if (instrument.Meter.Name == ApplicationTelemetry.Name
+                && instrument.Name == ApplicationMetrics.TopicStatusChangesInstrumentName)
+            {
+                meterListener.EnableMeasurementEvents(instrument);
+            }
+        };
+
+        listener.SetMeasurementEventCallback<long>((instrument, measurement, tags, state) =>
+        {
+            recordedValue = measurement;
+            foreach (var tag in tags)
+            {
+                if (tag.Key == "from")
+                {
+                    recordedFrom = tag.Value as string;
+                }
+                else if (tag.Key == "to")
+                {
+                    recordedTo = tag.Value as string;
+                }
+            }
+        });
+
+        listener.Start();
+
+        metrics.RecordTopicStatusChanged(TopicStatus.ToStudy, TopicStatus.Studying);
+
+        Assert.Equal(1L, recordedValue);
+        Assert.Equal("ToStudy", recordedFrom);
+        Assert.Equal("Studying", recordedTo);
+    }
+
+    [Fact]
+    public async Task StudyPlanCreatedMetricsConsumer_ConsumesEventAndRecordsMetric()
+    {
+        using var meterFactory = new RecordingMeterFactory();
+        var metrics = new ApplicationMetrics(meterFactory);
+        var consumer = new StudyPlanCreatedMetricsConsumer(metrics);
+
+        long? recordedValue = null;
+        string? recordedOrigin = null;
+
+        using var listener = new MeterListener();
+        listener.InstrumentPublished = (instrument, meterListener) =>
+        {
+            if (instrument.Meter.Name == ApplicationTelemetry.Name
+                && instrument.Name == ApplicationMetrics.PlansCreatedInstrumentName)
+            {
+                meterListener.EnableMeasurementEvents(instrument);
+            }
+        };
+
+        listener.SetMeasurementEventCallback<long>((instrument, measurement, tags, state) =>
+        {
+            recordedValue = measurement;
+            foreach (var tag in tags)
+            {
+                if (tag.Key == "origin")
+                {
+                    recordedOrigin = tag.Value as string;
+                }
+            }
+        });
+
+        listener.Start();
+
+        var domainEvent = new StudyPlanCreated(StudyPlanId.New(), UserId.New(), StudyPlanOrigin.Restore);
+        await consumer.ConsumeAsync(domainEvent, CancellationToken.None);
+
+        Assert.Equal(1L, recordedValue);
+        Assert.Equal("Restore", recordedOrigin);
+    }
+
+    [Fact]
+    public void StudyPlanCreatedMetricsConsumer_ConstructorWithNullMetrics_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => new StudyPlanCreatedMetricsConsumer(null!));
+    }
+
+    [Fact]
+    public async Task StudyPlanCreatedMetricsConsumer_ConsumeAsyncWithNullEvent_ThrowsArgumentNullException()
+    {
+        using var meterFactory = new RecordingMeterFactory();
+        var metrics = new ApplicationMetrics(meterFactory);
+        var consumer = new StudyPlanCreatedMetricsConsumer(metrics);
+
+        await Assert.ThrowsAsync<ArgumentNullException>(() => consumer.ConsumeAsync(null!, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task TopicStatusChangedMetricsConsumer_ConsumesEventAndRecordsMetric()
+    {
+        using var meterFactory = new RecordingMeterFactory();
+        var metrics = new ApplicationMetrics(meterFactory);
+        var consumer = new TopicStatusChangedMetricsConsumer(metrics);
+
+        long? recordedValue = null;
+        string? recordedFrom = null;
+        string? recordedTo = null;
+
+        using var listener = new MeterListener();
+        listener.InstrumentPublished = (instrument, meterListener) =>
+        {
+            if (instrument.Meter.Name == ApplicationTelemetry.Name
+                && instrument.Name == ApplicationMetrics.TopicStatusChangesInstrumentName)
+            {
+                meterListener.EnableMeasurementEvents(instrument);
+            }
+        };
+
+        listener.SetMeasurementEventCallback<long>((instrument, measurement, tags, state) =>
+        {
+            recordedValue = measurement;
+            foreach (var tag in tags)
+            {
+                if (tag.Key == "from")
+                {
+                    recordedFrom = tag.Value as string;
+                }
+                else if (tag.Key == "to")
+                {
+                    recordedTo = tag.Value as string;
+                }
+            }
+        });
+
+        listener.Start();
+
+        var domainEvent = new TopicStatusChanged(SubjectId.New(), TopicId.New(), TopicStatus.Studied, TopicStatus.Reviewing);
+        await consumer.ConsumeAsync(domainEvent, CancellationToken.None);
+
+        Assert.Equal(1L, recordedValue);
+        Assert.Equal("Studied", recordedFrom);
+        Assert.Equal("Reviewing", recordedTo);
+    }
+
+    [Fact]
+    public void TopicStatusChangedMetricsConsumer_ConstructorWithNullMetrics_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => new TopicStatusChangedMetricsConsumer(null!));
+    }
+
+    [Fact]
+    public async Task TopicStatusChangedMetricsConsumer_ConsumeAsyncWithNullEvent_ThrowsArgumentNullException()
+    {
+        using var meterFactory = new RecordingMeterFactory();
+        var metrics = new ApplicationMetrics(meterFactory);
+        var consumer = new TopicStatusChangedMetricsConsumer(metrics);
+
+        await Assert.ThrowsAsync<ArgumentNullException>(() => consumer.ConsumeAsync(null!, CancellationToken.None));
     }
 
     [Fact]

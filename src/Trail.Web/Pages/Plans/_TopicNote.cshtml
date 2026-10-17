@@ -1,0 +1,80 @@
+@model Trail.Web.Pages.Plans.SubjectModel
+@{
+    const string noteErrorsId = "topic-note-errors";
+    var noteErrors = PlanFormErrors.For(ViewData.ModelState, Model.ShowNoteErrors, PlanFormErrors.MarkdownField);
+    var noteInvalid = PlanFormErrors.HasErrors(ViewData.ModelState, Model.ShowNoteErrors, PlanFormErrors.MarkdownField);
+}
+
+<div id="topic-notes-container" class="card bg-base-100 border border-base-300 p-4 sm:p-6 space-y-4">
+    <div class="flex items-center justify-between border-b border-base-300 pb-3">
+        <h2 id="topic-notes-heading" class="font-bold text-base text-base-content flex items-center gap-2">
+            <span>@SharedLocalizer["TopicNotes"]</span>
+            @if (Model.SelectedNote != null)
+            {
+                <span class="text-sm font-normal text-base-content/70">
+                    @(Model.SelectedNote.TopicCode != null ? $"[{Model.SelectedNote.TopicCode}] " : string.Empty)@Model.SelectedNote.TopicTitle
+                </span>
+            }
+        </h2>
+    </div>
+
+    @if (Model.HasNoteConflict)
+    {
+        <div role="alert" class="alert alert-warning">
+            <span>@SharedLocalizer["ConcurrencyConflictBanner"]</span>
+        </div>
+    }
+
+    @if (Model.SelectedNote == null)
+    {
+        <p class="text-xs text-base-content/80">@SharedLocalizer["NoTopics"]</p>
+    }
+    else
+    {
+        <div class="space-y-4">
+            <div class="space-y-1">
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-base-content/80">@SharedLocalizer["MarkdownPreview"]</h3>
+                <div class="prose max-w-none p-4 rounded-box bg-base-200 text-sm">
+                    @if (string.IsNullOrWhiteSpace(Model.RenderedMarkdownHtml))
+                    {
+                        <p class="text-base-content/80 italic">(@SharedLocalizer["None"])</p>
+                    }
+                    else
+                    {
+                        @Html.Raw(Model.RenderedMarkdownHtml)
+                    }
+                </div>
+            </div>
+
+            <form id="save-note-form" aria-labelledby="topic-notes-heading"
+                  method="post"
+                  asp-page-handler="SaveNote"
+                  asp-route-planId="@Model.Subject.StudyPlanId.Value"
+                  asp-route-subjectId="@Model.Subject.Id.Value"
+                  class="space-y-3">
+                <input type="hidden" name="topicId" value="@Model.SelectedNote.TopicId.Value" />
+                <input type="hidden" name="expectedVersion" value="@Model.NoteExpectedVersion" />
+
+                <div class="form-control">
+                    <label class="label" for="topic-note-markdown">
+                        <span class="label-text font-medium text-xs uppercase tracking-wider text-base-content/80">@SharedLocalizer["MarkdownSource"]</span>
+                    </label>
+                    <textarea id="topic-note-markdown"
+                              name="markdown"
+                              rows="6"
+                              aria-invalid="@(noteInvalid ? "true" : null)"
+                              aria-describedby="@(noteInvalid ? noteErrorsId : null)"
+                              class="textarea textarea-bordered w-full font-mono text-sm @(noteInvalid ? "textarea-error" : null)">@Model.NoteMarkdown</textarea>
+                </div>
+
+                <partial name="_FormErrors" model="new FormErrorList(noteErrorsId, noteErrors)" />
+
+                <div>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        @SharedLocalizer["SaveNotes"]
+                    </button>
+                </div>
+            </form>
+        </div>
+    }
+</div>

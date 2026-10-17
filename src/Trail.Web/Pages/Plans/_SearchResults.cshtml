@@ -1,0 +1,65 @@
+@model IReadOnlyList<Trail.Application.Planning.TopicTreeItemView>
+@{
+    var planId = Convert.ToString(ViewContext.RouteData.Values["planId"], CultureInfo.InvariantCulture);
+}
+
+<div class="mt-4">
+    @if (Model == null || Model.Count == 0)
+    {
+        <div class="card bg-base-200 p-4 text-center">
+            <p class="text-base-content/70 text-sm">@SharedLocalizer["NoTopics"]</p>
+        </div>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="table w-full text-sm" aria-label="@SharedLocalizer["Topics"]">
+                <thead>
+                    <tr>
+                        <th scope="col">@SharedLocalizer["Subjects"]</th>
+                        <th scope="col">@SharedLocalizer["TopicCode"]</th>
+                        <th scope="col">@SharedLocalizer["TopicTitle"]</th>
+                        <th scope="col">@SharedLocalizer["Status"]</th>
+                        <th scope="col"><span class="sr-only">@SharedLocalizer["Actions"]</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var topic in Model)
+                    {
+                        <tr>
+                            <td class="font-medium text-base-content/80">@topic.SubjectName</td>
+                            <td class="font-mono text-xs">@(topic.Code ?? "-")</td>
+                            <td class="font-medium">
+                                <a asp-page="/Plans/Subject" asp-route-planId="@planId" asp-route-subjectId="@topic.SubjectId.Value" class="link link-hover text-primary">
+                                    @topic.Title
+                                </a>
+                            </td>
+                            <td>
+                                @switch (topic.Status)
+                                {
+                                    case Trail.Domain.Planning.TopicStatus.ToStudy:
+                                        <span class="badge badge-status-to-study">@SharedLocalizer["TopicStatus_ToStudy"]</span>
+                                        break;
+                                    case Trail.Domain.Planning.TopicStatus.Studying:
+                                        <span class="badge badge-status-studying">@SharedLocalizer["TopicStatus_Studying"]</span>
+                                        break;
+                                    case Trail.Domain.Planning.TopicStatus.Studied:
+                                        <span class="badge badge-status-studied">@SharedLocalizer["TopicStatus_Studied"]</span>
+                                        break;
+                                    case Trail.Domain.Planning.TopicStatus.Reviewing:
+                                        <span class="badge badge-status-reviewing">@SharedLocalizer["TopicStatus_Reviewing"]</span>
+                                        break;
+                                }
+                            </td>
+                            <td class="text-right">
+                                <a asp-page="/Plans/Subject" asp-route-planId="@planId" asp-route-subjectId="@topic.SubjectId.Value" class="btn btn-ghost btn-xs">
+                                    @SharedLocalizer["Details"]
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

@@ -69,4 +69,62 @@ internal static class AccountTestHelper
 
         return await client.SendAsync(request, TestContext.Current.CancellationToken);
     }
+
+    public static async Task<HttpResponseMessage> RegisterAsync(
+        HttpClient client,
+        string email,
+        string password,
+        string? inviteToken = null)
+    {
+        var registerPath = inviteToken is null
+            ? "/Account/Register"
+            : $"/Account/Register?inviteToken={Uri.EscapeDataString(inviteToken)}";
+
+        var (_, document, csrfHeader, csrfToken) = await GetDocWithAntiforgeryAsync(client, registerPath);
+        var form = new Dictionary<string, string>
+        {
+            ["Input.Email"] = email,
+            ["Input.Password"] = password,
+            ["Input.ConfirmPassword"] = password,
+        };
+
+        if (inviteToken is not null)
+        {
+            form["Input.InviteToken"] = inviteToken;
+        }
+
+        AddFormToken(document, form);
+        return await PostFormWithAntiforgeryAsync(client, "/Account/Register", form, csrfHeader, csrfToken);
+    }
+
+    public static async Task<HttpResponseMessage> SignInAsync(
+        HttpClient client,
+        string email,
+        string password,
+        bool rememberMe = true)
+    {
+        var (_, document, csrfHeader, csrfToken) = await GetDocWithAntiforgeryAsync(client, "/Account/Login");
+        var form = new Dictionary<string, string>
+        {
+            ["Input.Email"] = email,
+            ["Input.Password"] = password,
+        };
+
+        if (rememberMe)
+        {
+            form["Input.RememberMe"] = "true";
+        }
+
+        AddFormToken(document, form);
+        return await PostFormWithAntiforgeryAsync(client, "/Account/Login", form, csrfHeader, csrfToken);
+    }
+
+    private static void AddFormToken(IHtmlDocument document, Dictionary<string, string> form)
+    {
+        var formToken = document.QuerySelector("input[name='__RequestVerificationToken']")?.GetAttribute("value");
+        if (!string.IsNullOrEmpty(formToken))
+        {
+            form["__RequestVerificationToken"] = formToken;
+        }
+    }
 }

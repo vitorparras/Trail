@@ -104,6 +104,8 @@ nos dois bancos e as regras de arquitetura já verificadas.
 
 ### Fase 2 — Planos e conteúdo
 
+**Detalhamento:** [tarefas da Fase 2](fases/fase-2-planos-e-conteudo.md).
+
 **Entregas:**
 
 - Plano de estudo: nome, regra de pontuação, período de desempenho padrão, faixas de

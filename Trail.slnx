@@ -9,6 +9,7 @@
     <Project Path="tests/Trail.Application.Tests/Trail.Application.Tests.csproj" />
     <Project Path="tests/Trail.Architecture.Tests/Trail.Architecture.Tests.csproj" />
     <Project Path="tests/Trail.Domain.Tests/Trail.Domain.Tests.csproj" />
+    <Project Path="tests/Trail.E2E.Tests/Trail.E2E.Tests.csproj" />
     <Project Path="tests/Trail.Web.Tests/Trail.Web.Tests.csproj" />
   </Folder>
 </Solution>

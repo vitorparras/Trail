@@ -87,11 +87,58 @@ public sealed class SubjectModel : PageModel
 
     public int SubjectExpectedVersion { get; set; }
 
-    public Guid? ConflictTopicId { get; set; }
+    public Guid? EditedTopicId { get; set; }
 
-    public string? ConflictTopicTitle { get; set; }
+    public string? EditedTopicTitle { get; set; }
 
-    public string? ConflictTopicCode { get; set; }
+    public string? EditedTopicCode { get; set; }
+
+    public bool ShowNoteErrors => _submittedForm?.Form == SubjectForm.Note;
+
+    public SubjectNameFormModel SubjectNameForm => new(
+        Subject.StudyPlanId.Value,
+        Subject.Id.Value,
+        SubjectExpectedVersion,
+        SubjectNameInput ?? Subject.Name,
+        _submittedForm?.Form == SubjectForm.SubjectName);
+
+    public AddTopicFormModel AddTopicForm =>
+        _submittedForm is { Form: SubjectForm.AddTopic } submitted
+            ? new(Subject.StudyPlanId.Value, Subject.Id.Value, SubjectExpectedVersion, Subject.Topics, submitted.Code, submitted.Title, submitted.ParentId, ShowErrors: true)
+            : new(Subject.StudyPlanId.Value, Subject.Id.Value, SubjectExpectedVersion, Subject.Topics, null, null, null, ShowErrors: false);
+
+    public UpdateTopicFormModel UpdateTopicForm => new(
+        Subject.StudyPlanId.Value,
+        Subject.Id.Value,
+        SubjectExpectedVersion,
+        Subject.Topics,
+        EditedTopicId,
+        EditedTopicCode,
+        EditedTopicTitle,
+        _submittedForm?.Form == SubjectForm.UpdateTopic);
+
+    public MoveTopicFormModel MoveTopicForm =>
+        _submittedForm is { Form: SubjectForm.MoveTopic } submitted
+            ? new(Subject.StudyPlanId.Value, Subject.Id.Value, SubjectExpectedVersion, Subject.Topics, submitted.TopicId, submitted.ParentId, ShowErrors: true)
+            : new(Subject.StudyPlanId.Value, Subject.Id.Value, SubjectExpectedVersion, Subject.Topics, null, null, ShowErrors: false);
+
+    private SubmittedForm? _submittedForm;
+
+    private enum SubjectForm
+    {
+        SubjectName,
+        AddTopic,
+        UpdateTopic,
+        MoveTopic,
+        Note,
+    }
+
+    private sealed record SubmittedForm(
+        SubjectForm Form,
+        Guid? TopicId = null,
+        string? Code = null,
+        string? Title = null,
+        Guid? ParentId = null);
 
     public override async Task OnPageHandlerExecutionAsync(
         PageHandlerExecutingContext context,
@@ -191,69 +238,72 @@ public sealed class SubjectModel : PageModel
             expectedVersion);
 
         var result = await _saveTopicNoteHandler.HandleAsync(command, cancellationToken);
-        if (result.Status == ResultStatus.Conflict)
+        if (result.Status is ResultStatus.Conflict or ResultStatus.Invalid)
         {
             var latestNoteResult = await _getTopicNoteHandler.HandleAsync(
                 new GetTopicNoteQuery(SubjectId.From(subjectId), TopicId.From(topicId)),
                 cancellationToken);
 
-            HasNoteConflict = true;
             NoteMarkdown = markdown ?? string.Empty;
-            NoteExpectedVersion = latestNoteResult.IsOk ? latestNoteResult.Data.Version : expectedVersion;
+            NoteExpectedVersion = result.Status == ResultStatus.Conflict && latestNoteResult.IsOk
+                ? latestNoteResult.Data.Version
+                : expectedVersion;
             RenderedMarkdownHtml = _markdownRenderer.RenderToHtml(markdown);
 
             if (latestNoteResult.IsOk)
             {
-                SelectedNote = new TopicNoteView(
-                    TopicId.From(topicId),
-                    SubjectId.From(subjectId),
-                    StudyPlanId.From(planId),
-                    latestNoteResult.Data.TopicTitle,
-                    latestNoteResult.Data.TopicCode,
-                    latestNoteResult.Data.NoteId,
-                    markdown ?? string.Empty,
-                    NoteExpectedVersion);
+                SelectedNote = latestNoteResult.Data with
+                {
+                    Markdown = NoteMarkdown,
+                    Version = NoteExpectedVersion,
+                };
             }
+        }
 
+        if (result.Status == ResultStatus.Conflict)
+        {
+            HasNoteConflict = true;
             Response.StatusCode = StatusCodes.Status409Conflict;
             return Page();
         }
 
-        if (!result.IsOk)
+        _submittedForm = new SubmittedForm(SubjectForm.Note, TopicId: topicId);
+        return this.Respond(result, "planning.save_topic_note", options =>
         {
-            return this.Respond(result, "planning.save_topic_note");
-        }
-
-        return RedirectToPage("/Plans/Subject", new
-        {
-            planId,
-            subjectId,
-            noteTopicId = topicId
+            options.FormPartialViewName = "_TopicNote";
+            options.FormPartialModel = this;
+            options.RedirectPage = "/Plans/Subject";
+            options.RedirectRouteValues = new { planId, subjectId, noteTopicId = topicId };
         });
     }
 
     public async Task<IActionResult> OnPostUpdateSubjectAsync(
         Guid planId,
         Guid subjectId,
-        string name,
+        string? name,
         int expectedVersion,
         CancellationToken cancellationToken = default)
     {
-        var command = new UpdateSubjectCommand(SubjectId.From(subjectId), name, expectedVersion);
+        var command = new UpdateSubjectCommand(SubjectId.From(subjectId), name ?? string.Empty, expectedVersion);
         var result = await _updateSubjectHandler.HandleAsync(command, cancellationToken);
 
+        SubjectNameInput = name ?? string.Empty;
         if (result.Status == ResultStatus.Conflict)
         {
             await RefreshSubjectAsync(subjectId, cancellationToken);
             HasSubjectConflict = true;
-            SubjectNameInput = name;
             Response.StatusCode = StatusCodes.Status409Conflict;
             return Page();
         }
 
         if (!result.IsOk)
         {
-            return this.Respond(result, "planning.update_subject");
+            _submittedForm = new SubmittedForm(SubjectForm.SubjectName);
+            return this.Respond(result, "planning.update_subject", options =>
+            {
+                options.FormPartialViewName = "_SubjectNameForm";
+                options.FormPartialModel = SubjectNameForm;
+            });
         }
 
         return RedirectToPage("/Plans/Subject", new { planId, subjectId });
@@ -263,7 +313,7 @@ public sealed class SubjectModel : PageModel
         Guid planId,
         Guid subjectId,
         string? code,
-        string title,
+        string? title,
         Guid? parentId,
         TopicStatus initialStatus,
         int? expectedSubjectVersion,
@@ -271,7 +321,7 @@ public sealed class SubjectModel : PageModel
     {
         var command = new AddTopicCommand(
             SubjectId.From(subjectId),
-            title,
+            title ?? string.Empty,
             code,
             parentId.HasValue ? TopicId.From(parentId.Value) : null,
             initialStatus,
@@ -279,8 +329,11 @@ public sealed class SubjectModel : PageModel
 
         var result = await _addTopicHandler.HandleAsync(command, cancellationToken);
 
+        _submittedForm = new SubmittedForm(SubjectForm.AddTopic, Code: code, Title: title, ParentId: parentId);
         return this.Respond(result, "planning.add_topic", options =>
         {
+            options.FormPartialViewName = "_AddTopicForm";
+            options.FormPartialModel = AddTopicForm;
             options.RedirectPage = "/Plans/Subject";
             options.RedirectRouteValues = new { planId, subjectId };
         });
@@ -322,32 +375,38 @@ public sealed class SubjectModel : PageModel
         Guid subjectId,
         Guid topicId,
         string? code,
-        string title,
+        string? title,
         int expectedSubjectVersion,
         CancellationToken cancellationToken = default)
     {
         var command = new UpdateTopicCommand(
             SubjectId.From(subjectId),
             TopicId.From(topicId),
-            title,
+            title ?? string.Empty,
             code,
             expectedSubjectVersion);
 
         var result = await _updateTopicHandler.HandleAsync(command, cancellationToken);
+
+        EditedTopicId = topicId;
+        EditedTopicTitle = title;
+        EditedTopicCode = code;
         if (result.Status == ResultStatus.Conflict)
         {
             await RefreshSubjectAsync(subjectId, cancellationToken);
             HasTopicConflict = true;
-            ConflictTopicId = topicId;
-            ConflictTopicTitle = title;
-            ConflictTopicCode = code;
             Response.StatusCode = StatusCodes.Status409Conflict;
             return Page();
         }
 
         if (!result.IsOk)
         {
-            return this.Respond(result, "planning.update_topic");
+            _submittedForm = new SubmittedForm(SubjectForm.UpdateTopic);
+            return this.Respond(result, "planning.update_topic", options =>
+            {
+                options.FormPartialViewName = "_UpdateTopicForm";
+                options.FormPartialModel = UpdateTopicForm;
+            });
         }
 
         return RedirectToPage("/Plans/Subject", new { planId, subjectId });
@@ -369,8 +428,11 @@ public sealed class SubjectModel : PageModel
 
         var result = await _moveTopicHandler.HandleAsync(command, cancellationToken);
 
+        _submittedForm = new SubmittedForm(SubjectForm.MoveTopic, TopicId: topicId, ParentId: newParentId);
         return this.Respond(result, "planning.move_topic", options =>
         {
+            options.FormPartialViewName = "_MoveTopicForm";
+            options.FormPartialModel = MoveTopicForm;
             options.RedirectPage = "/Plans/Subject";
             options.RedirectRouteValues = new { planId, subjectId };
         });

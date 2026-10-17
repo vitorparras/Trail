@@ -1,4 +1,9 @@
 @model Trail.Web.Pages.Plans.SubjectModel
+@{
+    const string noteErrorsId = "topic-note-errors";
+    var noteErrors = PlanFormErrors.For(ViewData.ModelState, Model.ShowNoteErrors, PlanFormErrors.MarkdownField);
+    var noteInvalid = PlanFormErrors.HasErrors(ViewData.ModelState, Model.ShowNoteErrors, PlanFormErrors.MarkdownField);
+}
 
 <div id="topic-notes-container" class="card bg-base-100 border border-base-300 p-4 sm:p-6 space-y-4">
     <div class="flex items-center justify-between border-b border-base-300 pb-3">
@@ -54,8 +59,15 @@
                     <label class="label" for="topic-note-markdown">
                         <span class="label-text font-medium text-xs uppercase tracking-wider text-base-content/80">@SharedLocalizer["MarkdownSource"]</span>
                     </label>
-                    <textarea id="topic-note-markdown" name="markdown" rows="6" class="textarea textarea-bordered w-full font-mono text-sm">@Model.NoteMarkdown</textarea>
+                    <textarea id="topic-note-markdown"
+                              name="markdown"
+                              rows="6"
+                              aria-invalid="@(noteInvalid ? "true" : null)"
+                              aria-describedby="@(noteInvalid ? noteErrorsId : null)"
+                              class="textarea textarea-bordered w-full font-mono text-sm @(noteInvalid ? "textarea-error" : null)">@Model.NoteMarkdown</textarea>
                 </div>
+
+                <partial name="_FormErrors" model="new FormErrorList(noteErrorsId, noteErrors)" />
 
                 <div>
                     <button type="submit" class="btn btn-primary btn-sm">

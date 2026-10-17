@@ -1,0 +1,21 @@
+@model Trail.Web.Pages.Plans.SectionNameFormModel
+@{
+    var errorsId = $"section-name-errors-{Model.SectionId}";
+    var errors = PlanFormErrors.For(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.NameField);
+    var nameInvalid = PlanFormErrors.HasErrors(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.NameField);
+}
+
+<form method="post" asp-page-handler="UpdateSection" asp-route-planId="@Model.PlanId" class="flex flex-wrap items-center gap-2">
+    <input type="hidden" name="sectionId" value="@Model.SectionId" />
+    <input type="hidden" name="expectedPlanVersion" value="@Model.PlanVersion" />
+    <input type="text"
+           name="name"
+           value="@Model.Name"
+           aria-label="@SharedLocalizer["SectionName"]"
+           aria-invalid="@(nameInvalid ? "true" : null)"
+           aria-describedby="@(nameInvalid ? errorsId : null)"
+           class="input input-bordered input-sm font-bold text-base @(nameInvalid ? "input-error" : null)"
+           required />
+    <button type="submit" class="btn btn-ghost btn-xs">@SharedLocalizer["Save"]</button>
+    <partial name="_FormErrors" model="new FormErrorList(errorsId, errors)" />
+</form>

@@ -147,7 +147,7 @@ public static class ResultResponder
             return new HtmxPartialResult(
                 formPartial,
                 StatusCodes.Status422UnprocessableEntity,
-                options?.PartialModel,
+                options?.FormPartialModel ?? options?.PartialModel,
                 toasts);
         }
 
@@ -168,7 +168,7 @@ public static class ResultResponder
             return new HtmxPartialResult(
                 formPartial,
                 StatusCodes.Status422UnprocessableEntity,
-                null,
+                options?.FormPartialModel,
                 toasts);
         }
 

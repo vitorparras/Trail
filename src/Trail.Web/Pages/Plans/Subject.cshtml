@@ -30,11 +30,7 @@
 
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <h1 class="sr-only">@Model.Subject.Name</h1>
-            <form method="post" asp-page-handler="UpdateSubject" asp-route-planId="@Model.Subject.StudyPlanId.Value" asp-route-subjectId="@Model.Subject.Id.Value" class="flex items-center gap-2">
-                <input type="hidden" name="expectedVersion" value="@Model.SubjectExpectedVersion" />
-                <input type="text" name="name" value="@(Model.SubjectNameInput ?? Model.Subject.Name)" aria-label="@SharedLocalizer["SubjectName"]" class="input input-bordered input-sm text-xl font-bold max-w-md" required />
-                <button type="submit" class="btn btn-sm btn-ghost">@SharedLocalizer["Rename"]</button>
-            </form>
+            <partial name="_SubjectNameForm" model="Model.SubjectNameForm" />
             <div>
                 <a asp-page="/Plans/Details" asp-route-planId="@Model.Subject.StudyPlanId.Value" class="btn btn-ghost btn-sm">
                     @SharedLocalizer["Back"]
@@ -45,34 +41,7 @@
 
     <div class="card bg-base-200 p-4 space-y-3">
         <h2 id="add-topic-heading" class="font-bold text-base-content text-sm">@SharedLocalizer["AddTopic"]</h2>
-        <form id="add-topic-form" aria-labelledby="add-topic-heading"
-              method="post"
-              asp-page-handler="AddTopic"
-              asp-route-planId="@Model.Subject.StudyPlanId.Value"
-              asp-route-subjectId="@Model.Subject.Id.Value"
-              class="grid grid-cols-1 sm:grid-cols-5 gap-3">
-            <input type="hidden" name="expectedSubjectVersion" value="@Model.SubjectExpectedVersion" />
-            <div>
-                <input type="text" name="code" placeholder="@SharedLocalizer["TopicCode"]" aria-label="@SharedLocalizer["TopicCode"]" class="input input-bordered input-sm w-full font-mono text-xs" />
-            </div>
-            <div class="sm:col-span-2">
-                <input type="text" name="title" placeholder="@SharedLocalizer["TopicTitle"]" aria-label="@SharedLocalizer["TopicTitle"]" class="input input-bordered input-sm w-full" required />
-            </div>
-            <div>
-                <select name="parentId" aria-label="@SharedLocalizer["ParentTopic"]" class="select select-bordered select-sm w-full">
-                    <option value="">(@SharedLocalizer["None"])</option>
-                    @foreach (var topic in Model.Subject.Topics)
-                    {
-                        <option value="@topic.Id.Value">@(topic.Code != null ? $"{topic.Code} - " : string.Empty)@topic.Title</option>
-                    }
-                </select>
-            </div>
-            <div>
-                <button type="submit" class="btn btn-primary btn-sm w-full">
-                    @SharedLocalizer["AddTopic"]
-                </button>
-            </div>
-        </form>
+        <partial name="_AddTopicForm" model="Model.AddTopicForm" />
     </div>
 
     <div class="card bg-base-100 border border-base-300 p-4 sm:p-6 space-y-4">
@@ -83,79 +52,17 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <details class="collapse collapse-arrow bg-base-200" @(Model.HasTopicConflict ? "open" : null)>
+        <details class="collapse collapse-arrow bg-base-200" @(Model.HasTopicConflict || Model.UpdateTopicForm.ShowErrors ? "open" : null)>
             <summary class="collapse-title font-bold text-sm">@SharedLocalizer["Edit"] @SharedLocalizer["Topics"]</summary>
             <div class="collapse-content space-y-3 pt-2">
-                <form method="post"
-                      asp-page-handler="UpdateTopic"
-                      asp-route-planId="@Model.Subject.StudyPlanId.Value"
-                      asp-route-subjectId="@Model.Subject.Id.Value"
-                      class="space-y-3">
-                    <input type="hidden" name="expectedSubjectVersion" value="@Model.SubjectExpectedVersion" />
-                    <div class="form-control">
-                        <label class="label" for="update-topic-id">
-                            <span class="label-text text-xs">@SharedLocalizer["Topic"]</span>
-                        </label>
-                        <select id="update-topic-id" name="topicId" class="select select-bordered select-sm w-full" required>
-                            @foreach (var topic in Model.Subject.Topics)
-                            {
-                                <!option value="@topic.Id.Value" @(Model.ConflictTopicId == topic.Id.Value ? "selected" : null)>@(topic.Code != null ? $"{topic.Code} - " : string.Empty)@topic.Title</!option>
-                            }
-                        </select>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2">
-                        <div class="form-control">
-                            <label class="label" for="update-topic-code">
-                                <span class="label-text text-xs">@SharedLocalizer["TopicCode"]</span>
-                            </label>
-                            <input id="update-topic-code" type="text" name="code" value="@Model.ConflictTopicCode" class="input input-bordered input-sm font-mono text-xs" />
-                        </div>
-                        <div class="form-control col-span-2">
-                            <label class="label" for="update-topic-title">
-                                <span class="label-text text-xs">@SharedLocalizer["TopicTitle"]</span>
-                            </label>
-                            <input id="update-topic-title" type="text" name="title" value="@Model.ConflictTopicTitle" class="input input-bordered input-sm" required />
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-sm">@SharedLocalizer["Save"]</button>
-                </form>
+                <partial name="_UpdateTopicForm" model="Model.UpdateTopicForm" />
             </div>
         </details>
 
-        <details class="collapse collapse-arrow bg-base-200">
+        <details class="collapse collapse-arrow bg-base-200" @(Model.MoveTopicForm.ShowErrors ? "open" : null)>
             <summary class="collapse-title font-bold text-sm">@SharedLocalizer["MoveUp"] / @SharedLocalizer["MoveDown"] (@SharedLocalizer["Topics"])</summary>
             <div class="collapse-content space-y-3 pt-2">
-                <form method="post"
-                      asp-page-handler="MoveTopic"
-                      asp-route-planId="@Model.Subject.StudyPlanId.Value"
-                      asp-route-subjectId="@Model.Subject.Id.Value"
-                      class="space-y-3">
-                    <input type="hidden" name="expectedSubjectVersion" value="@Model.SubjectExpectedVersion" />
-                    <div class="form-control">
-                        <label class="label" for="move-topic-id">
-                            <span class="label-text text-xs">@SharedLocalizer["Topic"]</span>
-                        </label>
-                        <select id="move-topic-id" name="topicId" class="select select-bordered select-sm w-full" required>
-                            @foreach (var topic in Model.Subject.Topics)
-                            {
-                                <option value="@topic.Id.Value">@(topic.Code != null ? $"{topic.Code} - " : string.Empty)@topic.Title</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="form-control">
-                        <label class="label" for="move-topic-parent">
-                            <span class="label-text text-xs">@SharedLocalizer["NewParentTopic"]</span>
-                        </label>
-                        <select id="move-topic-parent" name="newParentId" class="select select-bordered select-sm w-full">
-                            <option value="">(@SharedLocalizer["None"])</option>
-                            @foreach (var topic in Model.Subject.Topics)
-                            {
-                                <option value="@topic.Id.Value">@(topic.Code != null ? $"{topic.Code} - " : string.Empty)@topic.Title</option>
-                            }
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-sm">@SharedLocalizer["Save"]</button>
-                </form>
+                <partial name="_MoveTopicForm" model="Model.MoveTopicForm" />
             </div>
         </details>
     </div>

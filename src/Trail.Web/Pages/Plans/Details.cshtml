@@ -115,27 +115,12 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="card bg-base-200 p-4 space-y-3">
             <h2 id="add-section-heading" class="font-bold text-base-content text-sm">@SharedLocalizer["AddSection"]</h2>
-            <form method="post" aria-labelledby="add-section-heading" asp-page-handler="AddSection" asp-route-planId="@Model.Plan.Id.Value" class="flex items-center gap-2">
-                <input type="hidden" name="expectedPlanVersion" value="@Model.Plan.Version" />
-                <input type="text" name="name" placeholder="@SharedLocalizer["SectionName"]" aria-label="@SharedLocalizer["SectionName"]" class="input input-bordered input-sm flex-1" required />
-                <button type="submit" class="btn btn-sm btn-primary">@SharedLocalizer["AddSection"]</button>
-            </form>
+            <partial name="_AddSectionForm" model="Model.AddSectionForm" />
         </div>
 
         <div class="card bg-base-200 p-4 space-y-3">
             <h2 id="add-subject-heading" class="font-bold text-base-content text-sm">@SharedLocalizer["AddSubject"]</h2>
-            <form method="post" aria-labelledby="add-subject-heading" asp-page-handler="AddSubject" asp-route-planId="@Model.Plan.Id.Value" class="flex flex-wrap items-center gap-2">
-                <input type="hidden" name="expectedPlanVersion" value="@Model.Plan.Version" />
-                <input type="text" name="name" placeholder="@SharedLocalizer["SubjectName"]" aria-label="@SharedLocalizer["SubjectName"]" class="input input-bordered input-sm flex-1 min-w-[140px]" required />
-                <select name="sectionId" aria-label="@SharedLocalizer["SubjectSection"]" class="select select-bordered select-sm">
-                    <option value="">@SharedLocalizer["UnassignedSubjects"]</option>
-                    @foreach (var sec in Model.Plan.Sections)
-                    {
-                        <option value="@sec.Id.Value">@sec.Name</option>
-                    }
-                </select>
-                <button type="submit" class="btn btn-sm btn-primary">@SharedLocalizer["AddSubject"]</button>
-            </form>
+            <partial name="_AddSubjectForm" model="Model.AddSubjectForm" />
         </div>
     </div>
 
@@ -145,12 +130,7 @@
             var sectionSubjects = Model.Plan.Subjects.Where(s => s.SectionId == planSection.Id).OrderBy(s => s.Order).ToList();
             <div class="card bg-base-100 border border-base-300 p-4 sm:p-6 space-y-4">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-base-300 pb-3">
-                    <form method="post" asp-page-handler="UpdateSection" asp-route-planId="@Model.Plan.Id.Value" class="flex items-center gap-2">
-                        <input type="hidden" name="sectionId" value="@planSection.Id.Value" />
-                        <input type="hidden" name="expectedPlanVersion" value="@Model.Plan.Version" />
-                        <input type="text" name="name" value="@planSection.Name" aria-label="@SharedLocalizer["SectionName"]" class="input input-bordered input-sm font-bold text-base" required />
-                        <button type="submit" class="btn btn-ghost btn-xs">@SharedLocalizer["Save"]</button>
-                    </form>
+                    <partial name="_SectionNameForm" model="Model.SectionNameForm(planSection.Id.Value, planSection.Name)" />
 
                     <div class="flex items-center gap-1">
                         <form method="post" asp-page-handler="ReorderSections" asp-route-planId="@Model.Plan.Id.Value">

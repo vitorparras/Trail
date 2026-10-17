@@ -8,6 +8,8 @@ public sealed class ResultResponseOptions
 
     public string? FormPartialViewName { get; set; }
 
+    public object? FormPartialModel { get; set; }
+
     public string? RedirectPage { get; set; }
 
     public object? RedirectRouteValues { get; set; }
@@ -23,6 +25,8 @@ public sealed class ResultResponseOptions<T>
     public Func<T, object>? PartialModelFactory { get; set; }
 
     public string? FormPartialViewName { get; set; }
+
+    public object? FormPartialModel { get; set; }
 
     public string? RedirectPage { get; set; }
 

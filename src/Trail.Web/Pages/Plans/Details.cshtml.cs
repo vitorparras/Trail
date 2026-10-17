@@ -77,6 +77,32 @@ public sealed class DetailsModel : PageModel
 
     public string? SearchQuery { get; set; }
 
+    public AddSectionFormModel AddSectionForm =>
+        _submittedForm is { Form: PlanForm.AddSection } submitted
+            ? new(Plan.Id.Value, Plan.Version, submitted.Name, ShowErrors: true)
+            : new(Plan.Id.Value, Plan.Version, null, ShowErrors: false);
+
+    public AddSubjectFormModel AddSubjectForm =>
+        _submittedForm is { Form: PlanForm.AddSubject } submitted
+            ? new(Plan.Id.Value, Plan.Version, Plan.Sections, submitted.Name, submitted.SectionId, ShowErrors: true)
+            : new(Plan.Id.Value, Plan.Version, Plan.Sections, null, null, ShowErrors: false);
+
+    public SectionNameFormModel SectionNameForm(Guid sectionId, string sectionName) =>
+        _submittedForm is { Form: PlanForm.SectionName } submitted && submitted.SectionId == sectionId
+            ? new(Plan.Id.Value, Plan.Version, sectionId, submitted.Name ?? string.Empty, ShowErrors: true)
+            : new(Plan.Id.Value, Plan.Version, sectionId, sectionName, ShowErrors: false);
+
+    private SubmittedForm? _submittedForm;
+
+    private enum PlanForm
+    {
+        AddSection,
+        AddSubject,
+        SectionName,
+    }
+
+    private sealed record SubmittedForm(PlanForm Form, string? Name, Guid? SectionId);
+
     public override async Task OnPageHandlerExecutionAsync(
         PageHandlerExecutingContext context,
         PageHandlerExecutionDelegate next)
@@ -174,15 +200,18 @@ public sealed class DetailsModel : PageModel
 
     public async Task<IActionResult> OnPostAddSectionAsync(
         Guid planId,
-        string name,
+        string? name,
         int expectedPlanVersion,
         CancellationToken cancellationToken = default)
     {
-        var command = new AddSectionCommand(StudyPlanId.From(planId), name, expectedPlanVersion);
+        var command = new AddSectionCommand(StudyPlanId.From(planId), name ?? string.Empty, expectedPlanVersion);
         var result = await _addSectionHandler.HandleAsync(command, cancellationToken);
 
+        _submittedForm = new SubmittedForm(PlanForm.AddSection, name, null);
         return this.Respond(result, "planning.add_section", options =>
         {
+            options.FormPartialViewName = "_AddSectionForm";
+            options.FormPartialModel = AddSectionForm;
             options.RedirectPage = "/Plans/Details";
             options.RedirectRouteValues = new { planId };
         });
@@ -191,15 +220,18 @@ public sealed class DetailsModel : PageModel
     public async Task<IActionResult> OnPostUpdateSectionAsync(
         Guid planId,
         Guid sectionId,
-        string name,
+        string? name,
         int expectedPlanVersion,
         CancellationToken cancellationToken = default)
     {
-        var command = new UpdateSectionCommand(StudyPlanId.From(planId), SectionId.From(sectionId), name, expectedPlanVersion);
+        var command = new UpdateSectionCommand(StudyPlanId.From(planId), SectionId.From(sectionId), name ?? string.Empty, expectedPlanVersion);
         var result = await _updateSectionHandler.HandleAsync(command, cancellationToken);
 
+        _submittedForm = new SubmittedForm(PlanForm.SectionName, name, sectionId);
         return this.Respond(result, "planning.update_section", options =>
         {
+            options.FormPartialViewName = "_SectionNameForm";
+            options.FormPartialModel = SectionNameForm(sectionId, name ?? string.Empty);
             options.RedirectPage = "/Plans/Details";
             options.RedirectRouteValues = new { planId };
         });
@@ -259,21 +291,24 @@ public sealed class DetailsModel : PageModel
 
     public async Task<IActionResult> OnPostAddSubjectAsync(
         Guid planId,
-        string name,
+        string? name,
         Guid? sectionId,
         int expectedPlanVersion,
         CancellationToken cancellationToken = default)
     {
         var command = new CreateSubjectCommand(
             StudyPlanId.From(planId),
-            name,
+            name ?? string.Empty,
             sectionId.HasValue ? SectionId.From(sectionId.Value) : null,
             expectedPlanVersion);
 
         var result = await _createSubjectHandler.HandleAsync(command, cancellationToken);
 
+        _submittedForm = new SubmittedForm(PlanForm.AddSubject, name, sectionId);
         return this.Respond(result, "planning.create_subject", options =>
         {
+            options.FormPartialViewName = "_AddSubjectForm";
+            options.FormPartialModel = AddSubjectForm;
             options.RedirectPage = "/Plans/Details";
             options.RedirectRouteValues = new { planId };
         });

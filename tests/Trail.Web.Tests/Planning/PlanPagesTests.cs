@@ -1070,6 +1070,195 @@ public sealed class PlanPagesTests(TrailWebApplicationFactory baseFactory) : ICl
         return (plan, subject, seeded);
     }
 
+    [Theory]
+    [InlineData("AddSection", "duplicate", false)]
+    [InlineData("AddSection", "duplicate", true)]
+    [InlineData("AddSection", "empty", false)]
+    [InlineData("AddSection", "empty", true)]
+    [InlineData("UpdateSection", "duplicate", false)]
+    [InlineData("UpdateSection", "duplicate", true)]
+    [InlineData("AddSubject", "too-long", false)]
+    [InlineData("AddSubject", "too-long", true)]
+    public async Task PlanForms_WithInvalidName_Return422WithTheFieldErrorOnTheSubmittedForm(string handler, string scenario, bool htmx)
+    {
+        var store = new TestPlanningStore();
+        var currentUser = new TestCurrentUser { IsAuthenticated = true };
+        var (plan, _, seeded) = await SeedPlanWithTreeAsync(store, currentUser, "Alpha");
+
+        using var factory = PlanningTestHelper.CreateTestFactory(baseFactory, store, currentUser);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
+        var localizer = factory.Services.GetRequiredService<IStringLocalizer<SharedResource>>();
+
+        var planUrl = $"/planos/{plan.Id.Value}";
+        var (_, _, csrfHeader, csrfToken) = await PlanningTestHelper.GetDocWithAntiforgeryAsync(client, planUrl);
+
+        var submittedName = scenario switch
+        {
+            "duplicate" => seeded.SectionName,
+            "too-long" => new string('x', Subject.MaxNameLength + 1),
+            _ => string.Empty,
+        };
+        var expectedMessage = (handler, scenario) switch
+        {
+            ("AddSubject", _) => localizer["planning.subject.name_too_long"].Value,
+            (_, "duplicate") => localizer["planning.section.duplicate_name"].Value,
+            _ => localizer["planning.section.name_required"].Value,
+        };
+
+        var form = new Dictionary<string, string>
+        {
+            ["name"] = submittedName,
+            ["expectedPlanVersion"] = seeded.PlanVersion.ToString(CultureInfo.InvariantCulture)
+        };
+        if (handler == "UpdateSection")
+        {
+            form["sectionId"] = seeded.SpareSectionId.ToString();
+        }
+
+        if (handler == "AddSubject")
+        {
+            form["sectionId"] = seeded.SectionId.ToString();
+        }
+
+        using var response = await PlanningTestHelper.PostFormWithAntiforgeryAsync(
+            client,
+            $"{planUrl}?handler={handler}",
+            form,
+            csrfHeader,
+            csrfToken,
+            htmx ? new() { [HtmxIntegration.RequestTypeHeaderName] = HtmxIntegration.PartialRequestType } : null);
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        var html = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        var document = new HtmlParser().ParseDocument(html);
+
+        Assert.Equal(htmx, !html.Contains("<html", StringComparison.OrdinalIgnoreCase));
+        if (!htmx)
+        {
+            Assert.Equal(seeded.PlanName, document.QuerySelector("main#main-content h1")?.TextContent.Trim());
+        }
+
+        var invalidInput = Assert.Single(document.QuerySelectorAll("[aria-invalid='true']"));
+        var submittedForm = invalidInput.Closest("form");
+        Assert.NotNull(submittedForm);
+        Assert.Contains($"handler={handler}", submittedForm.GetAttribute("action"), StringComparison.Ordinal);
+        if (handler == "UpdateSection")
+        {
+            Assert.Equal(seeded.SpareSectionId.ToString(), submittedForm.QuerySelector("input[name='sectionId']")?.GetAttribute("value"));
+        }
+
+        if (handler == "AddSubject")
+        {
+            Assert.Equal(seeded.SectionId.ToString(), submittedForm.QuerySelector("select[name='sectionId'] option[selected]")?.GetAttribute("value"));
+        }
+
+        Assert.Equal(submittedName, invalidInput.GetAttribute("value") ?? string.Empty);
+        var errors = document.GetElementById(invalidInput.GetAttribute("aria-describedby")!);
+        Assert.NotNull(errors);
+        Assert.Equal(expectedMessage, Assert.Single(errors.QuerySelectorAll("li")).TextContent.Trim());
+        Assert.Single(document.All, element => element.ChildElementCount == 0 && element.TextContent.Trim() == expectedMessage);
+        Assert.DoesNotContain("field is required", html, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData("UpdateSubject", "empty", false)]
+    [InlineData("UpdateSubject", "empty", true)]
+    [InlineData("UpdateSubject", "too-long", false)]
+    [InlineData("UpdateSubject", "too-long", true)]
+    [InlineData("AddTopic", "empty", false)]
+    [InlineData("AddTopic", "empty", true)]
+    [InlineData("AddTopic", "too-long", false)]
+    [InlineData("AddTopic", "too-long", true)]
+    [InlineData("AddTopic", "invalid-code", false)]
+    [InlineData("AddTopic", "invalid-code", true)]
+    [InlineData("UpdateTopic", "empty", false)]
+    [InlineData("UpdateTopic", "empty", true)]
+    [InlineData("UpdateTopic", "too-long", false)]
+    [InlineData("UpdateTopic", "too-long", true)]
+    [InlineData("UpdateTopic", "invalid-code", false)]
+    [InlineData("UpdateTopic", "invalid-code", true)]
+    [InlineData("MoveTopic", "cycle", false)]
+    [InlineData("MoveTopic", "cycle", true)]
+    [InlineData("SaveNote", "too-long", false)]
+    [InlineData("SaveNote", "too-long", true)]
+    public async Task SubjectForms_WithInvalidInput_Return422WithTheFieldErrorOnTheSubmittedForm(string handler, string scenario, bool htmx)
+    {
+        var store = new TestPlanningStore();
+        var currentUser = new TestCurrentUser { IsAuthenticated = true };
+        var (plan, subject, seeded) = await SeedPlanWithTreeAsync(store, currentUser, "Alpha");
+
+        using var factory = PlanningTestHelper.CreateTestFactory(baseFactory, store, currentUser);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
+        var localizer = factory.Services.GetRequiredService<IStringLocalizer<SharedResource>>();
+
+        var subjectUrl = $"/planos/{plan.Id.Value}/disciplinas/{subject.Id.Value}";
+        var (_, _, csrfHeader, csrfToken) = await PlanningTestHelper.GetDocWithAntiforgeryAsync(client, subjectUrl);
+
+        var subjectVersion = seeded.SubjectVersion.ToString(CultureInfo.InvariantCulture);
+        var (form, submittedValue, messageCode) = (handler, scenario) switch
+        {
+            ("UpdateSubject", "empty") => (new Dictionary<string, string> { ["name"] = string.Empty, ["expectedVersion"] = subjectVersion }, string.Empty, "planning.subject.name_required"),
+            ("UpdateSubject", _) => (new Dictionary<string, string> { ["name"] = new string('s', Subject.MaxNameLength + 1), ["expectedVersion"] = subjectVersion }, new string('s', Subject.MaxNameLength + 1), "planning.subject.name_too_long"),
+            ("AddTopic", "empty") => (new Dictionary<string, string> { ["code"] = "9", ["title"] = string.Empty, ["initialStatus"] = "ToStudy", ["expectedSubjectVersion"] = subjectVersion }, string.Empty, "planning.topic.title_required"),
+            ("AddTopic", "too-long") => (new Dictionary<string, string> { ["code"] = "9", ["title"] = new string('t', Subject.MaxTopicTitleLength + 1), ["initialStatus"] = "ToStudy", ["expectedSubjectVersion"] = subjectVersion }, new string('t', Subject.MaxTopicTitleLength + 1), "planning.topic.title_too_long"),
+            ("AddTopic", _) => (new Dictionary<string, string> { ["code"] = "nine", ["title"] = "Valid title", ["initialStatus"] = "ToStudy", ["expectedSubjectVersion"] = subjectVersion }, "nine", "planning.topic.invalid_code"),
+            ("UpdateTopic", "empty") => (new Dictionary<string, string> { ["topicId"] = seeded.TopicId.ToString(), ["code"] = "1", ["title"] = string.Empty, ["expectedSubjectVersion"] = subjectVersion }, string.Empty, "planning.topic.title_required"),
+            ("UpdateTopic", "too-long") => (new Dictionary<string, string> { ["topicId"] = seeded.TopicId.ToString(), ["code"] = "1", ["title"] = new string('t', Subject.MaxTopicTitleLength + 1), ["expectedSubjectVersion"] = subjectVersion }, new string('t', Subject.MaxTopicTitleLength + 1), "planning.topic.title_too_long"),
+            ("UpdateTopic", _) => (new Dictionary<string, string> { ["topicId"] = seeded.TopicId.ToString(), ["code"] = "one", ["title"] = seeded.TopicTitle, ["expectedSubjectVersion"] = subjectVersion }, "one", "planning.topic.invalid_code"),
+            ("MoveTopic", _) => (new Dictionary<string, string> { ["topicId"] = seeded.TopicId.ToString(), ["newParentId"] = seeded.SubtopicId.ToString(), ["expectedSubjectVersion"] = subjectVersion }, seeded.SubtopicId.ToString(), "planning.topic.cycle_detected"),
+            _ => (new Dictionary<string, string> { ["topicId"] = seeded.TopicId.ToString(), ["markdown"] = new string('m', TopicNote.MaxMarkdownLength + 1), ["expectedVersion"] = seeded.NoteVersion.ToString(CultureInfo.InvariantCulture) }, new string('m', TopicNote.MaxMarkdownLength + 1), "planning.note.too_long"),
+        };
+
+        using var response = await PlanningTestHelper.PostFormWithAntiforgeryAsync(
+            client,
+            $"{subjectUrl}?handler={handler}",
+            form,
+            csrfHeader,
+            csrfToken,
+            htmx ? new() { [HtmxIntegration.RequestTypeHeaderName] = HtmxIntegration.PartialRequestType } : null);
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        var html = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        var document = new HtmlParser().ParseDocument(html);
+
+        Assert.Equal(htmx, !html.Contains("<html", StringComparison.OrdinalIgnoreCase));
+        if (!htmx)
+        {
+            Assert.Equal(seeded.SubjectName, document.QuerySelector("main#main-content h1")?.TextContent.Trim());
+        }
+
+        var invalidControl = Assert.Single(document.QuerySelectorAll("[aria-invalid='true']"));
+        var submittedForm = invalidControl.Closest("form");
+        Assert.NotNull(submittedForm);
+        Assert.Contains($"handler={handler}", submittedForm.GetAttribute("action"), StringComparison.Ordinal);
+        Assert.Equal(submittedValue, SubmittedValueOf(invalidControl));
+
+        if (handler is "UpdateTopic" or "MoveTopic")
+        {
+            Assert.Equal(seeded.TopicId.ToString(), submittedForm.QuerySelector("select[name='topicId'] option[selected]")?.GetAttribute("value"));
+        }
+
+        if (handler == "SaveNote")
+        {
+            Assert.Equal(seeded.TopicId.ToString(), submittedForm.QuerySelector("input[name='topicId']")?.GetAttribute("value"));
+        }
+
+        var expectedMessage = localizer[messageCode].Value;
+        var errors = document.GetElementById(invalidControl.GetAttribute("aria-describedby")!);
+        Assert.NotNull(errors);
+        Assert.Equal(expectedMessage, Assert.Single(errors.QuerySelectorAll("li")).TextContent.Trim());
+        Assert.Single(document.All, element => element.ChildElementCount == 0 && element.TextContent.Trim() == expectedMessage);
+        Assert.DoesNotContain("field is required", html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("is not valid", html, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string SubmittedValueOf(AngleSharp.Dom.IElement control) => control.TagName switch
+    {
+        "TEXTAREA" => control.TextContent,
+        "SELECT" => control.QuerySelector("option[selected]")?.GetAttribute("value") ?? string.Empty,
+        _ => control.GetAttribute("value") ?? string.Empty,
+    };
+
     private static string FormValue(IHtmlDocument document, string handler, string inputName) =>
         document.QuerySelector($"form[action*='handler={handler}'] input[name='{inputName}']")?.GetAttribute("value")
             ?? throw new InvalidOperationException($"The {handler} form has no '{inputName}' field.");

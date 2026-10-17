@@ -1,7 +1,7 @@
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0-noble@sha256:0d99ebf1ccad15037b5c98c9fe8979d6b8dbac23812feae2277a0b277b5c5ffa AS build
 ARG TARGETARCH
 WORKDIR /source
-COPY Trail.slnx Directory.Build.props Directory.Packages.props global.json nuget.config ./
+COPY Trail.slnx Directory.Build.props Directory.Packages.props global.json nuget.config .editorconfig ./
 COPY eng/ eng/
 COPY src/Trail.Domain/Trail.Domain.csproj src/Trail.Domain/packages.lock.json src/Trail.Domain/
 COPY src/Trail.Application/Trail.Application.csproj src/Trail.Application/packages.lock.json src/Trail.Application/

@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "dependencies": {
+    "net10.0": {
+      "trail.application": {
+        "type": "Project",
+        "dependencies": {
+          "Trail.Domain": "[1.0.0, )"
+        }
+      },
+      "trail.domain": {
+        "type": "Project"
+      },
+      "trail.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Trail.Application": "[1.0.0, )"
+        }
+      }
+    }
+  }
+}

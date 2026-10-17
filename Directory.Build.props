@@ -10,6 +10,7 @@
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <NuGetAuditMode>all</NuGetAuditMode>
     <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <PublishDocumentationFiles>false</PublishDocumentationFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">

@@ -1,7 +1,7 @@
 # Fase 2 — Planos e conteúdo: detalhamento
 
-> **Situação:** em implementação na branch `phase/2-study-plans-and-content` (empilhada
-> sobre `phase/1-accounts-email-isolation`).
+> **Situação:** concluída e aguardando a revisão do autor no
+> [PR #3](https://github.com/vitorparras/trail/pull/3), empilhado sobre o PR #2 (Fase 1).
 
 ## Objetivo
 
@@ -160,3 +160,35 @@ sem HTMX, respeitam a CSP com nonce e nunca renderizam HTML bruto do Markdown.
 - Dá para montar à mão uma disciplina da planilha e mudar status pelo celular.
 - Os testes de isolamento e E2E passam nos dois bancos e no container Docker.
 - O CI fica 100% verde no PR da fase.
+
+## Resultado
+
+- Todas as tarefas (T1 a T5) foram implementadas e aprovadas por revisores independentes.
+  A T5 passou por quatro rodadas de revisão até a aprovação.
+- Na T5, além dos testes, a revisão corrigiu:
+  - handlers criados só para o teste, que foram removidos;
+  - a validação dos formulários, que agora mostra os erros ao lado do campo, com e sem HTMX;
+  - o login, agora exigido nas páginas de planos (o navegador vai para o login e o HTMX
+    navega a página inteira);
+  - o contêiner duplicado da árvore de tópicos depois da troca de status;
+  - um teste de telemetria instável.
+- O build da imagem Docker passou a usar o `.editorconfig` do repositório, como o build
+  local e o do CI.
+- Verificação no último commit da fase:
+  - CI com os 9 checks verdes;
+  - testes em SQLite e PostgreSQL: Domain 221, Architecture 71, Application 340, Web 250;
+  - cobertura do `Domain` em 95,3% e da `Application` em 98,3%;
+  - E2E em 7 de 7 testes, nos tamanhos de celular e desktop, sem violações do axe.
+
+## Pendências para o autor
+
+1. **Convites no modo `Closed`:** a tela de administração oferece convites, mas o
+   convidado é recusado, porque o modo `Closed` bloqueia novos cadastros (decisão D2 da
+   Fase 1). As opções são esconder ou avisar sobre os convites nesse modo, ou deixar um
+   convite válido criar a conta mesmo com o cadastro fechado.
+2. **Login no app inteiro:** as páginas de planos exigem login pela convenção da pasta
+   `/Plans`. As páginas de Preferências e Administração ainda respondem 403 a quem não
+   está autenticado, em vez de levar ao login. A alternativa é uma política única para o
+   app, liberando só as páginas públicas.
+3. **Para o futuro:** se algum formulário passar a ser enviado por HTMX, a lista de erros
+   precisa de `role="alert"` ou de foco no primeiro campo inválido (WCAG 4.1.3).

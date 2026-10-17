@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:17.5-alpine@sha256:6567bca8d7bc8c82c5922425a0baee57be8402df92bae5eacad5f01ae9544daa
+    image: postgres:17.11-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
     environment:
       POSTGRES_DB: trail
       POSTGRES_USER: trail
@@ -16,7 +16,7 @@ services:
       retries: 5
 
   mailpit:
-    image: axllent/mailpit:v1.24.0@sha256:06cf27fde6ea653c68b5c80f7d5d7280d56d17248e34de4b4ef15f9f4f86662c
+    image: axllent/mailpit:v1.31.4@sha256:b68349e3a014b90c5610bfb26b2ae36f3892d7b8cf25ee140c6c71c98d2fcf48
     ports:
       - "1025:1025"
       - "8025:8025"

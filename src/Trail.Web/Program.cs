@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Trail.Application;
 using Trail.Web.Cli;
 using Trail.Web.Htmx;
+using Trail.Web.Observability;
 
 if (args is ["--healthcheck", ..])
 {
@@ -13,6 +14,9 @@ if (args is ["--healthcheck", ..])
 }
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddTrailObservability();
+builder.Services.AddApplication();
 
 var culture = CultureInfo.GetCultureInfo("pt-BR");
 
@@ -38,7 +42,6 @@ builder.Services.Replace(ServiceDescriptor.Singleton(HtmlEncoder.Create(htmlEnco
 
 builder.Services.AddAntiforgery(options => options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest);
 builder.Services.AddHtmx();
-builder.Services.AddApplication();
 
 var app = builder.Build();
 

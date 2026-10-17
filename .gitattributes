@@ -11,6 +11,7 @@ Caddyfile text eol=lf
 
 src/Trail.Web/Styles/daisyui*.mjs -text
 src/Trail.Web/Styles/daisyui.LICENSE -text
+src/Trail.Web/wwwroot/lib/** -text
 
 *.png binary
 *.ico binary

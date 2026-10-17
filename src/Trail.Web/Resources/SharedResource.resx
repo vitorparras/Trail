@@ -39,6 +39,9 @@
   <data name="DarkTheme" xml:space="preserve">
     <value>Tema escuro</value>
   </data>
+  <data name="SourceCode" xml:space="preserve">
+    <value>Código-fonte</value>
+  </data>
   <data name="DismissNotification" xml:space="preserve">
     <value>Fechar notificação</value>
   </data>

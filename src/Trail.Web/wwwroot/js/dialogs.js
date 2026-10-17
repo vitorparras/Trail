@@ -26,6 +26,15 @@
     };
 
     document.addEventListener('click', (event) => {
+        const closer = event.target instanceof Element ? event.target.closest('[data-dialog-close]') : null;
+        if (closer) {
+            const dialog = closer.closest('dialog');
+            if (dialog instanceof HTMLDialogElement && dialog.open) {
+                dialog.close();
+            }
+            return;
+        }
+
         const opener = event.target instanceof Element ? event.target.closest('[data-dialog-open]') : null;
         if (!opener) {
             return;

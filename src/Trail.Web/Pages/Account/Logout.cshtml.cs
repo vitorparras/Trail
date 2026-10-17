@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Trail.Application.Accounts;
+using Trail.Web.Results;
 
 namespace Trail.Web.Pages.Account;
 
@@ -18,7 +19,10 @@ public sealed class LogoutModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken = default)
     {
-        await _logoutHandler.HandleAsync(new LogoutCommand(), cancellationToken);
-        return RedirectToPage("/Index");
+        var result = await _logoutHandler.HandleAsync(new LogoutCommand(), cancellationToken);
+        return this.Respond(result, "account.logout", options =>
+        {
+            options.RedirectPage = "/Index";
+        });
     }
 }

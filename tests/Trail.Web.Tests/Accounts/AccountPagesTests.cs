@@ -25,6 +25,7 @@ public sealed class AccountPagesTests(TrailWebApplicationFactory baseFactory) : 
         Assert.NotNull(document.QuerySelector("input[name='Input.Email']"));
         Assert.NotNull(document.QuerySelector("input[name='Input.Password']"));
         Assert.NotNull(document.QuerySelector("input[name='Input.RememberMe']"));
+        Assert.NotNull(document.QuerySelector("label[for='Input_RememberMe']"));
         Assert.NotNull(document.QuerySelector("button[type='submit']"));
         Assert.NotNull(document.QuerySelector("a[href='/Account/ForgotPassword']"));
         Assert.NotNull(document.QuerySelector("a[href='/Account/Register']"));
@@ -317,6 +318,23 @@ public sealed class AccountPagesTests(TrailWebApplicationFactory baseFactory) : 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var html = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.Contains("Confirme seu e-mail", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Get_AcceptInvite_WithToken_RedirectsToRegister()
+    {
+        var gateway = new TestAccountIdentityGateway();
+        var emailSender = new TestEmailSender();
+        var settingsStore = new TestUserSettingsStore();
+        var currentUser = new TestCurrentUser { IsAuthenticated = false };
+
+        using var factory = AccountTestHelper.CreateTestFactory(baseFactory, gateway, emailSender, settingsStore, currentUser);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
+
+        using var response = await client.GetAsync("/Account/AcceptInvite?token=sample-invite-token", TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Equal("/Account/Register?inviteToken=sample-invite-token", response.Headers.Location?.OriginalString);
     }
 
     [Fact]
@@ -787,6 +805,7 @@ public sealed class AccountPagesTests(TrailWebApplicationFactory baseFactory) : 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var html = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.Contains("Link do convite gerado", html, StringComparison.Ordinal);
+        Assert.Contains("for=\"generated-invite-link\"", html, StringComparison.Ordinal);
         Assert.Single(gateway.Invitations);
     }
 
@@ -824,6 +843,7 @@ public sealed class AccountPagesTests(TrailWebApplicationFactory baseFactory) : 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var html = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.Contains("Link gerado para entrega manual", html, StringComparison.Ordinal);
+        Assert.Contains("for=\"generated-manual-link\"", html, StringComparison.Ordinal);
     }
 
     [Fact]

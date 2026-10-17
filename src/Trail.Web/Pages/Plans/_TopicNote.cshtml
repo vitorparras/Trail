@@ -2,7 +2,7 @@
 
 <div id="topic-notes-container" class="card bg-base-100 border border-base-300 p-4 sm:p-6 space-y-4">
     <div class="flex items-center justify-between border-b border-base-300 pb-3">
-        <h3 class="font-bold text-base text-base-content flex items-center gap-2">
+        <h2 id="topic-notes-heading" class="font-bold text-base text-base-content flex items-center gap-2">
             <span>@SharedLocalizer["TopicNotes"]</span>
             @if (Model.SelectedNote != null)
             {
@@ -10,7 +10,7 @@
                     @(Model.SelectedNote.TopicCode != null ? $"[{Model.SelectedNote.TopicCode}] " : string.Empty)@Model.SelectedNote.TopicTitle
                 </span>
             }
-        </h3>
+        </h2>
     </div>
 
     @if (Model.HasNoteConflict)
@@ -22,17 +22,17 @@
 
     @if (Model.SelectedNote == null)
     {
-        <p class="text-xs text-base-content/60">@SharedLocalizer["NoTopics"]</p>
+        <p class="text-xs text-base-content/80">@SharedLocalizer["NoTopics"]</p>
     }
     else
     {
         <div class="space-y-4">
             <div class="space-y-1">
-                <h4 class="text-xs font-semibold uppercase tracking-wider text-base-content/60">@SharedLocalizer["MarkdownPreview"]</h4>
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-base-content/80">@SharedLocalizer["MarkdownPreview"]</h3>
                 <div class="prose max-w-none p-4 rounded-box bg-base-200 text-sm">
                     @if (string.IsNullOrWhiteSpace(Model.RenderedMarkdownHtml))
                     {
-                        <p class="text-base-content/50 italic">(@SharedLocalizer["None"])</p>
+                        <p class="text-base-content/80 italic">(@SharedLocalizer["None"])</p>
                     }
                     else
                     {
@@ -41,7 +41,8 @@
                 </div>
             </div>
 
-            <form method="post"
+            <form id="save-note-form" aria-labelledby="topic-notes-heading"
+                  method="post"
                   asp-page-handler="SaveNote"
                   asp-route-planId="@Model.Subject.StudyPlanId.Value"
                   asp-route-subjectId="@Model.Subject.Id.Value"
@@ -50,10 +51,10 @@
                 <input type="hidden" name="expectedVersion" value="@Model.NoteExpectedVersion" />
 
                 <div class="form-control">
-                    <label class="label">
-                        <span class="label-text font-medium text-xs uppercase tracking-wider text-base-content/60">@SharedLocalizer["MarkdownSource"]</span>
+                    <label class="label" for="topic-note-markdown">
+                        <span class="label-text font-medium text-xs uppercase tracking-wider text-base-content/80">@SharedLocalizer["MarkdownSource"]</span>
                     </label>
-                    <textarea name="markdown" rows="6" class="textarea textarea-bordered w-full font-mono text-sm">@Model.NoteMarkdown</textarea>
+                    <textarea id="topic-note-markdown" name="markdown" rows="6" class="textarea textarea-bordered w-full font-mono text-sm">@Model.NoteMarkdown</textarea>
                 </div>
 
                 <div>

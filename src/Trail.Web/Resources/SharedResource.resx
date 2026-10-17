@@ -822,4 +822,22 @@
   <data name="auth.unauthenticated" xml:space="preserve">
     <value>É necessário entrar para continuar.</value>
   </data>
+  <data name="Apply" xml:space="preserve">
+    <value>Aplicar</value>
+  </data>
+  <data name="Topic" xml:space="preserve">
+    <value>Tópico</value>
+  </data>
+  <data name="ParentTopic" xml:space="preserve">
+    <value>Tópico pai</value>
+  </data>
+  <data name="SubjectSection" xml:space="preserve">
+    <value>Bloco da disciplina</value>
+  </data>
+  <data name="SearchTopicsLabel" xml:space="preserve">
+    <value>Buscar tópico</value>
+  </data>
+  <data name="TopicStatusFor" xml:space="preserve">
+    <value>Status do tópico {0}</value>
+  </data>
 </root>

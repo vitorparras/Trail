@@ -45,6 +45,7 @@ builder.Services.AddRazorPages(options =>
 {
     options.Conventions.AddPageApplicationModelConvention("/Account/Login", page => page.EndpointMetadata.Add(new EnableRateLimitingAttribute(RateLimitingExtensions.AuthPolicyName)));
     options.Conventions.AddPageApplicationModelConvention("/Account/ForgotPassword", page => page.EndpointMetadata.Add(new EnableRateLimitingAttribute(RateLimitingExtensions.AuthPolicyName)));
+    options.Conventions.AuthorizeFolder("/Plans");
     options.Conventions.ConfigureFilter(new UnknownPageHandlerFilter());
 });
 

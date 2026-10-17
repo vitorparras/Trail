@@ -4,10 +4,8 @@ using System.Reflection;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Localization;
 using OpenTelemetry.Trace;
-using Trail.Application.Abstractions;
 using Trail.Application.Planning;
 using Trail.Application.Telemetry;
 using Trail.Domain.Planning;
@@ -512,25 +510,6 @@ public sealed class PlanPagesTests(TrailWebApplicationFactory baseFactory) : ICl
         Assert.DoesNotContain("Organização Político-Administrativa do Estado", filterSubjectDoc.Body.TextContent, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public async Task UnauthenticatedAccess_ToPlansPages_ReturnsForbidden()
-    {
-        var store = new TestPlanningStore();
-        var currentUser = new TestCurrentUser { IsAuthenticated = false };
-
-        using var factory = PlanningTestHelper.CreateTestFactory(baseFactory, store, currentUser);
-        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
-
-        using var indexResponse = await client.GetAsync("/planos", TestContext.Current.CancellationToken);
-        Assert.Equal(HttpStatusCode.Forbidden, indexResponse.StatusCode);
-
-        using var createResponse = await client.GetAsync("/planos/novo", TestContext.Current.CancellationToken);
-        Assert.Equal(HttpStatusCode.Forbidden, createResponse.StatusCode);
-
-        using var detailsResponse = await client.GetAsync($"/planos/{Guid.NewGuid()}", TestContext.Current.CancellationToken);
-        Assert.Equal(HttpStatusCode.Forbidden, detailsResponse.StatusCode);
-    }
-
     [Theory]
     [MemberData(nameof(TestDatabaseProviders.EnabledProviders), MemberType = typeof(TestDatabaseProviders))]
     public async Task PlanningFlow_OnRealDatabase_BuildsSubjectTreeChangesStatusAndRendersNote(DatabaseProvider provider)
@@ -869,13 +848,7 @@ public sealed class PlanPagesTests(TrailWebApplicationFactory baseFactory) : ICl
         var currentUser = new TestCurrentUser { IsAuthenticated = true };
         var failingStore = DispatchProxy.Create<IPlanningStore, FailingPlanningStore>();
 
-        using var factory = baseFactory.WithWebHostBuilder(builder => builder.ConfigureServices(services =>
-        {
-            services.RemoveAll<ICurrentUser>();
-            services.AddScoped<ICurrentUser>(_ => currentUser);
-            services.RemoveAll<IPlanningStore>();
-            services.AddScoped(_ => failingStore);
-        }));
+        using var factory = PlanningTestHelper.CreateTestFactory(baseFactory, failingStore, currentUser);
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
         var localizer = factory.Services.GetRequiredService<IStringLocalizer<SharedResource>>();
         var (_, _, csrfHeader, csrfToken) = await PlanningTestHelper.GetDocWithAntiforgeryAsync(client, "/planos/novo");

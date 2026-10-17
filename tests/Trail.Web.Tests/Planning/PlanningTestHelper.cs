@@ -1,5 +1,6 @@
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Trail.Application.Abstractions;
@@ -12,7 +13,7 @@ internal static class PlanningTestHelper
 {
     public static WebApplicationFactory<Program> CreateTestFactory(
         TrailWebApplicationFactory baseFactory,
-        TestPlanningStore store,
+        IPlanningStore store,
         TestCurrentUser currentUser)
     {
         return baseFactory.WithWebHostBuilder(builder =>
@@ -23,7 +24,12 @@ internal static class PlanningTestHelper
                 services.AddScoped<ICurrentUser>(_ => currentUser);
 
                 services.RemoveAll<IPlanningStore>();
-                services.AddScoped<IPlanningStore>(_ => store);
+                services.AddScoped(_ => store);
+
+                services.AddAuthentication()
+                    .AddScheme<AuthenticationSchemeOptions, TestCurrentUserAuthenticationHandler>(TestCurrentUserAuthenticationHandler.SchemeName, null);
+                services.Configure<AuthenticationOptions>(options =>
+                    options.DefaultAuthenticateScheme = TestCurrentUserAuthenticationHandler.SchemeName);
             });
         });
     }

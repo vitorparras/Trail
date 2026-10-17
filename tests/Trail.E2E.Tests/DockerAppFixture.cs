@@ -99,10 +99,15 @@ public sealed class DockerAppFixture : IAsyncLifetime
             throw new InvalidOperationException("Failed to start docker build process.");
         }
 
+        var outputTask = buildProcess.StandardOutput.ReadToEndAsync();
+        var errorTask = buildProcess.StandardError.ReadToEndAsync();
+
         await buildProcess.WaitForExitAsync();
+        _ = await outputTask;
+        var error = await errorTask;
+
         if (buildProcess.ExitCode != 0)
         {
-            var error = await buildProcess.StandardError.ReadToEndAsync();
             throw new InvalidOperationException($"docker build failed with exit code {buildProcess.ExitCode}: {error}");
         }
     }

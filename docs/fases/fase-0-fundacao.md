@@ -79,7 +79,7 @@ o CI fica verde na branch da fase.
 - `Domain/Common`: `Result`, `Result<T>`, `Message`, `MessageSeverity`, `ResultStatus`,
   `AggregateRoot`, `IDomainEvent` e o padrão de ID tipado.
 - `Application/Abstractions`: `IAppDbContext`, `ICurrentUser` e
-  `IDomainEventHandler<TEvent>`.
+  `IDomainEventConsumer<TEvent>`.
 - Registro dos handlers e os nomes do `Meter` e do `ActivitySource`.
 - Testes de unidade: mensagens acumuladas (padrão Notification), `Result` com e sem
   dados, criação de IDs.

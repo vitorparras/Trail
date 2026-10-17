@@ -25,7 +25,7 @@ DDD por completo, incluindo eventos de domínio.
    levantados pela raiz do agregado.
 5. **Despacho:**
    - em processo, depois do commit, por um `SaveChangesInterceptor` na `Infrastructure`;
-   - para as implementações de `IDomainEventHandler<TEvent>` na `Application`;
+   - para as implementações de `IDomainEventConsumer<TEvent>` na `Application` (o sufixo `Handler` fica reservado aos casos de uso, e o analisador CA1711 rejeita `EventHandler`);
    - o despachante registra cada evento no log estruturado;
    - a falha de um consumidor vai para o log e não desfaz a gravação.
 6. **Consumidores na 1.0:** métricas de negócio

@@ -78,6 +78,9 @@ internal sealed class FallbackAccountIdentityGateway : IAccountIdentityGateway
 
     public Task<AccountUserDto?> GetUserByIdAsync(UserId userId, CancellationToken cancellationToken = default) =>
         throw new NotImplementedException();
+
+    public Task<Result> ResetAdminPasswordAsync(string newPassword, CancellationToken cancellationToken = default) =>
+        throw new NotImplementedException();
 }
 
 internal sealed class FallbackEmailSender : IEmailSender

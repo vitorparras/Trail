@@ -78,4 +78,8 @@ public interface IAccountIdentityGateway
     Task<AccountUserDto?> GetUserByIdAsync(
         UserId userId,
         CancellationToken cancellationToken = default);
+
+    Task<Result> ResetAdminPasswordAsync(
+        string newPassword,
+        CancellationToken cancellationToken = default);
 }

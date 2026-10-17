@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Trail.Application.Abstractions;
 using Trail.Application.Accounts;
+using Trail.Application.Planning;
 using Trail.Application.Telemetry;
 
 namespace Trail.Application;
@@ -18,6 +19,7 @@ public static class DependencyInjection
         services.TryAddScoped<IAccountIdentityGateway, FallbackAccountIdentityGateway>();
         services.TryAddScoped<IEmailSender, FallbackEmailSender>();
         services.TryAddScoped<IUserSettingsStore, FallbackUserSettingsStore>();
+        services.TryAddScoped<IPlanningStore, FallbackPlanningStore>();
 
         return services;
     }

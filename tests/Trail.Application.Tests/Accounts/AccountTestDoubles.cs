@@ -215,4 +215,7 @@ internal sealed class FakeAccountIdentityGateway : IAccountIdentityGateway
 
     public Task<Result> ResetAdminPasswordAsync(string newPassword, CancellationToken cancellationToken = default) =>
         Task.FromResult(ResetAdminPasswordResult);
+
+    public Task<Result> ResetAdminPasswordAsync(string email, string newPassword, CancellationToken cancellationToken = default) =>
+        Task.FromResult(ResetAdminPasswordResult);
 }

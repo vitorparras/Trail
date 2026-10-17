@@ -82,4 +82,9 @@ public interface IAccountIdentityGateway
     Task<Result> ResetAdminPasswordAsync(
         string newPassword,
         CancellationToken cancellationToken = default);
+
+    Task<Result> ResetAdminPasswordAsync(
+        string email,
+        string newPassword,
+        CancellationToken cancellationToken = default);
 }

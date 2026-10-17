@@ -436,21 +436,55 @@ public sealed class AccountIdentityGateway : IAccountIdentityGateway
             user.CreatedAt);
     }
 
-    public async Task<Result> ResetAdminPasswordAsync(
+    public Task<Result> ResetAdminPasswordAsync(
         string newPassword,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        ResetAdminPasswordInternalAsync(email: null, newPassword, cancellationToken);
+
+    public Task<Result> ResetAdminPasswordAsync(
+        string email,
+        string newPassword,
+        CancellationToken cancellationToken = default) =>
+        ResetAdminPasswordInternalAsync(email, newPassword, cancellationToken);
+
+    private async Task<Result> ResetAdminPasswordInternalAsync(
+        string? email,
+        string newPassword,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(newPassword))
         {
             return Result.Invalid(Message.Error("accounts.reset_password.password_required", nameof(newPassword)));
         }
 
-        var admin = await _userManager.Users
-            .FirstOrDefaultAsync(u => u.IsAdmin, cancellationToken);
-
-        if (admin is null)
+        ApplicationUser? admin;
+        if (string.IsNullOrWhiteSpace(email))
         {
-            return Result.NotFound(Message.Error("accounts.admin.not_found", "Admin user not found."));
+            admin = await _userManager.Users
+                .FirstOrDefaultAsync(u => u.IsAdmin, cancellationToken);
+
+            if (admin is null)
+            {
+                return Result.NotFound(Message.Error("accounts.admin.not_found", "Admin user not found."));
+            }
+        }
+        else
+        {
+            var normalizedEmail = _userManager.NormalizeEmail(email) ?? email.ToUpperInvariant();
+            var user = await _userManager.Users
+                .FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail, cancellationToken);
+
+            if (user is null)
+            {
+                return Result.NotFound(Message.Error("accounts.admin.not_found", $"User '{email}' not found."));
+            }
+
+            if (!user.IsAdmin)
+            {
+                return Result.Invalid(Message.Error("accounts.admin.not_admin", $"User '{email}' is not an administrator."));
+            }
+
+            admin = user;
         }
 
         var resetToken = await _userManager.GeneratePasswordResetTokenAsync(admin);

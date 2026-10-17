@@ -225,6 +225,88 @@ public sealed class IdentityAndEmailPersistenceTests
         }
     }
 
+    [Theory]
+    [MemberData(nameof(TestDatabaseProviders.EnabledProviders), MemberType = typeof(TestDatabaseProviders))]
+    public async Task ResetAdminPasswordCommand_WithEmailAndNewPassword_ResetsPasswordAndUnlocksAccount(DatabaseProvider provider)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var harness = await CreateHarnessAsync(provider, cancellationToken: ct);
+        await using (harness.Cleanup)
+        {
+            await harness.Gateway.CreateUserAsync("firstadmin@trail.local", "FirstPass123!", isAdmin: true, emailConfirmed: true, ct);
+            await harness.Gateway.CreateUserAsync("secondadmin@trail.local", "SecondPass123!", isAdmin: true, emailConfirmed: true, ct);
+
+            for (var i = 0; i < 5; i++)
+            {
+                await harness.Gateway.SignInWithPasswordAsync("secondadmin@trail.local", "WrongPass123!", isPersistent: false, ct);
+            }
+
+            var lockCheck = await harness.Gateway.SignInWithPasswordAsync("secondadmin@trail.local", "WrongPass123!", isPersistent: false, ct);
+            Assert.Equal(PasswordSignInResult.LockedOut, lockCheck);
+
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+            var exitCode = await ResetAdminPasswordCommand.RunAsync(
+                ["--reset-admin-password", "secondadmin@trail.local", "SecondNewSecret123!"],
+                harness.Gateway,
+                stdout,
+                stderr,
+                ct);
+
+            Assert.Equal(0, exitCode);
+            Assert.Contains("successfully reset", stdout.ToString(), StringComparison.Ordinal);
+
+            var signInResult = await harness.Gateway.SignInWithPasswordAsync("secondadmin@trail.local", "SecondNewSecret123!", isPersistent: false, ct);
+            Assert.Equal(PasswordSignInResult.Success, signInResult);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TestDatabaseProviders.EnabledProviders), MemberType = typeof(TestDatabaseProviders))]
+    public async Task ResetAdminPasswordCommand_WithNonAdminEmail_ReturnsExitCode1(DatabaseProvider provider)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var harness = await CreateHarnessAsync(provider, cancellationToken: ct);
+        await using (harness.Cleanup)
+        {
+            await harness.Gateway.CreateUserAsync("regular@trail.local", "RegularPass123!", isAdmin: false, emailConfirmed: true, ct);
+
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+            var exitCode = await ResetAdminPasswordCommand.RunAsync(
+                ["--reset-admin-password", "regular@trail.local", "NewPassword123!"],
+                harness.Gateway,
+                stdout,
+                stderr,
+                ct);
+
+            Assert.Equal(1, exitCode);
+            Assert.Contains("Error", stderr.ToString(), StringComparison.Ordinal);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TestDatabaseProviders.EnabledProviders), MemberType = typeof(TestDatabaseProviders))]
+    public async Task ResetAdminPasswordCommand_WithNonexistentEmail_ReturnsExitCode1(DatabaseProvider provider)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var harness = await CreateHarnessAsync(provider, cancellationToken: ct);
+        await using (harness.Cleanup)
+        {
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+            var exitCode = await ResetAdminPasswordCommand.RunAsync(
+                ["--reset-admin-password", "nonexistent@trail.local", "NewPassword123!"],
+                harness.Gateway,
+                stdout,
+                stderr,
+                ct);
+
+            Assert.Equal(1, exitCode);
+            Assert.Contains("Error", stderr.ToString(), StringComparison.Ordinal);
+        }
+    }
+
     [Fact]
     public async Task ResetAdminPasswordCommand_MissingPasswordArgument_ReturnsExitCode1()
     {
@@ -233,6 +315,23 @@ public sealed class IdentityAndEmailPersistenceTests
         using var stderr = new StringWriter();
         var exitCode = await ResetAdminPasswordCommand.RunAsync(
             ["--reset-admin-password"],
+            new FakeAccountIdentityGateway(),
+            stdout,
+            stderr,
+            ct);
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("Error", stderr.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ResetAdminPasswordCommand_BlankPasswordArgument_ReturnsExitCode1()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+        var exitCode = await ResetAdminPasswordCommand.RunAsync(
+            ["--reset-admin-password", "admin@trail.local", "   "],
             new FakeAccountIdentityGateway(),
             stdout,
             stderr,

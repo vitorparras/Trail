@@ -17,9 +17,9 @@ public static class ResetAdminPasswordCommand
         standardOut ??= Console.Out;
         standardError ??= Console.Error;
 
-        if (args.Length < 2 || string.IsNullOrWhiteSpace(args[1]))
+        if (!TryParseArguments(args, out _, out _, out var validationError))
         {
-            await standardError.WriteLineAsync("Error: New password is required. Usage: --reset-admin-password <new-password>");
+            await standardError.WriteLineAsync(validationError);
             return 1;
         }
 
@@ -42,14 +42,15 @@ public static class ResetAdminPasswordCommand
         standardOut ??= Console.Out;
         standardError ??= Console.Error;
 
-        if (args.Length < 2 || string.IsNullOrWhiteSpace(args[1]))
+        if (!TryParseArguments(args, out var email, out var newPassword, out var validationError))
         {
-            await standardError.WriteLineAsync("Error: New password is required. Usage: --reset-admin-password <new-password>");
+            await standardError.WriteLineAsync(validationError);
             return 1;
         }
 
-        var newPassword = args[1];
-        var result = await gateway.ResetAdminPasswordAsync(newPassword, cancellationToken);
+        var result = string.IsNullOrWhiteSpace(email)
+            ? await gateway.ResetAdminPasswordAsync(newPassword, cancellationToken)
+            : await gateway.ResetAdminPasswordAsync(email, newPassword, cancellationToken);
 
         if (!result.IsOk)
         {
@@ -60,5 +61,44 @@ public static class ResetAdminPasswordCommand
 
         await standardOut.WriteLineAsync("Admin password has been successfully reset.");
         return 0;
+    }
+
+    private static bool TryParseArguments(
+        string[] args,
+        out string? email,
+        out string newPassword,
+        out string errorMessage)
+    {
+        email = null;
+        newPassword = string.Empty;
+        errorMessage = string.Empty;
+
+        if (args.Length < 2)
+        {
+            errorMessage = "Error: New password is required. Usage: --reset-admin-password <new-password> or --reset-admin-password <email> <new-password>";
+            return false;
+        }
+
+        if (args.Length == 2)
+        {
+            if (string.IsNullOrWhiteSpace(args[1]))
+            {
+                errorMessage = "Error: New password is required. Usage: --reset-admin-password <new-password> or --reset-admin-password <email> <new-password>";
+                return false;
+            }
+
+            newPassword = args[1];
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(args[1]) || string.IsNullOrWhiteSpace(args[2]))
+        {
+            errorMessage = "Error: New password is required. Usage: --reset-admin-password <new-password> or --reset-admin-password <email> <new-password>";
+            return false;
+        }
+
+        email = args[1];
+        newPassword = args[2];
+        return true;
     }
 }

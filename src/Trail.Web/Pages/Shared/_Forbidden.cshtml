@@ -1,0 +1,11 @@
+@using Trail.Web.Results
+@model ForbiddenViewModel
+@{
+    var title = SharedLocalizer["ForbiddenTitle"];
+    var message = Model?.Message ?? SharedLocalizer["ForbiddenDescription"];
+}
+<div class="flex flex-col items-start gap-4">
+    <h1 class="text-2xl font-bold">@title</h1>
+    <p class="text-base-content/80">@message</p>
+    <a href="/" class="btn btn-primary">@SharedLocalizer["BackToHome"]</a>
+</div>

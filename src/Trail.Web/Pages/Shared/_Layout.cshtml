@@ -54,7 +54,12 @@
             <button tabindex="-1">@SharedLocalizer["CloseMenu"]</button>
         </form>
     </dialog>
-    <div id="toasts" class="toast toast-end toast-bottom z-50" aria-live="polite"></div>
+    <div id="toasts" class="toast toast-end toast-bottom z-50" aria-live="polite">
+        @foreach (var toast in ToastExtensions.GetToasts(ViewData, TempData))
+        {
+            <partial name="_Toast" model="toast" />
+        }
+    </div>
     <template id="toast-unexpected-error">
         <partial name="_Toast" model="@(new Toast(MessageSeverity.Error, SharedLocalizer["UnexpectedError"]))" />
     </template>

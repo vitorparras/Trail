@@ -3,6 +3,7 @@ using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Trail.Application;
 using Trail.Web.Cli;
 using Trail.Web.Htmx;
 
@@ -37,9 +38,11 @@ builder.Services.Replace(ServiceDescriptor.Singleton(HtmlEncoder.Create(htmlEnco
 
 builder.Services.AddAntiforgery(options => options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest);
 builder.Services.AddHtmx();
+builder.Services.AddApplication();
 
 var app = builder.Build();
 
+app.UseExceptionHandler("/Error");
 app.UseRequestLocalization();
 app.MapStaticAssets();
 app.MapRazorPages().WithStaticAssets();

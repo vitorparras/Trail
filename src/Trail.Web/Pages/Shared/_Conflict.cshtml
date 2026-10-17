@@ -1,0 +1,15 @@
+@using Trail.Web.Results
+@model ConflictViewModel
+@{
+    var title = SharedLocalizer["ConflictTitle"];
+    var message = Model?.Message ?? SharedLocalizer["Concurrency.Conflict"];
+    var reloadUrl = string.IsNullOrEmpty(Model?.ReloadUrl) ? "" : Model.ReloadUrl;
+}
+<div class="flex flex-col items-start gap-4">
+    <h1 class="text-2xl font-bold">@title</h1>
+    <div class="alert alert-warning max-w-xl">
+        <icon name="alert-triangle" class="size-6 shrink-0" />
+        <span>@message</span>
+    </div>
+    <a href="@reloadUrl" class="btn btn-primary">@SharedLocalizer["Reload"]</a>
+</div>

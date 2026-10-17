@@ -1,0 +1,7 @@
+@page "/Error"
+@using Trail.Web.Results
+@model ErrorModel
+@{
+    ViewData["Title"] = SharedLocalizer["ErrorTitle"];
+}
+<partial name="_Error" model="Model.ToViewModel()" />

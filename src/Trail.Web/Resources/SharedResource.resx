@@ -45,4 +45,52 @@
   <data name="UnexpectedError" xml:space="preserve">
     <value>Não foi possível concluir a ação. Tente novamente.</value>
   </data>
+  <data name="Concurrency.Conflict" xml:space="preserve">
+    <value>Este registro foi alterado em outro dispositivo. Recarregue a página para continuar.</value>
+  </data>
+  <data name="NotFound" xml:space="preserve">
+    <value>Não encontrado</value>
+  </data>
+  <data name="NotFoundTitle" xml:space="preserve">
+    <value>Página não encontrada</value>
+  </data>
+  <data name="NotFoundDescription" xml:space="preserve">
+    <value>O recurso solicitado não foi encontrado.</value>
+  </data>
+  <data name="Conflict" xml:space="preserve">
+    <value>Conflito de alterações</value>
+  </data>
+  <data name="ConflictTitle" xml:space="preserve">
+    <value>Conflito de alterações</value>
+  </data>
+  <data name="ConflictDescription" xml:space="preserve">
+    <value>Este registro foi alterado em outro dispositivo.</value>
+  </data>
+  <data name="Forbidden" xml:space="preserve">
+    <value>Acesso negado</value>
+  </data>
+  <data name="ForbiddenTitle" xml:space="preserve">
+    <value>Acesso negado</value>
+  </data>
+  <data name="ForbiddenDescription" xml:space="preserve">
+    <value>Você não tem permissão para acessar este recurso.</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Erro inesperado</value>
+  </data>
+  <data name="ErrorTitle" xml:space="preserve">
+    <value>Erro inesperado</value>
+  </data>
+  <data name="ErrorDescription" xml:space="preserve">
+    <value>Ocorreu um erro no servidor. Nossa equipe foi notificada.</value>
+  </data>
+  <data name="TrackingCode" xml:space="preserve">
+    <value>Código de rastreio: {0}</value>
+  </data>
+  <data name="Reload" xml:space="preserve">
+    <value>Recarregar</value>
+  </data>
+  <data name="BackToHome" xml:space="preserve">
+    <value>Voltar ao início</value>
+  </data>
 </root>

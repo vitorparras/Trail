@@ -1,0 +1,18 @@
+@using Trail.Web.Results
+@model ErrorViewModel
+@{
+    var title = SharedLocalizer["ErrorTitle"];
+    var message = Model?.Message ?? SharedLocalizer["UnexpectedError"];
+    var traceId = Model?.TraceId;
+}
+<div class="flex flex-col items-start gap-4">
+    <h1 class="text-2xl font-bold">@title</h1>
+    <p class="text-base-content/80">@message</p>
+    @if (!string.IsNullOrWhiteSpace(traceId))
+    {
+        <p class="text-sm font-mono opacity-70">
+            <span>@SharedLocalizer["TrackingCode", traceId]</span>
+        </p>
+    }
+    <a href="/" class="btn btn-primary">@SharedLocalizer["BackToHome"]</a>
+</div>

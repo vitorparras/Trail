@@ -1,0 +1,10 @@
+@page
+@model IndexModel
+@inject IStringLocalizer<IndexModel> Localizer
+@{
+    ViewData["Title"] = Localizer["Title"].Value;
+}
+<div class="mx-auto flex max-w-3xl flex-col gap-4">
+    <h1 class="text-2xl font-bold sm:text-3xl">@Localizer["Heading"]</h1>
+    <p class="text-base-content/80">@Localizer["Description"]</p>
+</div>

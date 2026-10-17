@@ -1,0 +1,7 @@
+@model IEnumerable<Toast>
+<div hx-swap-oob="beforeend:#toasts">
+    @foreach (var toast in Model)
+    {
+        <partial name="_Toast" model="toast" />
+    }
+</div>

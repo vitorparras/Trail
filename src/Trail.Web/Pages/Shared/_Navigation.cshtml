@@ -1,0 +1,16 @@
+@{
+    var currentPage = ViewContext.RouteData.Values["page"] as string;
+    var isHome = currentPage == "/Index";
+}
+<nav aria-label="@SharedLocalizer["MainNavigation"]">
+    <ul class="menu w-full gap-1 p-0 lg:p-4">
+        <li>
+            <a asp-page="/Index"
+               class="@(isHome ? "menu-active" : null) focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-base-content"
+               aria-current="@(isHome ? "page" : null)">
+                <icon name="house" class="size-5" />
+                @SharedLocalizer["Home"]
+            </a>
+        </li>
+    </ul>
+</nav>

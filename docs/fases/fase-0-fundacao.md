@@ -182,6 +182,21 @@ usando o `IAppDbContext`.
 
 **Pronto quando:** as três verificações rodam na branch da fase.
 
+### Reestruturação do CI (depois da integração da onda 1)
+
+Itens que as revisões independentes apontaram e que dependem de várias tarefas já
+integradas:
+
+- Um job agregador como único check exigido pela proteção da `main`, para a matriz
+  SQLite/PostgreSQL da T4 não deixar o PR esperando um check que não existe mais.
+- Cobertura medida no CI, com limite mínimo de 90% no `Domain` e na `Application`
+  (critério de pronto da T3, hoje verificado só localmente).
+- Lock files do NuGet com restore travado e cache dos pacotes.
+- Cache do executável do Tailwind, pela versão em `eng/frontend.props`.
+- Cancelamento de runs só em PRs, `workflow_dispatch` e variáveis que desligam a
+  telemetria das ferramentas.
+- Regra de bloqueio de merge com alerta grave do CodeQL, depois da primeira análise.
+
 ## Entrega da fase
 
 Ao fim da T10, abro o PR da fase e apresento:

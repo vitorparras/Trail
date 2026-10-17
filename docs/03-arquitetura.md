@@ -546,7 +546,7 @@ O backup por arquivo da aplicação ([2.5](02-dominio-e-regras.md#25-backup-e-re
 | Upload malicioso (`.xlsx` e backup `.zip`) | Limite de tamanho, verificação do tamanho descompactado, validação do manifest e do formato |
 | Roubo de sessão | Cookie `HttpOnly`, `Secure` e `SameSite=Lax`. HTTPS com HSTS no modo hospedado |
 | Vazamento de dados pela telemetria | Nenhum dado pessoal em logs, spans ou métricas. O usuário aparece só pelo ID |
-| Dependências vulneráveis | Dependabot + `dotnet list package --vulnerable` no CI + CodeQL |
+| Dependências vulneráveis | Dependabot com alertas e correções automáticas, auditoria do NuGet como erro no restore do CI, lock files, Actions fixadas por SHA e CodeQL |
 | Segredos expostos | Só em variáveis de ambiente, com `.env.example` no repositório e `.env` no `.gitignore` |
 | Container comprometido | Imagem chiseled, usuário não root, só `/data` com escrita |
 

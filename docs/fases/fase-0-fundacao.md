@@ -172,9 +172,13 @@ usando o `IAppDbContext`.
 
 ### T10 — Segurança do repositório
 
-- CodeQL (C# e JavaScript).
+- CodeQL (C#, JavaScript e workflows), excluindo o código de terceiros.
 - Dependabot para NuGet, GitHub Actions e imagens Docker.
-- Verificação de pacotes vulneráveis no CI.
+- Verificação de pacotes vulneráveis no restore do CI.
+- Actions fixadas por SHA, com a versão anotada (decisão do autor).
+- Na reestruturação do CI: lock files do NuGet com restore travado (decisão do autor).
+- No repositório: alertas e correções automáticas do Dependabot, relato privado de
+  vulnerabilidades e bloqueio de merge com alerta grave do CodeQL (decisões do autor).
 
 **Pronto quando:** as três verificações rodam na branch da fase.
 

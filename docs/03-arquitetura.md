@@ -346,8 +346,10 @@ Convenções:
   `Result` em status HTTP, parcial e mensagens (tabela na
   [ADR 0015](adr/0015-resultado-padrao.md)). O HTMX 4 troca o conteúdo em todas as
   respostas, exceto 204 e 304.
-- **Antifalsificação:** o token vai em `hx-headers:inherited` no `<body>`, no cabeçalho
-  `X-CSRF-TOKEN`, e o Razor Pages valida por padrão.
+- **Antifalsificação:** o token vem de `<meta name="csrf-token">` e é posto no cabeçalho
+  `X-CSRF-TOKEN` de toda requisição pelo evento `htmx:config:request`
+  (`wwwroot/js/htmx-integration.js`), sem depender da herança de atributos. O Razor Pages valida por padrão.
+- **Erros sem corpo** não apagam o conteúdo: o swap é cancelado e aparece um toast.
 - **CSP estrita:** o projeto não usa `hx-on:*`, valores `js:` nem filtros de gatilho, os
   únicos recursos do HTMX 4 que avaliam código. Assim a CSP dispensa `'unsafe-eval'`. A
   extensão `hx-csp`, com nonce por requisição, entra na Fase 1

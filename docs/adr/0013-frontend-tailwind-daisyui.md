@@ -47,8 +47,12 @@ versão 4.0.0:
 - **Parcial ou página inteira:** decidido pelo cabeçalho `HX-Request-Type: partial`. O
   `HX-Request` não serve para isso, porque também vem em links reforçados (`hx-boost`) e
   na restauração do histórico, que precisam da página inteira.
-- **Antifalsificação:** a herança de atributos é explícita no HTMX 4, então o token vai em
-  `hx-headers:inherited` no `<body>`, no cabeçalho `X-CSRF-TOKEN`.
+- **Antifalsificação:** o token vem de `<meta name="csrf-token">` e é posto no cabeçalho
+  `X-CSRF-TOKEN` de toda requisição pelo evento `htmx:config:request`
+  (`wwwroot/js/htmx-integration.js`), sem depender da herança de atributos. Um `hx-headers` no próprio elemento não
+  consegue descartá-lo.
+- **Erros sem corpo:** uma resposta >= 400 vazia não apaga o alvo. O evento
+  `htmx:before:swap` cancela a troca e mostra um toast genérico, com o texto do `.resx`.
 - **CSP:** o HTMX 4 só avalia código em `hx-on:*`, em valores `js:` e em filtros de
   gatilho. Sem esses recursos, que o projeto não usa, a CSP dispensa `'unsafe-eval'`. O CSS
   do indicador usa Constructable Stylesheets, que a CSP não restringe.
@@ -64,8 +68,9 @@ versão 4.0.0:
   - no desenvolvimento, o executável roda com `--watch` ao lado do `dotnet watch`;
   - o CSS gerado (`wwwroot/css/app.css`) fica fora do Git.
 - **Versões num só lugar:** Tailwind, daisyUI, HTMX e Chart.js ficam fixados num único
-  arquivo do repositório e são atualizados à mão, porque o Dependabot não acompanha esses
-  arquivos.
+  arquivo (`eng/frontend.props`), com o SHA-256 de cada arquivo vendorizado verificado por
+  teste, e são atualizados à mão, porque o Dependabot não os acompanha. As licenças ficam
+  em `THIRD-PARTY-NOTICES.md`.
 - **Classes sempre completas:** o Tailwind encontra as classes lendo os arquivos do
   projeto. Uma classe montada em tempo de execução (ex.: `"badge-" + color`) não é
   gerada.
@@ -79,8 +84,8 @@ versão 4.0.0:
   - os testes ponta a ponta verificam a navegação por teclado nos fluxos principais,
     além do axe.
 - **Toasts:** as mensagens do `Result` ([ADR 0015](0015-resultado-padrao.md)) chegam por
-  `hx-swap-oob` num contêiner de toasts. Um script próprio, pequeno e em arquivo externo
-  (por causa da CSP), remove cada toast depois de alguns segundos.
+  `hx-swap-oob="beforeend:#toasts"` (parcial `_Toasts`). Info e sucesso somem sozinhos;
+  erro e aviso ficam até o usuário fechar, com botão acessível.
 
 ## Consequências
 

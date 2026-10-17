@@ -115,7 +115,8 @@ zero passam nos dois bancos.
 - HTMX 4:
   - configuração `{"includeIndicatorCSS":true,"noSwap":[204,304]}`;
   - parcial decidido por `HX-Request-Type: partial`;
-  - token antifalsificação em `hx-headers:inherited`, no cabeçalho `X-CSRF-TOKEN`;
+  - token antifalsificação da `<meta name="csrf-token">`, posto no cabeçalho
+    `X-CSRF-TOKEN` pelo evento `htmx:config:request`;
   - nenhum recurso que avalia código (`hx-on:*`, valores `js:`, filtros de gatilho).
 - Frontend:
   - build do Tailwind + daisyUI pelo target do MSBuild, com download verificado por

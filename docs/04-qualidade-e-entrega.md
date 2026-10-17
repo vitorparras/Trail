@@ -51,7 +51,8 @@ testes controlam o tempo.
   GitHub Actions fixadas por SHA (`uses: actions/checkout@<sha> # v7.0.1`), que o
   Dependabot mantém junto com o SHA.
 - **Textos da interface** ficam em arquivos `.resx` (pt-BR), acessados por chaves em
-  inglês. O código não contém texto em português.
+  inglês. O código não contém texto em português. As views usam só `IStringLocalizer<T>`,
+  que codifica o texto; `IViewLocalizer` e `IHtmlLocalizer` não são usados.
 - **Rigor do compilador:** `Nullable` habilitado, `TreatWarningsAsErrors` e analisadores
   do .NET no nível `latest-recommended`.
 - **Formatação:** `.editorconfig` + `dotnet format --verify-no-changes` no CI.

@@ -47,13 +47,18 @@ testes controlam o tempo.
   mensagens de log.
 - **Sem comentários.** O código se explica pelos nomes e pela estrutura. Um comentário só
   aparece quando é indispensável (ex.: o porquê de uma decisão que o código não consegue
-  mostrar), e sempre em inglês.
+  mostrar), e sempre em inglês. Exceção aprovada pelo autor: a anotação de versão das
+  GitHub Actions fixadas por SHA (`uses: actions/checkout@<sha> # v7.0.1`), que o
+  Dependabot mantém junto com o SHA.
 - **Textos da interface** ficam em arquivos `.resx` (pt-BR), acessados por chaves em
-  inglês. O código não contém texto em português.
+  inglês. O código não contém texto em português. As views usam só `IStringLocalizer<T>`,
+  que codifica o texto; `IViewLocalizer` e `IHtmlLocalizer` não são usados.
 - **Rigor do compilador:** `Nullable` habilitado, `TreatWarningsAsErrors` e analisadores
   do .NET no nível `latest-recommended`.
 - **Formatação:** `.editorconfig` + `dotnet format --verify-no-changes` no CI.
-- **Pacotes:** versões centralizadas em `Directory.Packages.props`.
+- **Pacotes:** versões centralizadas em `Directory.Packages.props`, com arquivos de lock
+  (`packages.lock.json`) e restore travado (`--locked-mode`) no CI, decisão do autor. O
+  conteúdo de cada pacote é verificado por hash e o build é reproduzível.
 
 ## 4.3 Fluxo de trabalho no Git
 
@@ -75,15 +80,26 @@ Em todo PR:
 4. Verificação de migrações pendentes nos dois contextos.
 5. Testes de casos de uso e de integração, em matriz: `sqlite` e `postgresql`.
 6. Testes ponta a ponta (Playwright) contra a imagem Docker gerada.
-7. Verificação de pacotes vulneráveis.
-8. CodeQL (C# e JavaScript).
+7. Verificação de pacotes vulneráveis: o restore do CI trata os avisos de auditoria do
+   NuGet (diretos e transitivos) como erro. Uma exceção justificada usa
+   `NuGetAuditSuppress`, registrada no repositório.
+8. CodeQL: C#, JavaScript e os próprios workflows, com o código de terceiros excluído da
+   análise.
 9. Build da imagem Docker, sem publicar.
 
 Diariamente: o teste de orçamento de desempenho ([3.15](03-arquitetura.md#315-verificações-automáticas-da-arquitetura)).
 
-Dependabot para NuGet, GitHub Actions e imagens Docker. Tailwind, daisyUI, HTMX e
-Chart.js são atualizados à mão, com as versões num só arquivo
-([ADR 0013](adr/0013-frontend-tailwind-daisyui.md)).
+Dependabot para NuGet, GitHub Actions (fixadas por SHA) e imagens Docker (fixadas por
+digest), com alertas e correções automáticas de segurança ativos. Tailwind, daisyUI, HTMX
+e Chart.js são atualizados à mão, com as versões num só arquivo
+([ADR 0013](adr/0013-frontend-tailwind-daisyui.md)). Por isso, os avisos de segurança dos
+repositórios do HTMX e do Chart.js são acompanhados no GitHub (risco residual registrado).
+
+Proteções do repositório, decididas pelo autor:
+
+- `main` só recebe código por PR, com o CI verde, sem force push nem exclusão.
+- Um PR com alerta do CodeQL de severidade alta ou crítica não pode ser mergeado.
+- Relato privado de vulnerabilidades ativo (usado pelo `SECURITY.md`).
 
 ## 4.5 Releases
 

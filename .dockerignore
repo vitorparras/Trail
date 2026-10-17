@@ -1,0 +1,17 @@
+.git
+.github
+.claude
+.tools
+bin
+**/bin
+obj
+**/obj
+TestResults
+docs
+tests
+deploy
+*.xlsx
+.env*
+*.md
+*.db*
+src/Trail.Web/wwwroot/css/app.css

@@ -1,0 +1,71 @@
+@{
+    var productName = SharedLocalizer["ProductName"];
+    var pageTitle = ViewData["Title"] as string;
+}
+<!DOCTYPE html>
+<html lang="@CultureInfo.CurrentUICulture.Name" data-theme="trail-light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@(string.IsNullOrEmpty(pageTitle) ? productName : SharedLocalizer["PageTitle", pageTitle, productName])</title>
+    <script src="~/js/theme.js"></script>
+    <link rel="stylesheet" href="~/css/app.css" />
+    <partial name="_Htmx" />
+    <script src="~/js/dialogs.js" defer></script>
+    <script src="~/js/toasts.js" defer></script>
+</head>
+<body class="flex min-h-dvh flex-col bg-base-200 text-base-content">
+    <a href="#main-content" class="btn btn-primary sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:px-4 focus:py-2">@SharedLocalizer["SkipToContent"]</a>
+    <header class="navbar sticky top-0 z-30 gap-2 border-b border-base-300 bg-base-100 px-4">
+        <button type="button" class="btn btn-ghost btn-square lg:hidden" aria-haspopup="dialog" aria-controls="mobile-nav-dialog" data-dialog-open="mobile-nav-dialog">
+            <icon name="menu" class="size-6" />
+            <span class="sr-only">@SharedLocalizer["OpenMenu"]</span>
+        </button>
+        <a asp-page="/Index" class="rounded-field px-2 text-xl font-bold text-primary">@productName</a>
+        <div class="ms-auto">
+            <button type="button" class="btn btn-ghost btn-square" aria-pressed="false" data-theme-toggle>
+                <icon name="sun-moon" class="size-5" />
+                <span class="sr-only">@SharedLocalizer["DarkTheme"]</span>
+            </button>
+        </div>
+    </header>
+    <div class="flex-1 lg:flex">
+        <div class="hidden w-64 shrink-0 border-e border-base-300 bg-base-100 lg:block">
+            <partial name="_Navigation" />
+        </div>
+        <main id="main-content" tabindex="-1" class="min-w-0 flex-1 p-4 outline-none sm:p-6 lg:p-8">
+            @RenderBody()
+        </main>
+    </div>
+    <footer class="border-t border-base-300 bg-base-100 px-4 py-3 text-center text-sm text-base-content/80">
+        <a href="https://github.com/vitorparras/trail" target="_blank" rel="noopener noreferrer" class="link link-hover" data-footer-source>@SharedLocalizer["SourceCode"]</a>
+    </footer>
+    <dialog id="mobile-nav-dialog" class="modal modal-start" aria-labelledby="mobile-nav-dialog-title" data-close-when="(min-width: 64rem)">
+        <div class="modal-box flex w-72 max-w-[85vw] flex-col gap-4 p-4">
+            <div class="flex items-center justify-between">
+                <h2 id="mobile-nav-dialog-title" class="text-lg font-bold">@SharedLocalizer["Menu"]</h2>
+                <form method="dialog" asp-antiforgery="false">
+                    <button type="submit" class="btn btn-ghost btn-square btn-sm" data-dialog-close>
+                        <icon name="x" class="size-5" />
+                        <span class="sr-only">@SharedLocalizer["CloseMenu"]</span>
+                    </button>
+                </form>
+            </div>
+            <partial name="_Navigation" />
+        </div>
+        <form method="dialog" class="modal-backdrop" asp-antiforgery="false">
+            <button type="submit" tabindex="-1" data-dialog-close>@SharedLocalizer["CloseMenu"]</button>
+        </form>
+    </dialog>
+    <div id="toasts" class="toast toast-end toast-bottom z-50" aria-live="polite">
+        @foreach (var toast in ToastExtensions.GetToasts(ViewData, TempData))
+        {
+            <partial name="_Toast" model="toast" />
+        }
+    </div>
+    <template id="toast-unexpected-error">
+        <partial name="_Toast" model="@(new Toast(MessageSeverity.Error, SharedLocalizer["UnexpectedError"]))" />
+    </template>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,11 +1,18 @@
 * text=auto
 
 *.sh text eol=lf
-Dockerfile text eol=lf
+Dockerfile* text eol=lf
+Caddyfile text eol=lf
+.env.example text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
+packages.lock.json text eol=lf
 *.cmd text eol=crlf
 *.bat text eol=crlf
+
+src/Trail.Web/Styles/daisyui*.mjs -text
+src/Trail.Web/Styles/daisyui.LICENSE -text
+src/Trail.Web/wwwroot/lib/** -text
 
 *.png binary
 *.ico binary

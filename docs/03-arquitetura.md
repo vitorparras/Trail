@@ -298,7 +298,7 @@ O que é estável não ganha abstração:
 | Camada | Tecnologia | Situação |
 |---|---|---|
 | Runtime | .NET 10 (LTS, suporte até nov/2028) | Aceita ([0002](adr/0002-stack-aspnetcore-razor-htmx.md)) |
-| Web | ASP.NET Core Razor Pages + HTMX | Aceita ([0002](adr/0002-stack-aspnetcore-razor-htmx.md)) |
+| Web | ASP.NET Core Razor Pages + HTMX 4 | Aceita ([0002](adr/0002-stack-aspnetcore-razor-htmx.md)) |
 | Interface | Tailwind CSS 4 + daisyUI 5 (build pelo executável standalone, sem Node) e Chart.js, servidos pelo app | Aceita ([0013](adr/0013-frontend-tailwind-daisyui.md)) |
 | Ícones | Lucide, em sprite SVG | Aceita ([0013](adr/0013-frontend-tailwind-daisyui.md)) |
 | Textos da interface | Arquivos `.resx` (pt-BR) acessados por `IStringLocalizer` | Aceita ([0007](adr/0007-idiomas.md)) |
@@ -337,17 +337,23 @@ sequenceDiagram
 
 Convenções:
 
-- **Mesma rota, duas respostas:** se a requisição tem o cabeçalho `HX-Request`, a página
-  devolve só o trecho (parcial). Sem ele, devolve a página inteira. Assim os formulários
-  continuam funcionando sem JavaScript.
+- **Mesma rota, duas respostas:** se a requisição tem o cabeçalho
+  `HX-Request-Type: partial`, a página devolve só o trecho (parcial). Sem ele, devolve a
+  página inteira. Assim os formulários continuam funcionando sem JavaScript, e os links
+  reforçados e a restauração do histórico recebem a página inteira. Respostas que forem
+  para cache levam `Vary: HX-Request-Type`.
 - **Ponto único de saída:** toda página responde pelo mesmo método, que converte o
   `Result` em status HTTP, parcial e mensagens (tabela na
-  [ADR 0015](adr/0015-resultado-padrao.md)). Por padrão, o HTMX não troca o conteúdo em
-  respostas 4xx, e o `responseHandling` passa a trocar em 422 e 409.
-- **Antifalsificação:** o token vai em `hx-headers` no `<body>`, e o Razor Pages valida
-  por padrão.
-- **CSP estrita:** `htmx.config.allowEval = false` e
-  `htmx.config.includeIndicatorStyles = false`.
+  [ADR 0015](adr/0015-resultado-padrao.md)). O HTMX 4 troca o conteúdo em todas as
+  respostas, exceto 204 e 304.
+- **Antifalsificação:** o token vem de `<meta name="csrf-token">` e é posto no cabeçalho
+  `X-CSRF-TOKEN` de toda requisição pelo evento `htmx:config:request`
+  (`wwwroot/js/htmx-integration.js`), sem depender da herança de atributos. O Razor Pages valida por padrão.
+- **Erros sem corpo** não apagam o conteúdo: o swap é cancelado e aparece um toast.
+- **CSP estrita:** o projeto não usa `hx-on:*`, valores `js:` nem filtros de gatilho, os
+  únicos recursos do HTMX 4 que avaliam código. Assim a CSP dispensa `'unsafe-eval'`. A
+  extensão `hx-csp`, com nonce por requisição, entra na Fase 1
+  ([ADR 0013](adr/0013-frontend-tailwind-daisyui.md)).
 - **Componentes só em CSS (daisyUI):** nada precisa ser reinicializado depois das trocas.
   Modais e o menu lateral do celular usam o `<dialog>` nativo
   ([ADR 0013](adr/0013-frontend-tailwind-daisyui.md)).
@@ -542,7 +548,7 @@ O backup por arquivo da aplicação ([2.5](02-dominio-e-regras.md#25-backup-e-re
 | Upload malicioso (`.xlsx` e backup `.zip`) | Limite de tamanho, verificação do tamanho descompactado, validação do manifest e do formato |
 | Roubo de sessão | Cookie `HttpOnly`, `Secure` e `SameSite=Lax`. HTTPS com HSTS no modo hospedado |
 | Vazamento de dados pela telemetria | Nenhum dado pessoal em logs, spans ou métricas. O usuário aparece só pelo ID |
-| Dependências vulneráveis | Dependabot + `dotnet list package --vulnerable` no CI + CodeQL |
+| Dependências vulneráveis | Dependabot com alertas e correções automáticas, auditoria do NuGet como erro no restore do CI, lock files, Actions fixadas por SHA e CodeQL |
 | Segredos expostos | Só em variáveis de ambiente, com `.env.example` no repositório e `.env` no `.gitignore` |
 | Container comprometido | Imagem chiseled, usuário não root, só `/data` com escrita |
 

@@ -61,7 +61,11 @@ testes, e estende o CI com as suas verificações. A fase inteira vira um único
 - Projetos `Domain`, `Application`, `Infrastructure` e `Web`, com as referências da
   [seção 3.5](../03-arquitetura.md#35-camadas-módulos-e-padrões-internos).
 - Projetos de teste `Domain.Tests`, `Application.Tests`, `Web.Tests`,
-  `Architecture.Tests` e `E2E.Tests`.
+  `Architecture.Tests` e `E2E.Tests`. Cada um nasce na tarefa que traz o seu primeiro
+  teste: um projeto sem testes faz o `dotnet test` falhar e não verifica nada.
+- `nuget.config` com o nuget.org como única origem e mapeamento de pacotes. O build não
+  depende de feeds configurados na máquina e fica protegido contra confusão de pacotes
+  entre origens.
 - As pastas dos módulos nascem com o primeiro arquivo de cada um, porque o Git não guarda
   pastas vazias.
 - CI inicial: formatação, build e testes.
@@ -75,7 +79,7 @@ o CI fica verde na branch da fase.
 - `Domain/Common`: `Result`, `Result<T>`, `Message`, `MessageSeverity`, `ResultStatus`,
   `AggregateRoot`, `IDomainEvent` e o padrão de ID tipado.
 - `Application/Abstractions`: `IAppDbContext`, `ICurrentUser` e
-  `IDomainEventHandler<TEvent>`.
+  `IDomainEventConsumer<TEvent>`.
 - Registro dos handlers e os nomes do `Meter` e do `ActivitySource`.
 - Testes de unidade: mensagens acumuladas (padrão Notification), `Result` com e sem
   dados, criação de IDs.
@@ -108,10 +112,12 @@ zero passam nos dois bancos.
   [ADR 0015](../adr/0015-resultado-padrao.md). As mensagens são traduzidas pelo `.resx`, e
   a página de erro mostra o código de rastreio.
 - Localização pt-BR com `.resx`.
-- HTMX:
-  - `allowEval = false` e `includeIndicatorStyles = false`;
-  - `responseHandling` trocando o conteúdo em 422 e 409;
-  - token antifalsificação em `hx-headers`.
+- HTMX 4:
+  - configuração `{"includeIndicatorCSS":true,"noSwap":[204,304]}`;
+  - parcial decidido por `HX-Request-Type: partial`;
+  - token antifalsificação da `<meta name="csrf-token">`, posto no cabeçalho
+    `X-CSRF-TOKEN` pelo evento `htmx:config:request`;
+  - nenhum recurso que avalia código (`hx-on:*`, valores `js:`, filtros de gatilho).
 - Frontend:
   - build do Tailwind + daisyUI pelo target do MSBuild, com download verificado por
     SHA-256, e um script de `--watch` para o desenvolvimento;
@@ -167,11 +173,30 @@ usando o `IAppDbContext`.
 
 ### T10 — Segurança do repositório
 
-- CodeQL (C# e JavaScript).
+- CodeQL (C#, JavaScript e workflows), excluindo o código de terceiros.
 - Dependabot para NuGet, GitHub Actions e imagens Docker.
-- Verificação de pacotes vulneráveis no CI.
+- Verificação de pacotes vulneráveis no restore do CI.
+- Actions fixadas por SHA, com a versão anotada (decisão do autor).
+- Na reestruturação do CI: lock files do NuGet com restore travado (decisão do autor).
+- No repositório: alertas e correções automáticas do Dependabot, relato privado de
+  vulnerabilidades e bloqueio de merge com alerta grave do CodeQL (decisões do autor).
 
 **Pronto quando:** as três verificações rodam na branch da fase.
+
+### Reestruturação do CI (depois da integração da onda 1)
+
+Itens que as revisões independentes apontaram e que dependem de várias tarefas já
+integradas:
+
+- Um job agregador como único check exigido pela proteção da `main`, para a matriz
+  SQLite/PostgreSQL da T4 não deixar o PR esperando um check que não existe mais.
+- Cobertura medida no CI, com limite mínimo de 90% no `Domain` e na `Application`
+  (critério de pronto da T3, hoje verificado só localmente).
+- Lock files do NuGet com restore travado e cache dos pacotes.
+- Cache do executável do Tailwind, pela versão em `eng/frontend.props`.
+- Cancelamento de runs só em PRs, `workflow_dispatch` e variáveis que desligam a
+  telemetria das ferramentas.
+- Regra de bloqueio de merge com alerta grave do CodeQL, depois da primeira análise.
 
 ## Entrega da fase
 

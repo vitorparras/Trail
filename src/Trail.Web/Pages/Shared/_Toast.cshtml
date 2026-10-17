@@ -1,0 +1,17 @@
+@model Toast
+@{
+    var (severity, alertClass) = Model.Severity switch
+    {
+        MessageSeverity.Error => ("error", "alert-error"),
+        MessageSeverity.Warning => ("warning", "alert-warning"),
+        MessageSeverity.Success => ("success", "alert-success"),
+        _ => ("info", "alert-info"),
+    };
+}
+<div class="alert @alertClass w-80 max-w-full items-start shadow-lg" data-toast="@severity" data-toast-persistent="@(Model.IsPersistent ? "true" : "false")">
+    <span class="min-w-0 flex-1 whitespace-normal">@Model.Text</span>
+    <button type="button" class="btn btn-ghost btn-square btn-xs" data-toast-dismiss>
+        <icon name="x" class="size-4" />
+        <span class="sr-only">@SharedLocalizer["DismissNotification"]</span>
+    </button>
+</div>

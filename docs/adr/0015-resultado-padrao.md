@@ -49,8 +49,9 @@ retorno, em que só os dados variam de um caso de uso para outro.
 
    - Dado de outro usuário responde `NotFound`, nunca `Forbidden`, para não revelar que
      o dado existe.
-   - Por padrão, o HTMX não troca o conteúdo em respostas 4xx. A configuração
-     `responseHandling` passa a trocar em 422 e 409.
+   - O HTMX 4 troca o conteúdo em todas as respostas, exceto 204 e 304
+     ([ADR 0013](0013-frontend-tailwind-daisyui.md)), então cada parcial de erro aparece no
+     lugar certo sem configuração extra.
 
 ## Consequências
 

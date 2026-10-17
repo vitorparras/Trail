@@ -1,0 +1,80 @@
+<Project>
+  <PropertyGroup>
+    <TailwindVersion>4.3.3</TailwindVersion>
+    <DaisyUIVersion>5.7.50</DaisyUIVersion>
+    <HtmxVersion>4.0.0</HtmxVersion>
+    <ChartJsVersion>4.5.1</ChartJsVersion>
+    <LucideVersion>1.58.0</LucideVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <TailwindExecutable Include="win-x64" Asset="tailwindcss-windows-x64.exe" Sha256="e0e260ce048014e9268f6237ff18f8ccf02cef521cbd0ae04e82c2cdf7aa3955" />
+    <TailwindExecutable Include="linux-x64" Asset="tailwindcss-linux-x64" Sha256="dc61b3ac6b8c9ca874c0cc4c57b2409791a64c5540404ca5f5367360babc313a" />
+    <TailwindExecutable Include="linux-arm64" Asset="tailwindcss-linux-arm64" Sha256="55fd0b241214eff3de1e8ee4f22796662f2d2e7a49bcfca7477cfd0bac398195" />
+    <TailwindExecutable Include="linux-musl-x64" Asset="tailwindcss-linux-x64-musl" Sha256="a04d34ceacc8f52cbe8920ad846cdeb61d3d0021dba32db0d1f77c9d9fad7a6c" />
+    <TailwindExecutable Include="linux-musl-arm64" Asset="tailwindcss-linux-arm64-musl" Sha256="71ea4be79c9de9827545682df3e040053fb535d37c71ed2cfdedf9385a0868e0" />
+    <TailwindExecutable Include="osx-x64" Asset="tailwindcss-macos-x64" Sha256="7922e0953f2110c05976e3bf58f14e643d90427575e766b7d433f5f80cbee7e1" />
+    <TailwindExecutable Include="osx-arm64" Asset="tailwindcss-macos-arm64" Sha256="cdf646702987a743464dff4d9c60fd4480d1c1e73dd819a9a67f1078815dce9d" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrontendArchive Include="htmx-$(HtmxVersion)-dist.zip"
+                     Url="https://github.com/bigskysoftware/htmx/releases/download/v$(HtmxVersion)/htmx-$(HtmxVersion)-dist.zip"
+                     Sha256="858d5fb806ed3003704bc9c9a7fc7aad15213dcfc78c5b78b005fff4211ce57c" />
+    <FrontendArchive Include="chart.js-$(ChartJsVersion).tgz"
+                     Url="https://github.com/chartjs/Chart.js/releases/download/v$(ChartJsVersion)/chart.js-$(ChartJsVersion).tgz"
+                     Sha256="d74ffdc9e4760d8960de3fd92bfa03397f01f85497c887d580bcf72641766aad" />
+    <FrontendArchive Include="lucide-icons-$(LucideVersion).zip"
+                     Url="https://github.com/lucide-icons/lucide/releases/download/$(LucideVersion)/lucide-icons-$(LucideVersion).zip"
+                     Sha256="b8ef0e89a3a26d96ef43fabb3c55ace846236cd09439b15c2dac6ea450524e55" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <VendoredFile Include="daisyui.mjs"
+                  File="src/Trail.Web/Styles/daisyui.mjs"
+                  Url="https://github.com/saadeghi/daisyui/releases/download/v$(DaisyUIVersion)/daisyui.mjs"
+                  Sha256="d69de07c7463bb1f41548e2688f88ee105cdadf9779fce5b3c47b3bfaa6be472" />
+    <VendoredFile Include="daisyui-theme.mjs"
+                  File="src/Trail.Web/Styles/daisyui-theme.mjs"
+                  Url="https://github.com/saadeghi/daisyui/releases/download/v$(DaisyUIVersion)/daisyui-theme.mjs"
+                  Sha256="e48a35d8326d650181ca600560e8520cf6b44cf9242bbd9d45825607e641f251" />
+    <VendoredFile Include="daisyui-license"
+                  File="src/Trail.Web/Styles/daisyui.LICENSE"
+                  Url="https://raw.githubusercontent.com/saadeghi/daisyui/v$(DaisyUIVersion)/LICENSE"
+                  Sha256="8709e3ac65c84637c422dc8082b893d9997fce093751c77b2f1983bf29dbf9ea" />
+    <VendoredFile Include="htmx.min.js"
+                  File="src/Trail.Web/wwwroot/lib/htmx/htmx.min.js"
+                  Archive="htmx-$(HtmxVersion)-dist.zip"
+                  Entry="dist/htmx.min.js"
+                  Sha256="e484d9171a9db30a39c8f16e3d709d4137f3211c659f8e6125816635033d593f" />
+    <VendoredFile Include="htmx-license"
+                  File="src/Trail.Web/wwwroot/lib/htmx/LICENSE"
+                  Url="https://raw.githubusercontent.com/bigskysoftware/htmx/v$(HtmxVersion)/LICENSE"
+                  Sha256="d3d2456f76414f2456104660ebd65aff1c04cd7966b942bdabd63f3cdb316a38" />
+    <VendoredFile Include="chart.umd.min.js"
+                  File="src/Trail.Web/wwwroot/lib/chart.js/chart.umd.min.js"
+                  Archive="chart.js-$(ChartJsVersion).tgz"
+                  Entry="package/dist/chart.umd.min.js"
+                  Sha256="48444a82d4edcb5bec0f1965faacdde18d9c17db3063d042abada2f705c9f54a" />
+    <VendoredFile Include="chartjs-license"
+                  File="src/Trail.Web/wwwroot/lib/chart.js/LICENSE.md"
+                  Archive="chart.js-$(ChartJsVersion).tgz"
+                  Entry="package/LICENSE.md"
+                  Sha256="41a84aa2caba645f966a18d9c2056b73e6d3a81d80bc0046bc0011a2634d4cce" />
+    <VendoredFile Include="lucide-sprite"
+                  File="src/Trail.Web/wwwroot/lib/lucide/sprite.svg"
+                  SpriteOf="lucide-icons-$(LucideVersion).zip"
+                  Sha256="d8b5703a90bca6e5b0173545651a344a65773e04f9b3ad43bbf18be6a61a883b" />
+    <VendoredFile Include="lucide-license"
+                  File="src/Trail.Web/wwwroot/lib/lucide/LICENSE"
+                  Url="https://raw.githubusercontent.com/lucide-icons/lucide/$(LucideVersion)/LICENSE"
+                  Sha256="b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <LucideIcon Include="house" />
+    <LucideIcon Include="menu" />
+    <LucideIcon Include="sun-moon" />
+    <LucideIcon Include="x" />
+  </ItemGroup>
+</Project>

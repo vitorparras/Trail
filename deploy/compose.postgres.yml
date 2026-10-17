@@ -1,0 +1,55 @@
+services:
+  caddy:
+    image: caddy:2.10.0-alpine@sha256:ae4458638da8e1a91aafffb231c5f8778e964bca650c8a8cb23a7e8ac557aa3c
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    environment:
+      TRAIL_DOMAIN: ${TRAIL_DOMAIN:-localhost}
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+
+  app:
+    image: ghcr.io/vitorparras/trail:latest
+    build:
+      context: ..
+    expose:
+      - "8080"
+    environment:
+      Database__Provider: PostgreSql
+      ConnectionStrings__Default: Host=postgres;Port=5432;Database=${POSTGRES_DB:-trail};Username=${POSTGRES_USER:-trail};Password=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+    volumes:
+      - trail-data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17.5-alpine@sha256:6567bca8d7bc8c82c5922425a0baee57be8402df92bae5eacad5f01ae9544daa
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-trail}
+      POSTGRES_USER: ${POSTGRES_USER:-trail}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - trail-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-trail} -d ${POSTGRES_DB:-trail}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  trail-data:
+  trail-postgres:
+  caddy-data:
+  caddy-config:

@@ -1,0 +1,94 @@
+@import "tailwindcss" source(none);
+
+@source "../Pages/**/*.cshtml";
+
+@custom-variant dark {
+  &:where([data-theme="trail-dark"], [data-theme="trail-dark"] *) {
+    @slot;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme]), :root:not([data-theme]) *) {
+      @slot;
+    }
+  }
+}
+
+@plugin "./daisyui.mjs" {
+  themes: false;
+  logs: false;
+}
+
+@plugin "./daisyui-theme.mjs" {
+  name: "trail-light";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+  --color-base-100: oklch(99% 0.003 210);
+  --color-base-200: oklch(96.5% 0.006 210);
+  --color-base-300: oklch(91.5% 0.01 210);
+  --color-base-content: oklch(26% 0.025 235);
+  --color-primary: oklch(47% 0.08 195);
+  --color-primary-content: oklch(98.5% 0.008 195);
+  --color-secondary: oklch(50% 0.13 45);
+  --color-secondary-content: oklch(98.5% 0.008 45);
+  --color-accent: oklch(48% 0.16 290);
+  --color-accent-content: oklch(98.5% 0.006 290);
+  --color-neutral: oklch(30% 0.025 235);
+  --color-neutral-content: oklch(96% 0.006 235);
+  --color-info: oklch(49% 0.12 245);
+  --color-info-content: oklch(98.5% 0.006 245);
+  --color-success: oklch(48% 0.11 155);
+  --color-success-content: oklch(98.5% 0.008 155);
+  --color-warning: oklch(80% 0.15 80);
+  --color-warning-content: oklch(28% 0.06 60);
+  --color-error: oklch(51% 0.19 25);
+  --color-error-content: oklch(98.5% 0.006 25);
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+@plugin "./daisyui-theme.mjs" {
+  name: "trail-dark";
+  default: false;
+  prefersdark: true;
+  color-scheme: dark;
+  --color-base-100: oklch(23% 0.016 235);
+  --color-base-200: oklch(20% 0.015 235);
+  --color-base-300: oklch(17% 0.013 235);
+  --color-base-content: oklch(93% 0.01 220);
+  --color-primary: oklch(76% 0.11 190);
+  --color-primary-content: oklch(22% 0.04 200);
+  --color-secondary: oklch(78% 0.12 60);
+  --color-secondary-content: oklch(24% 0.05 50);
+  --color-accent: oklch(76% 0.11 290);
+  --color-accent-content: oklch(23% 0.05 290);
+  --color-neutral: oklch(34% 0.02 235);
+  --color-neutral-content: oklch(93% 0.01 235);
+  --color-info: oklch(75% 0.11 240);
+  --color-info-content: oklch(22% 0.05 245);
+  --color-success: oklch(77% 0.13 155);
+  --color-success-content: oklch(22% 0.05 155);
+  --color-warning: oklch(83% 0.14 80);
+  --color-warning-content: oklch(25% 0.06 60);
+  --color-error: oklch(72% 0.16 22);
+  --color-error-content: oklch(21% 0.06 20);
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+:root {
+  --fx-noise: none;
+}

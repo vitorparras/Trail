@@ -1,0 +1,197 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)frontend.props" />
+
+  <UsingTask TaskName="WriteFrontendTextFile" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <File ParameterType="System.String" Required="true" />
+      <Content ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Code Type="Fragment" Language="cs"><![CDATA[
+System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(File));
+System.IO.File.WriteAllText(File, Content.Replace("\r\n", "\n"), new System.Text.UTF8Encoding(false));
+]]></Code>
+    </Task>
+  </UsingTask>
+
+  <PropertyGroup>
+    <FrontendRepositoryRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..'))</FrontendRepositoryRoot>
+    <FrontendToolsDirectory>$([MSBuild]::NormalizeDirectory('$(FrontendRepositoryRoot)', '.tools'))</FrontendToolsDirectory>
+    <FrontendDownloadDirectory>$([MSBuild]::NormalizeDirectory('$(FrontendToolsDirectory)', 'downloads'))</FrontendDownloadDirectory>
+    <FrontendStagingDirectory>$([MSBuild]::NormalizeDirectory('$(FrontendDownloadDirectory)', 'staging'))</FrontendStagingDirectory>
+    <TailwindRuntimeIdentifier Condition="'$(TailwindRuntimeIdentifier)' == ''">$(NETCoreSdkPortableRuntimeIdentifier)</TailwindRuntimeIdentifier>
+    <TailwindRuntimeIdentifier Condition="'$(TailwindRuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</TailwindRuntimeIdentifier>
+    <TailwindDirectory>$([MSBuild]::NormalizeDirectory('$(FrontendToolsDirectory)', 'tailwindcss', '$(TailwindVersion)'))</TailwindDirectory>
+    <TailwindInput>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', 'Styles', 'app.css'))</TailwindInput>
+    <TailwindOutput>wwwroot/css/app.css</TailwindOutput>
+    <TailwindOutputPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(TailwindOutput)'))</TailwindOutputPath>
+    <_TailwindArguments>--input &quot;$(TailwindInput)&quot; --output &quot;$(TailwindOutputPath)&quot; --minify</_TailwindArguments>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <TailwindInputFile Include="Styles/**/*" />
+    <TailwindInputFile Include="Pages/**/*.cshtml" />
+    <TailwindInputFile Include="$(MSBuildThisFileFullPath);$(MSBuildThisFileDirectory)frontend.props" />
+  </ItemGroup>
+
+  <Target Name="_ResolveTailwindExecutable">
+    <ItemGroup>
+      <_TailwindExecutableForPlatform Include="@(TailwindExecutable)" Condition="'%(Identity)' == '$(TailwindRuntimeIdentifier)'" />
+    </ItemGroup>
+    <Error Condition="'@(_TailwindExecutableForPlatform)' == '' And '$(TailwindRuntimeIdentifier)' == 'win-arm64'"
+           Text="Tailwind CSS $(TailwindVersion) ships no standalone executable for win-arm64. Windows on Arm runs the x64 build under emulation: build with -p:TailwindRuntimeIdentifier=win-x64." />
+    <Error Condition="'@(_TailwindExecutableForPlatform)' == ''"
+           Text="Tailwind CSS $(TailwindVersion) ships no standalone executable for '$(TailwindRuntimeIdentifier)'. Supported runtime identifiers: @(TailwindExecutable, ', ')." />
+    <PropertyGroup>
+      <TailwindAsset>@(_TailwindExecutableForPlatform->'%(Asset)')</TailwindAsset>
+      <TailwindSha256>@(_TailwindExecutableForPlatform->'%(Sha256)')</TailwindSha256>
+      <TailwindExecutable>$(TailwindDirectory)$(TailwindAsset)</TailwindExecutable>
+      <TailwindDownloadUrl>https://github.com/tailwindlabs/tailwindcss/releases/download/v$(TailwindVersion)/$(TailwindAsset)</TailwindDownloadUrl>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="TailwindInstall" DependsOnTargets="_ResolveTailwindExecutable;_DownloadTailwindExecutable" />
+
+  <Target Name="_DownloadTailwindExecutable" Condition="!Exists('$(TailwindExecutable)')">
+    <PropertyGroup>
+      <_TailwindDownloadName>$(TailwindAsset).download</_TailwindDownloadName>
+      <_TailwindDownloadPath>$(TailwindDirectory)$(_TailwindDownloadName)</_TailwindDownloadPath>
+    </PropertyGroup>
+    <DownloadFile SourceUrl="$(TailwindDownloadUrl)"
+                  DestinationFolder="$(TailwindDirectory)"
+                  DestinationFileName="$(_TailwindDownloadName)"
+                  SkipUnchangedFiles="false"
+                  Retries="3" />
+    <GetFileHash Files="$(_TailwindDownloadPath)" Algorithm="SHA256">
+      <Output TaskParameter="Hash" PropertyName="_TailwindDownloadSha256" />
+    </GetFileHash>
+    <Delete Files="$(_TailwindDownloadPath)" Condition="'$(_TailwindDownloadSha256)' != '$(TailwindSha256)'" />
+    <Error Condition="'$(_TailwindDownloadSha256)' != '$(TailwindSha256)'"
+           Text="SHA-256 mismatch for $(TailwindDownloadUrl): expected $(TailwindSha256), got $(_TailwindDownloadSha256). The download was discarded." />
+    <Move SourceFiles="$(_TailwindDownloadPath)" DestinationFiles="$(TailwindExecutable)" />
+    <Exec Command="chmod +x &quot;$(TailwindExecutable)&quot;" Condition="!$([MSBuild]::IsOSPlatform('Windows'))" />
+  </Target>
+
+  <Target Name="_VerifyTailwindExecutable" DependsOnTargets="TailwindInstall">
+    <GetFileHash Files="$(TailwindExecutable)" Algorithm="SHA256">
+      <Output TaskParameter="Hash" PropertyName="_TailwindExecutableSha256" />
+    </GetFileHash>
+    <Error Condition="'$(_TailwindExecutableSha256)' != '$(TailwindSha256)'"
+           Text="SHA-256 mismatch for $(TailwindExecutable): expected $(TailwindSha256), got $(_TailwindExecutableSha256). Delete the file so the build downloads it again." />
+  </Target>
+
+  <Target Name="TailwindBuild"
+          DependsOnTargets="TailwindInstall"
+          Condition="'$(DesignTimeBuild)' != 'true'"
+          Inputs="@(TailwindInputFile);$(TailwindExecutable)"
+          Outputs="$(TailwindOutputPath)">
+    <CallTarget Targets="_VerifyTailwindExecutable" />
+    <Exec Command="&quot;$(TailwindExecutable)&quot; $(_TailwindArguments)"
+          WorkingDirectory="$(MSBuildProjectDirectory)"
+          ConsoleToMSBuild="true"
+          IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true"
+          StandardOutputImportance="low"
+          StandardErrorImportance="low">
+      <Output TaskParameter="ExitCode" PropertyName="_TailwindExitCode" />
+      <Output TaskParameter="ConsoleOutput" ItemName="_TailwindConsoleOutput" />
+    </Exec>
+    <Error Condition="'$(_TailwindExitCode)' != '0'"
+           Text="Tailwind CSS failed with exit code $(_TailwindExitCode):%0A@(_TailwindConsoleOutput, '%0A')" />
+    <Touch Files="$(TailwindOutputPath)" />
+  </Target>
+
+  <Target Name="_IncludeTailwindOutput" BeforeTargets="ResolveProjectStaticWebAssets" DependsOnTargets="TailwindBuild">
+    <ItemGroup Condition="Exists('$(TailwindOutputPath)')">
+      <_TailwindOutputContent Include="@(Content)" Condition="'%(Content.FullPath)' == '$(TailwindOutputPath)'" />
+      <Content Remove="@(_TailwindOutputContent)" />
+      <Content Include="$(TailwindOutput)" ExcludeFromSingleFile="true" CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="TailwindWatch" DependsOnTargets="_VerifyTailwindExecutable">
+    <Exec Command="&quot;$(TailwindExecutable)&quot; $(_TailwindArguments) --watch=always"
+          WorkingDirectory="$(MSBuildProjectDirectory)"
+          IgnoreStandardErrorWarningFormat="true"
+          StandardOutputImportance="high"
+          StandardErrorImportance="high" />
+  </Target>
+
+  <Target Name="TailwindClean" AfterTargets="Clean">
+    <Delete Files="$(TailwindOutputPath)" />
+  </Target>
+
+  <Target Name="UpdateFrontendLibraries" DependsOnTargets="_StageFrontendLibraries;_StageLucideSprite">
+    <ItemGroup>
+      <_StagedVendoredFile Include="@(VendoredFile->'$(FrontendStagingDirectory)%(File)')" />
+    </ItemGroup>
+    <GetFileHash Files="@(_StagedVendoredFile)" Algorithm="SHA256">
+      <Output TaskParameter="Items" ItemName="_StagedVendoredFileHash" />
+    </GetFileHash>
+    <ItemGroup>
+      <_VendoredFileMismatch Include="@(_StagedVendoredFileHash)" Condition="'%(FileHash)' != '%(Sha256)'" />
+    </ItemGroup>
+    <Error Condition="'@(_VendoredFileMismatch)' != ''"
+           Text="SHA-256 mismatch for vendored files. Review the upstream changes and update eng/frontend.props:%0A@(_VendoredFileMismatch->'%(File): expected %(Sha256), got %(FileHash)', '%0A')" />
+    <Copy SourceFiles="@(VendoredFile->'$(FrontendStagingDirectory)%(File)')"
+          DestinationFiles="@(VendoredFile->'$(FrontendRepositoryRoot)%(File)')" />
+  </Target>
+
+  <Target Name="_StageFrontendLibraries" DependsOnTargets="_DownloadFrontendArchives">
+    <RemoveDir Directories="$(FrontendStagingDirectory)" />
+    <ItemGroup>
+      <_DownloadedVendoredFile Include="@(VendoredFile)" Condition="'%(VendoredFile.Url)' != ''" />
+      <_ExtractedVendoredFile Include="@(VendoredFile)" Condition="'%(VendoredFile.Entry)' != ''" />
+    </ItemGroup>
+    <DownloadFile SourceUrl="%(_DownloadedVendoredFile.Url)"
+                  DestinationFolder="$(FrontendStagingDirectory)$([System.IO.Path]::GetDirectoryName('%(_DownloadedVendoredFile.File)'))"
+                  DestinationFileName="$([System.IO.Path]::GetFileName('%(_DownloadedVendoredFile.File)'))"
+                  SkipUnchangedFiles="false"
+                  Retries="3" />
+    <Copy SourceFiles="@(_ExtractedVendoredFile->'$(FrontendDownloadDirectory)%(Archive).content/%(Entry)')"
+          DestinationFiles="@(_ExtractedVendoredFile->'$(FrontendStagingDirectory)%(File)')" />
+  </Target>
+
+  <Target Name="_DownloadFrontendArchives">
+    <DownloadFile SourceUrl="%(FrontendArchive.Url)"
+                  DestinationFolder="$(FrontendDownloadDirectory)"
+                  DestinationFileName="%(FrontendArchive.Identity)"
+                  Retries="3" />
+    <GetFileHash Files="@(FrontendArchive->'$(FrontendDownloadDirectory)%(Identity)')" Algorithm="SHA256">
+      <Output TaskParameter="Items" ItemName="_FrontendArchiveHash" />
+    </GetFileHash>
+    <ItemGroup>
+      <_FrontendArchiveMismatch Include="@(_FrontendArchiveHash)" Condition="'%(FileHash)' != '%(Sha256)'" />
+    </ItemGroup>
+    <Delete Files="@(_FrontendArchiveMismatch)" />
+    <Error Condition="'@(_FrontendArchiveMismatch)' != ''"
+           Text="SHA-256 mismatch for downloaded archives, which were discarded:%0A@(_FrontendArchiveMismatch->'%(Url): expected %(Sha256), got %(FileHash)', '%0A')" />
+    <RemoveDir Directories="@(FrontendArchive->'$(FrontendDownloadDirectory)%(Identity).content')" />
+    <Unzip SourceFiles="$(FrontendDownloadDirectory)%(FrontendArchive.Identity)"
+           DestinationFolder="$(FrontendDownloadDirectory)%(FrontendArchive.Identity).content"
+           Condition="'%(FrontendArchive.Extension)' == '.zip'" />
+    <MakeDir Directories="$(FrontendDownloadDirectory)%(FrontendArchive.Identity).content"
+             Condition="'%(FrontendArchive.Extension)' == '.tgz'" />
+    <Exec Command="tar -xzf ../%(FrontendArchive.Identity)"
+          WorkingDirectory="$(FrontendDownloadDirectory)%(FrontendArchive.Identity).content"
+          Condition="'%(FrontendArchive.Extension)' == '.tgz'" />
+  </Target>
+
+  <Target Name="_StageLucideSprite">
+    <ItemGroup>
+      <_LucideSprite Include="@(VendoredFile)" Condition="'%(VendoredFile.SpriteOf)' != ''" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_LucideIconsDirectory>$(FrontendDownloadDirectory)@(_LucideSprite->'%(SpriteOf)').content/icons/</_LucideIconsDirectory>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(_LucideIconsDirectory)%(LucideIcon.Identity).svg')"
+           Text="Lucide $(LucideVersion) has no icon named '%(LucideIcon.Identity)'." />
+    <ItemGroup>
+      <_LucideSymbol Include="@(LucideIcon)">
+        <Markup>&lt;symbol id=&quot;%(Identity)&quot; viewBox=&quot;0 0 24 24&quot;&gt;$([System.Text.RegularExpressions.Regex]::Replace($([System.IO.File]::ReadAllText('$(_LucideIconsDirectory)%(Identity).svg')), '(?s)^.*?&gt;\s*(.*?)\s*&lt;/svg&gt;\s*$', '$1'))&lt;/symbol&gt;</Markup>
+      </_LucideSymbol>
+    </ItemGroup>
+    <WriteFrontendTextFile File="$(FrontendStagingDirectory)@(_LucideSprite->'%(File)')"
+                           Content="&lt;svg xmlns=&quot;http://www.w3.org/2000/svg&quot;&gt;%0A@(_LucideSymbol->'%(Markup)', '%0A')%0A&lt;/svg&gt;%0A" />
+  </Target>
+</Project>

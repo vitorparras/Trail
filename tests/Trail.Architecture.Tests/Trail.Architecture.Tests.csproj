@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="TngTech.ArchUnitNET.xUnitV3" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Trail.Domain\Trail.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Trail.Application\Trail.Application.csproj" />
+    <ProjectReference Include="..\..\src\Trail.Infrastructure\Trail.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Trail.Web\Trail.Web.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,120 @@
+version: 2
+
+updates:
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      aspnetcore-efcore:
+        patterns:
+          - Microsoft.AspNetCore.*
+          - Microsoft.EntityFrameworkCore*
+          - Microsoft.Extensions.*
+          - Npgsql*
+      opentelemetry:
+        patterns:
+          - OpenTelemetry*
+        update-types:
+          - minor
+          - patch
+      testing:
+        patterns:
+          - xunit*
+          - Microsoft.NET.Test.Sdk
+          - Microsoft.Testing.*
+          - Microsoft.Playwright*
+          - Deque.AxeCore.*
+          - Testcontainers*
+          - CsCheck
+          - TngTech.ArchUnitNET*
+          - coverlet*
+        update-types:
+          - minor
+          - patch
+    ignore:
+      - dependency-name: Microsoft.AspNetCore.*
+        update-types:
+          - version-update:semver-major
+      - dependency-name: Microsoft.EntityFrameworkCore*
+        update-types:
+          - version-update:semver-major
+      - dependency-name: Microsoft.Extensions.*
+        update-types:
+          - version-update:semver-major
+      - dependency-name: Npgsql*
+        update-types:
+          - version-update:semver-major
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
+    cooldown:
+      default-days: 7
+      exclude:
+        - dotnet/*
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      dotnet-images:
+        patterns:
+          - dotnet/*
+    ignore:
+      - dependency-name: dotnet/*
+        update-types:
+          - version-update:semver-major
+
+  - package-ecosystem: docker-compose
+    directory: /deploy
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      compose-images:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+    ignore:
+      - dependency-name: vitorparras/trail
+      - dependency-name: "*postgres"
+        update-types:
+          - version-update:semver-major

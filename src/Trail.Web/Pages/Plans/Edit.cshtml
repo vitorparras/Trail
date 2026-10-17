@@ -1,0 +1,141 @@
+@page "/planos/{planId:guid}/editar"
+@model Trail.Web.Pages.Plans.EditModel
+@{
+    ViewData["Title"] = SharedLocalizer["EditStudyPlan"];
+}
+
+<div class="max-w-2xl mx-auto space-y-6">
+    <div>
+        <h1 class="text-2xl font-bold tracking-tight text-base-content sm:text-3xl">
+            @SharedLocalizer["EditStudyPlan"]
+        </h1>
+    </div>
+
+    @if (Model.HasConcurrencyConflict)
+    {
+        <div role="alert" class="alert alert-warning">
+            <span>@SharedLocalizer["ConcurrencyConflictBanner"]</span>
+        </div>
+    }
+
+    <form method="post" class="space-y-4">
+        <input type="hidden" asp-for="Input.ExpectedVersion" />
+
+        <div asp-validation-summary="ModelOnly" role="alert" class="alert alert-error"></div>
+
+        <div class="form-control">
+            <label asp-for="Input.Name" class="label">
+                <span class="label-text font-medium">@SharedLocalizer["PlanName"]</span>
+            </label>
+            <input asp-for="Input.Name" class="input input-bordered w-full" required />
+            <span asp-validation-for="Input.Name" class="text-error text-sm mt-1"></span>
+        </div>
+
+        <div class="form-control">
+            <label asp-for="Input.Description" class="label">
+                <span class="label-text font-medium">@SharedLocalizer["PlanDescription"]</span>
+            </label>
+            <textarea asp-for="Input.Description" class="textarea textarea-bordered w-full" rows="3"></textarea>
+            <span asp-validation-for="Input.Description" class="text-error text-sm mt-1"></span>
+        </div>
+
+        <div class="form-control">
+            <label asp-for="Input.ScoringRule" class="label">
+                <span class="label-text font-medium">@SharedLocalizer["ScoringRule"]</span>
+            </label>
+            <select asp-for="Input.ScoringRule" class="select select-bordered w-full">
+                <option value="@Trail.Domain.Planning.ScoringRule.Cebraspe">@SharedLocalizer["ScoringRule_Cebraspe"]</option>
+                <option value="@Trail.Domain.Planning.ScoringRule.Standard">@SharedLocalizer["ScoringRule_Standard"]</option>
+                <option value="@Trail.Domain.Planning.ScoringRule.None">@SharedLocalizer["ScoringRule_None"]</option>
+            </select>
+            <span asp-validation-for="Input.ScoringRule" class="text-error text-sm mt-1"></span>
+        </div>
+
+        <div class="form-control">
+            <label asp-for="Input.PeriodKind" class="label">
+                <span class="label-text font-medium">@SharedLocalizer["DefaultPerformancePeriod"]</span>
+            </label>
+            <select asp-for="Input.PeriodKind" class="select select-bordered w-full">
+                <option value="@Trail.Domain.Planning.PerformancePeriodKind.All">@SharedLocalizer["Period_All"]</option>
+                <option value="@Trail.Domain.Planning.PerformancePeriodKind.LastDays">@SharedLocalizer["Period_LastDays"]</option>
+                <option value="@Trail.Domain.Planning.PerformancePeriodKind.DateRange">@SharedLocalizer["Period_DateRange"]</option>
+            </select>
+            <span asp-validation-for="Input.PeriodKind" class="text-error text-sm mt-1"></span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="form-control">
+                <label asp-for="Input.PeriodDays" class="label">
+                    <span class="label-text">@SharedLocalizer["Days"]</span>
+                </label>
+                <input asp-for="Input.PeriodDays" type="number" min="1" class="input input-bordered w-full" />
+                <span asp-validation-for="Input.PeriodDays" class="text-error text-sm mt-1"></span>
+            </div>
+            <div class="form-control">
+                <label asp-for="Input.PeriodStartDate" class="label">
+                    <span class="label-text">@SharedLocalizer["StartDate"]</span>
+                </label>
+                <input asp-for="Input.PeriodStartDate" type="date" class="input input-bordered w-full" />
+                <span asp-validation-for="Input.PeriodStartDate" class="text-error text-sm mt-1"></span>
+            </div>
+            <div class="form-control">
+                <label asp-for="Input.PeriodEndDate" class="label">
+                    <span class="label-text">@SharedLocalizer["EndDate"]</span>
+                </label>
+                <input asp-for="Input.PeriodEndDate" type="date" class="input input-bordered w-full" />
+                <span asp-validation-for="Input.PeriodEndDate" class="text-error text-sm mt-1"></span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="form-control">
+                <label asp-for="Input.LowBandThreshold" class="label">
+                    <span class="label-text font-medium">@SharedLocalizer["LowBandThreshold"]</span>
+                </label>
+                <input asp-for="Input.LowBandThreshold" type="number" class="input input-bordered w-full" />
+                <span asp-validation-for="Input.LowBandThreshold" class="text-error text-sm mt-1"></span>
+            </div>
+            <div class="form-control">
+                <label asp-for="Input.HighBandThreshold" class="label">
+                    <span class="label-text font-medium">@SharedLocalizer["HighBandThreshold"]</span>
+                </label>
+                <input asp-for="Input.HighBandThreshold" type="number" class="input input-bordered w-full" />
+                <span asp-validation-for="Input.HighBandThreshold" class="text-error text-sm mt-1"></span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="form-control">
+                <label asp-for="Input.ExamDate" class="label">
+                    <span class="label-text font-medium">@SharedLocalizer["ExamDate"]</span>
+                </label>
+                <input asp-for="Input.ExamDate" type="date" class="input input-bordered w-full" />
+                <span asp-validation-for="Input.ExamDate" class="text-error text-sm mt-1"></span>
+            </div>
+            <div class="form-control">
+                <label asp-for="Input.DefaultMockExamQuestions" class="label">
+                    <span class="label-text font-medium">@SharedLocalizer["DefaultMockExamQuestions"]</span>
+                </label>
+                <input asp-for="Input.DefaultMockExamQuestions" type="number" min="1" class="input input-bordered w-full" />
+                <span asp-validation-for="Input.DefaultMockExamQuestions" class="text-error text-sm mt-1"></span>
+            </div>
+        </div>
+
+        <div class="form-control">
+            <label class="label cursor-pointer justify-start gap-3">
+                <input asp-for="Input.FitnessTestEnabled" type="checkbox" class="checkbox" />
+                <span class="label-text font-medium">@SharedLocalizer["FitnessTestEnabled"]</span>
+            </label>
+            <span asp-validation-for="Input.FitnessTestEnabled" class="text-error text-sm mt-1"></span>
+        </div>
+
+        <div class="flex items-center gap-4 pt-4">
+            <button type="submit" class="btn btn-primary">
+                @SharedLocalizer["Save"]
+            </button>
+            <a asp-page="/Plans/Details" asp-route-planId="@Model.PlanId" class="btn btn-ghost">
+                @SharedLocalizer["Cancel"]
+            </a>
+        </div>
+    </form>
+</div>

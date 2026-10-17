@@ -1,0 +1,73 @@
+@page "/planos/{planId:guid}/disciplinas/{subjectId:guid}"
+@model Trail.Web.Pages.Plans.SubjectModel
+@{
+    ViewData["Title"] = $"{Model.Subject.Name} · {Model.Subject.StudyPlanName}";
+}
+
+<div class="space-y-8">
+    <div class="space-y-2">
+        <div class="text-sm breadcrumbs">
+            <ul>
+                <li><a asp-page="/Plans/Index" class="link link-hover text-base-content/70">@SharedLocalizer["StudyPlans"]</a></li>
+                <li><a asp-page="/Plans/Details" asp-route-planId="@Model.Subject.StudyPlanId.Value" class="link link-hover text-base-content/70">@Model.Subject.StudyPlanName</a></li>
+                <li class="font-medium text-base-content">@Model.Subject.Name</li>
+            </ul>
+        </div>
+
+        @if (Model.HasSubjectConflict)
+        {
+            <div role="alert" class="alert alert-warning">
+                <span>@SharedLocalizer["ConcurrencyConflictBanner"]</span>
+            </div>
+        }
+
+        @if (Model.HasTopicConflict)
+        {
+            <div role="alert" class="alert alert-warning">
+                <span>@SharedLocalizer["ConcurrencyConflictBanner"]</span>
+            </div>
+        }
+
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <h1 class="sr-only">@Model.Subject.Name</h1>
+            <partial name="_SubjectNameForm" model="Model.SubjectNameForm" />
+            <div>
+                <a asp-page="/Plans/Details" asp-route-planId="@Model.Subject.StudyPlanId.Value" class="btn btn-ghost btn-sm">
+                    @SharedLocalizer["Back"]
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-200 p-4 space-y-3">
+        <h2 id="add-topic-heading" class="font-bold text-base-content text-sm">@SharedLocalizer["AddTopic"]</h2>
+        <partial name="_AddTopicForm" model="Model.AddTopicForm" />
+    </div>
+
+    <div class="card bg-base-100 border border-base-300 p-4 sm:p-6 space-y-4">
+        <h2 class="text-lg font-bold text-base-content">@SharedLocalizer["Topics"]</h2>
+        <div id="topic-tree-container" class="space-y-4">
+            @await Html.PartialAsync("_TopicTree", Model.Subject)
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <details class="collapse collapse-arrow bg-base-200" @(Model.HasTopicConflict || Model.UpdateTopicForm.ShowErrors ? "open" : null)>
+            <summary class="collapse-title font-bold text-sm">@SharedLocalizer["Edit"] @SharedLocalizer["Topics"]</summary>
+            <div class="collapse-content space-y-3 pt-2">
+                <partial name="_UpdateTopicForm" model="Model.UpdateTopicForm" />
+            </div>
+        </details>
+
+        <details class="collapse collapse-arrow bg-base-200" @(Model.MoveTopicForm.ShowErrors ? "open" : null)>
+            <summary class="collapse-title font-bold text-sm">@SharedLocalizer["MoveUp"] / @SharedLocalizer["MoveDown"] (@SharedLocalizer["Topics"])</summary>
+            <div class="collapse-content space-y-3 pt-2">
+                <partial name="_MoveTopicForm" model="Model.MoveTopicForm" />
+            </div>
+        </details>
+    </div>
+
+    <div id="notes">
+        @await Html.PartialAsync("_TopicNote", Model)
+    </div>
+</div>

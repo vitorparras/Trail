@@ -1,10 +1,11 @@
-using Deque.AxeCore.Playwright;
+using System.Text.RegularExpressions;
 using Microsoft.Playwright;
 using static Microsoft.Playwright.Assertions;
 
 namespace Trail.E2E.Tests;
 
-public sealed class AccountsE2ETests(DockerAppFixture fixture) : IClassFixture<DockerAppFixture>
+[Collection(E2ETestCollectionDefinition.Name)]
+public sealed partial class AccountsE2ETests(DockerAppFixture fixture)
 {
     [Fact]
     public async Task Accounts_FullLifecycleAndAccessibilityScans_PassWithZeroViolations()
@@ -24,42 +25,48 @@ public sealed class AccountsE2ETests(DockerAppFixture fixture) : IClassFixture<D
         foreach (var route in unauthenticatedRoutes)
         {
             await page.GotoAsync(fixture.BaseUrl + route);
-            await AssertAxeZeroViolationsAcrossThemesAndViewportsAsync(page);
+            await AxeTestHelper.AssertAxeZeroViolationsAcrossThemesAndViewportsAsync(page);
         }
 
-        await page.SetViewportSizeAsync(1280, 800);
         await page.GotoAsync(fixture.BaseUrl + "/Account/Register");
+        var main = page.GetByRole(AriaRole.Main);
+        await main.GetByLabel(UiText.Get("Email"), new() { Exact = true }).FillAsync("second@trail.local");
+        await main.GetByLabel(UiText.Get("Password"), new() { Exact = true }).FillAsync("SecondPass123!");
+        await main.GetByLabel(UiText.Get("ConfirmPassword"), new() { Exact = true }).FillAsync("SecondPass123!");
 
-        await page.FillAsync("input[name='Input.Email']", "admin@trail.local");
-        await page.FillAsync("input[name='Input.Password']", "AdminPass123!");
-        await page.FillAsync("input[name='Input.ConfirmPassword']", "AdminPass123!");
-        await page.ClickAsync("button[type='submit']");
+        var closedRegistration = await page.RunAndWaitForResponseAsync(
+            () => main.GetByRole(AriaRole.Button, new() { Name = UiText.Get("Register"), Exact = true }).ClickAsync(),
+            response => response.Request.Method == "POST" && response.Url.Contains("/Account/Register", StringComparison.Ordinal));
 
-        await page.WaitForURLAsync(url => url.Contains("/Account/Login", StringComparison.Ordinal));
-        await Expect(page.Locator("h1")).ToContainTextAsync("Acesse sua conta");
+        Assert.Equal(403, closedRegistration.Status);
+        await Expect(main).ToContainTextAsync(UiText.Get("accounts.registration.closed"));
 
-        await page.FillAsync("input[name='Input.Email']", "admin@trail.local");
-        await page.FillAsync("input[name='Input.Password']", "AdminPass123!");
-        await page.CheckAsync("input[name='Input.RememberMe']");
-        await page.ClickAsync("button[type='submit']");
+        await page.GotoAsync(fixture.BaseUrl + "/Account/Login");
+        await Expect(main.GetByRole(AriaRole.Heading, new() { Level = 1 })).ToHaveTextAsync(UiText.Get("LoginHeading"));
 
-        await page.WaitForURLAsync(url => !url.Contains("/Account/Login", StringComparison.Ordinal));
-        await Expect(page.Locator("header a[href='/Account/Settings']")).ToBeVisibleAsync();
-        await Expect(page.Locator("header a[href='/Admin/Users']")).ToBeVisibleAsync();
+        await main.GetByLabel(UiText.Get("Email"), new() { Exact = true }).FillAsync(DockerAppFixture.AdminEmail);
+        await main.GetByLabel(UiText.Get("Password"), new() { Exact = true }).FillAsync(DockerAppFixture.AdminPassword);
+        await main.GetByLabel(UiText.Get("RememberMe"), new() { Exact = true }).CheckAsync();
+        await main.GetByRole(AriaRole.Button, new() { Name = UiText.Get("Login"), Exact = true }).ClickAsync();
+
+        await Expect(page).Not.ToHaveURLAsync(LoginPathPattern());
+        var banner = page.GetByRole(AriaRole.Banner);
+        await Expect(banner.GetByRole(AriaRole.Link, new() { Name = UiText.Get("Settings"), Exact = true })).ToBeVisibleAsync();
+        await Expect(banner.GetByRole(AriaRole.Link, new() { Name = UiText.Get("Administration"), Exact = true })).ToBeVisibleAsync();
 
         await page.GotoAsync(fixture.BaseUrl + "/Account/Settings");
-        await Expect(page.Locator("h1")).ToContainTextAsync("Preferências");
+        await Expect(main.GetByRole(AriaRole.Heading, new() { Level = 1 })).ToContainTextAsync(UiText.Get("SettingsTitle"));
 
-        await AssertAxeZeroViolationsAcrossThemesAndViewportsAsync(page);
+        await AxeTestHelper.AssertAxeZeroViolationsAcrossThemesAndViewportsAsync(page);
 
-        await page.SetViewportSizeAsync(1280, 800);
         await page.SelectOptionAsync("select[name='SettingsInput.TimeZoneId']", "Europe/Lisbon");
         await page.FillAsync("input[name='SettingsInput.PomodoroFocusMinutes']", "40");
         await page.FillAsync("input[name='SettingsInput.PomodoroBreakMinutes']", "8");
 
-        var responseTask = page.WaitForResponseAsync(resp => resp.Url.Contains("/Account/Settings", StringComparison.Ordinal) && resp.Status == 200);
-        await page.ClickAsync("#settings-form-container button[type='submit']");
-        await responseTask;
+        var settingsResponse = await page.RunAndWaitForResponseAsync(
+            () => page.ClickAsync("#settings-form-container button[type='submit']"),
+            response => response.Request.Method == "POST" && response.Url.Contains("/Account/Settings", StringComparison.Ordinal));
+        Assert.Equal(200, settingsResponse.Status);
 
         await page.ReloadAsync();
         await Expect(page.Locator("select[name='SettingsInput.TimeZoneId']")).ToHaveValueAsync("Europe/Lisbon");
@@ -67,53 +74,22 @@ public sealed class AccountsE2ETests(DockerAppFixture fixture) : IClassFixture<D
         await Expect(page.Locator("input[name='SettingsInput.PomodoroBreakMinutes']")).ToHaveValueAsync("8");
 
         await page.GotoAsync(fixture.BaseUrl + "/Admin/Users");
-        await Expect(page.Locator("h1")).ToContainTextAsync("Gestão de Usuários");
+        await Expect(main.GetByRole(AriaRole.Heading, new() { Level = 1 })).ToContainTextAsync(UiText.Get("AdministrationHeading"));
 
-        await AssertAxeZeroViolationsAcrossThemesAndViewportsAsync(page);
+        await AxeTestHelper.AssertAxeZeroViolationsAcrossThemesAndViewportsAsync(page);
 
-        await page.SetViewportSizeAsync(1280, 800);
         await page.FillAsync("input#invite-email", "invited@trail.local");
         await page.ClickAsync("section[aria-labelledby='invite-heading'] button[type='submit']");
 
         var generatedInviteInput = page.Locator("#generated-invite-link");
-        await Expect(generatedInviteInput).ToBeVisibleAsync();
-        var inviteLink = await generatedInviteInput.InputValueAsync();
-        Assert.False(string.IsNullOrWhiteSpace(inviteLink));
-        Assert.Contains("inviteToken=", inviteLink, StringComparison.Ordinal);
+        await Expect(generatedInviteInput).ToHaveValueAsync(InviteTokenPattern());
 
-        await AssertAxeZeroViolationsAcrossThemesAndViewportsAsync(page);
+        await AxeTestHelper.AssertAxeZeroViolationsAcrossThemesAndViewportsAsync(page);
     }
 
-    private static async Task AssertAxeZeroViolationsAcrossThemesAndViewportsAsync(IPage page)
-    {
-        await page.SetViewportSizeAsync(1280, 800);
-        await page.EvaluateAsync("() => { document.documentElement.setAttribute('data-theme', 'trail-light'); localStorage.setItem('trail-theme', 'trail-light'); }");
-        await page.WaitForTimeoutAsync(250);
-        var desktopLight = await page.RunAxe();
-        Assert.Empty(desktopLight.Violations);
+    [GeneratedRegex("/Account/Login(\\?.*)?$")]
+    private static partial Regex LoginPathPattern();
 
-        await page.ClickAsync("[data-theme-toggle]");
-        await Expect(page.Locator("html")).ToHaveAttributeAsync("data-theme", "trail-dark");
-        await page.WaitForTimeoutAsync(250);
-        var desktopDark = await page.RunAxe();
-        Assert.Empty(desktopDark.Violations);
-
-        await page.SetViewportSizeAsync(390, 844);
-        await page.ClickAsync("[data-theme-toggle]");
-        await Expect(page.Locator("html")).ToHaveAttributeAsync("data-theme", "trail-light");
-        await page.WaitForTimeoutAsync(250);
-        var mobileLight = await page.RunAxe();
-        Assert.Empty(mobileLight.Violations);
-
-        await page.ClickAsync("[data-theme-toggle]");
-        await Expect(page.Locator("html")).ToHaveAttributeAsync("data-theme", "trail-dark");
-        await page.WaitForTimeoutAsync(250);
-        var mobileDark = await page.RunAxe();
-        Assert.Empty(mobileDark.Violations);
-
-        await page.ClickAsync("[data-theme-toggle]");
-        await Expect(page.Locator("html")).ToHaveAttributeAsync("data-theme", "trail-light");
-        await page.WaitForTimeoutAsync(250);
-        await page.SetViewportSizeAsync(1280, 800);
-    }
+    [GeneratedRegex("[?&]inviteToken=[^&]+")]
+    private static partial Regex InviteTokenPattern();
 }

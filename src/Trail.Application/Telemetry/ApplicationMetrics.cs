@@ -1,5 +1,7 @@
+
 using System.Diagnostics.Metrics;
 using Trail.Domain.Common;
+using Trail.Domain.Planning;
 
 namespace Trail.Application.Telemetry;
 
@@ -8,10 +10,14 @@ public sealed class ApplicationMetrics
     public const string ResultsInstrumentName = "trail.usecase.results";
     public const string EmailsSentInstrumentName = "trail.emails.sent";
     public const string EmailsFailedInstrumentName = "trail.emails.failed";
+    public const string PlansCreatedInstrumentName = "trail.plans.created";
+    public const string TopicStatusChangesInstrumentName = "trail.topics.status_changes";
 
     private readonly Counter<long> _resultsCounter;
     private readonly Counter<long> _emailsSentCounter;
     private readonly Counter<long> _emailsFailedCounter;
+    private readonly Counter<long> _plansCreatedCounter;
+    private readonly Counter<long> _topicStatusChangesCounter;
 
     public ApplicationMetrics(IMeterFactory meterFactory)
     {
@@ -21,6 +27,8 @@ public sealed class ApplicationMetrics
         _resultsCounter = Meter.CreateCounter<long>(ResultsInstrumentName);
         _emailsSentCounter = Meter.CreateCounter<long>(EmailsSentInstrumentName);
         _emailsFailedCounter = Meter.CreateCounter<long>(EmailsFailedInstrumentName);
+        _plansCreatedCounter = Meter.CreateCounter<long>(PlansCreatedInstrumentName);
+        _topicStatusChangesCounter = Meter.CreateCounter<long>(TopicStatusChangesInstrumentName);
     }
 
     public Meter Meter { get; }
@@ -47,5 +55,18 @@ public sealed class ApplicationMetrics
         ArgumentException.ThrowIfNullOrWhiteSpace(kind);
 
         _emailsFailedCounter.Add(1, new KeyValuePair<string, object?>("kind", kind));
+    }
+
+    public void RecordPlanCreated(StudyPlanOrigin origin)
+    {
+        _plansCreatedCounter.Add(1, new KeyValuePair<string, object?>("origin", origin.ToString()));
+    }
+
+    public void RecordTopicStatusChanged(TopicStatus previousStatus, TopicStatus newStatus)
+    {
+        _topicStatusChangesCounter.Add(
+            1,
+            new KeyValuePair<string, object?>("from", previousStatus.ToString()),
+            new KeyValuePair<string, object?>("to", newStatus.ToString()));
     }
 }

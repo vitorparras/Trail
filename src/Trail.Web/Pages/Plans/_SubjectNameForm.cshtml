@@ -1,0 +1,20 @@
+@model Trail.Web.Pages.Plans.SubjectNameFormModel
+@{
+    const string errorsId = "subject-name-errors";
+    var errors = PlanFormErrors.For(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.NameField);
+    var nameInvalid = PlanFormErrors.HasErrors(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.NameField);
+}
+
+<form method="post" asp-page-handler="UpdateSubject" asp-route-planId="@Model.PlanId" asp-route-subjectId="@Model.SubjectId" class="flex flex-wrap items-center gap-2">
+    <input type="hidden" name="expectedVersion" value="@Model.SubjectVersion" />
+    <input type="text"
+           name="name"
+           value="@Model.Name"
+           aria-label="@SharedLocalizer["SubjectName"]"
+           aria-invalid="@(nameInvalid ? "true" : null)"
+           aria-describedby="@(nameInvalid ? errorsId : null)"
+           class="input input-bordered input-sm text-xl font-bold max-w-md @(nameInvalid ? "input-error" : null)"
+           required />
+    <button type="submit" class="btn btn-sm btn-ghost">@SharedLocalizer["Rename"]</button>
+    <partial name="_FormErrors" model="new FormErrorList(errorsId, errors)" />
+</form>

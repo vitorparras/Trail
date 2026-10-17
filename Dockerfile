@@ -8,7 +8,6 @@ COPY src/Trail.Application/Trail.Application.csproj src/Trail.Application/packag
 COPY src/Trail.Infrastructure/Trail.Infrastructure.csproj src/Trail.Infrastructure/packages.lock.json src/Trail.Infrastructure/
 COPY src/Trail.Web/Trail.Web.csproj src/Trail.Web/packages.lock.json src/Trail.Web/
 RUN dotnet restore src/Trail.Web/Trail.Web.csproj --locked-mode -a $TARGETARCH
-COPY eng/ eng/
 COPY src/ src/
 RUN dotnet publish src/Trail.Web/Trail.Web.csproj --no-restore -c Release -a $TARGETARCH -p:ContinuousIntegrationBuild=true -p:UseAppHost=false -o /app/publish
 RUN mkdir -p /data

@@ -12,4 +12,16 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="practice.question_count.total_must_be_positive" xml:space="preserve">
+    <value>O total de questões deve ser maior que zero.</value>
+  </data>
+  <data name="practice.question_count.correct_must_not_be_negative" xml:space="preserve">
+    <value>A quantidade de questões certas não pode ser negativa.</value>
+  </data>
+  <data name="practice.question_count.wrong_must_not_be_negative" xml:space="preserve">
+    <value>A quantidade de questões erradas não pode ser negativa.</value>
+  </data>
+  <data name="practice.question_count.answers_exceed_total" xml:space="preserve">
+    <value>A soma das questões certas e erradas não pode ser maior que o total.</value>
+  </data>
 </root>

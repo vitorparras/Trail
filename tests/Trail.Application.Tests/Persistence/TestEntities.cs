@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Trail.Application.Abstractions;
 using Trail.Domain.Common;
 using Trail.Infrastructure.Persistence;
+using Trail.Infrastructure.Persistence.Configurations.Practice;
 
 namespace Trail.Application.Tests.Persistence;
 
@@ -81,6 +82,8 @@ public sealed class TestDbContext : AppDbContext
 
     public DbSet<TestAggregateRoot> Aggregates => Set<TestAggregateRoot>();
 
+    public DbSet<QuestionCountSample> QuestionCountSamples => Set<QuestionCountSample>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -89,6 +92,12 @@ public sealed class TestDbContext : AppDbContext
         {
             b.HasKey(e => e.Id);
             b.OwnsOne(e => e.Child);
+        });
+
+        builder.Entity<QuestionCountSample>(b =>
+        {
+            b.HasKey(e => e.Id);
+            b.HasQuestionCount(e => e.Count, QuestionCountSample.CheckConstraintName);
         });
 
         base.OnModelCreating(builder);

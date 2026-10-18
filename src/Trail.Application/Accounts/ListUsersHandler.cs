@@ -35,6 +35,6 @@ public sealed class ListUsersHandler
         var users = await _identityGateway.ListUsersAsync(cancellationToken);
         var invitations = await _identityGateway.ListInvitationsAsync(cancellationToken);
 
-        return Result.Ok(new AdminUsersOverviewDto(users, invitations));
+        return Result.Ok(new AdminUsersOverviewDto(users, invitations, _identityGateway.GetRegistrationMode()));
     }
 }

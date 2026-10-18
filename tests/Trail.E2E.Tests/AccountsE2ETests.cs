@@ -78,18 +78,11 @@ public sealed partial class AccountsE2ETests(DockerAppFixture fixture)
 
         await AxeTestHelper.AssertAxeZeroViolationsAcrossThemesAndViewportsAsync(page);
 
-        await page.FillAsync("input#invite-email", "invited@trail.local");
-        await page.ClickAsync("section[aria-labelledby='invite-heading'] button[type='submit']");
-
-        var generatedInviteInput = page.Locator("#generated-invite-link");
-        await Expect(generatedInviteInput).ToHaveValueAsync(InviteTokenPattern());
-
-        await AxeTestHelper.AssertAxeZeroViolationsAcrossThemesAndViewportsAsync(page);
+        var registrationMode = main.GetByRole(AriaRole.Region, new() { Name = UiText.Get("RegistrationClosedHeading"), Exact = true });
+        await Expect(registrationMode).ToContainTextAsync(UiText.Get("RegistrationClosedHowToInvite"));
+        await Expect(page.Locator("#invite-email")).ToHaveCountAsync(0);
     }
 
     [GeneratedRegex("/Account/Login(\\?.*)?$")]
     private static partial Regex LoginPathPattern();
-
-    [GeneratedRegex("[?&]inviteToken=[^&]+")]
-    private static partial Regex InviteTokenPattern();
 }

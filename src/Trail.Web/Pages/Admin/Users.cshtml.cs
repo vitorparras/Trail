@@ -38,6 +38,10 @@ public sealed class UsersModel : PageModel
 
     public IReadOnlyList<AccountInvitationDto> Invitations { get; private set; } = [];
 
+    public RegistrationMode RegistrationMode { get; private set; } = RegistrationMode.Closed;
+
+    public bool AcceptsInvitations => RegistrationMode != RegistrationMode.Closed;
+
     [TempData]
     public string? GeneratedInviteLink { get; set; }
 
@@ -61,6 +65,7 @@ public sealed class UsersModel : PageModel
 
         Users = result.Data.Users;
         Invitations = result.Data.Invitations;
+        RegistrationMode = result.Data.RegistrationMode;
 
         return Page();
     }
@@ -153,6 +158,7 @@ public sealed class UsersModel : PageModel
         {
             Users = listResult.Data.Users;
             Invitations = listResult.Data.Invitations;
+            RegistrationMode = listResult.Data.RegistrationMode;
         }
     }
 }

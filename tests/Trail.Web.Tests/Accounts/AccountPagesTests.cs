@@ -1,5 +1,6 @@
 using System.Net;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.WebUtilities;
 using Trail.Application.Accounts;
 using Trail.Domain.Accounts;
 using Trail.Domain.Common;
@@ -552,8 +553,10 @@ public sealed class AccountPagesTests(TrailWebApplicationFactory baseFactory) : 
         Assert.Contains("A confirmação de senha não confere", html, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public async Task Get_Settings_WhenUnauthenticated_Returns403Forbidden()
+    [Theory]
+    [InlineData("/Account/Settings")]
+    [InlineData("/Admin/Users")]
+    public async Task Get_SettingsOrAdministration_WhenUnauthenticated_RedirectsToLogin(string path)
     {
         var gateway = new TestAccountIdentityGateway();
         var emailSender = new TestEmailSender();
@@ -563,9 +566,13 @@ public sealed class AccountPagesTests(TrailWebApplicationFactory baseFactory) : 
         using var factory = AccountTestHelper.CreateTestFactory(baseFactory, gateway, emailSender, settingsStore, currentUser);
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
 
-        using var response = await client.GetAsync("/Account/Settings", TestContext.Current.CancellationToken);
+        using var response = await client.GetAsync(path, TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.NotNull(response.Headers.Location);
+        var location = new Uri(new Uri("http://localhost"), response.Headers.Location);
+        Assert.Equal("/Account/Login", location.AbsolutePath);
+        Assert.Equal(path, QueryHelpers.ParseQuery(location.Query)["ReturnUrl"].ToString());
     }
 
     [Fact]

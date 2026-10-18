@@ -52,6 +52,21 @@ public sealed class AdminHandlersTests
         Assert.Single(result.Data.Invitations);
     }
 
+    [Theory]
+    [InlineData(RegistrationMode.Closed)]
+    [InlineData(RegistrationMode.InviteOnly)]
+    [InlineData(RegistrationMode.Open)]
+    public async Task ListUsers_Admin_ReportsTheRegistrationMode(RegistrationMode mode)
+    {
+        _identityGateway.RegistrationMode = mode;
+        var handler = new ListUsersHandler(_currentUser, _identityGateway);
+
+        var result = await handler.HandleAsync(new ListUsersQuery(), TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsOk);
+        Assert.Equal(mode, result.Data.RegistrationMode);
+    }
+
     [Fact]
     public async Task SetUserActiveStatus_NonAdmin_ReturnsForbidden()
     {
@@ -108,6 +123,51 @@ public sealed class AdminHandlersTests
 
         Assert.False(result.IsOk);
         Assert.Equal(ResultStatus.Forbidden, result.Status);
+    }
+
+    [Fact]
+    public async Task CreateInvitation_RegistrationClosed_ReturnsForbiddenWithItsOwnMessageAndCreatesNothing()
+    {
+        _identityGateway.RegistrationMode = RegistrationMode.Closed;
+        _emailSender.IsSmtpConfigured = true;
+        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _metrics);
+
+        var result = await handler.HandleAsync(new CreateInvitationCommand("invitee@example.com"), TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsOk);
+        Assert.Equal(ResultStatus.Forbidden, result.Status);
+        var message = Assert.Single(result.Messages);
+        Assert.Equal("accounts.invitation.registration_closed", message.Code);
+        Assert.Empty(_identityGateway.Invitations);
+        Assert.Empty(_emailSender.SentMessages);
+    }
+
+    [Fact]
+    public async Task CreateInvitation_RegistrationClosedAndNonAdmin_ReturnsTheAdministratorRefusal()
+    {
+        _identityGateway.RegistrationMode = RegistrationMode.Closed;
+        _currentUser.IsAdmin = false;
+        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _metrics);
+
+        var result = await handler.HandleAsync(new CreateInvitationCommand("invitee@example.com"), TestContext.Current.CancellationToken);
+
+        Assert.Equal(ResultStatus.Forbidden, result.Status);
+        var message = Assert.Single(result.Messages);
+        Assert.Equal("accounts.admin.forbidden", message.Code);
+    }
+
+    [Theory]
+    [InlineData(RegistrationMode.InviteOnly)]
+    [InlineData(RegistrationMode.Open)]
+    public async Task CreateInvitation_RegistrationAcceptsInvitations_CreatesTheInvitation(RegistrationMode mode)
+    {
+        _identityGateway.RegistrationMode = mode;
+        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _metrics);
+
+        var result = await handler.HandleAsync(new CreateInvitationCommand("invitee@example.com"), TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsOk);
+        Assert.Single(_identityGateway.Invitations);
     }
 
     [Theory]

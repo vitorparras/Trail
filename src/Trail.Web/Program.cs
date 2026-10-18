@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.RateLimiting;
@@ -50,9 +51,10 @@ builder.Services.AddRazorPages(options =>
 {
     options.Conventions.AddPageApplicationModelConvention("/Account/Login", page => page.EndpointMetadata.Add(new EnableRateLimitingAttribute(RateLimitingExtensions.AuthPolicyName)));
     options.Conventions.AddPageApplicationModelConvention("/Account/ForgotPassword", page => page.EndpointMetadata.Add(new EnableRateLimitingAttribute(RateLimitingExtensions.AuthPolicyName)));
-    options.Conventions.AuthorizeFolder("/Plans");
     options.Conventions.ConfigureFilter(new UnknownPageHandlerFilter());
 });
+builder.Services.AddAuthorizationBuilder()
+    .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
 var htmlEncoderSettings = new TextEncoderSettings(
     UnicodeRanges.BasicLatin,
@@ -96,18 +98,20 @@ webApp.UseRouting();
 webApp.UseAuthentication();
 webApp.UseAuthorization();
 webApp.UseRateLimiter();
-webApp.MapStaticAssets();
+webApp.MapStaticAssets().AllowAnonymous();
 webApp.MapRazorPages().WithStaticAssets();
 
 webApp.MapHealthChecks("/health/live", new HealthCheckOptions
 {
     Predicate = _ => false,
-});
+}).AllowAnonymous();
 
 webApp.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
     Predicate = check => check.Tags.Contains("ready"),
-});
+}).AllowAnonymous();
+
+webApp.MapFallback("{*path}", () => Results.NotFound()).AllowAnonymous();
 
 webApp.Run();
 

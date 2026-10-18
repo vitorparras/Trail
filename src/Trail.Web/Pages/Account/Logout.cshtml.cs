@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Trail.Application.Accounts;
@@ -5,6 +6,7 @@ using Trail.Web.Results;
 
 namespace Trail.Web.Pages.Account;
 
+[AllowAnonymous]
 public sealed class LogoutModel : PageModel
 {
     private readonly LogoutHandler _logoutHandler;

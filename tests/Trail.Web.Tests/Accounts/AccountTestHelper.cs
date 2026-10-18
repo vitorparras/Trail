@@ -1,9 +1,11 @@
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Trail.Application.Abstractions;
 using Trail.Application.Accounts;
+using Trail.Web.Tests.Planning;
 
 namespace Trail.Web.Tests.Accounts;
 
@@ -31,6 +33,11 @@ internal static class AccountTestHelper
 
                 services.RemoveAll<IUserSettingsStore>();
                 services.AddScoped<IUserSettingsStore>(_ => settingsStore);
+
+                services.AddAuthentication()
+                    .AddScheme<AuthenticationSchemeOptions, TestCurrentUserAuthenticationHandler>(TestCurrentUserAuthenticationHandler.SchemeName, null);
+                services.Configure<AuthenticationOptions>(options =>
+                    options.DefaultAuthenticateScheme = TestCurrentUserAuthenticationHandler.SchemeName);
             });
         });
     }

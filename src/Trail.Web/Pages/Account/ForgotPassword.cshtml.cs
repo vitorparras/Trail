@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.RateLimiting;
@@ -8,6 +9,7 @@ using Trail.Web.Security;
 
 namespace Trail.Web.Pages.Account;
 
+[AllowAnonymous]
 [EnableRateLimiting(RateLimitingExtensions.AuthPolicyName)]
 public sealed class ForgotPasswordModel : PageModel
 {

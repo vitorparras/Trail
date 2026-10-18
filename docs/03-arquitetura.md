@@ -402,7 +402,8 @@ Decidido na [ADR 0003](adr/0003-sqlite-e-postgresql.md).
 - **Duas camadas:** as invariantes ficam nos agregados, e o banco repete as essenciais
   como restrições (ex.: `CHECK (Correct + Wrong <= Total)`), chaves estrangeiras e
   índices únicos.
-- **Uma transação por caso de uso:** um único `SaveChanges`.
+- **Uma transação por caso de uso:** um único `SaveChanges`. A exceção aprovada é o acerto
+  do pomodoro vencido, gravado numa operação própria (Onda 0, P7).
 
 ### Concorrência
 

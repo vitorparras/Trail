@@ -15,6 +15,16 @@ public interface IAccountIdentityGateway
         bool emailConfirmed,
         CancellationToken cancellationToken = default);
 
+    Task<Result> ValidatePasswordAsync(
+        string email,
+        string password,
+        CancellationToken cancellationToken = default);
+
+    Task SimulateAccountCreationAsync(
+        string email,
+        string password,
+        CancellationToken cancellationToken = default);
+
     Task<Result> ConfirmEmailAsync(
         UserId userId,
         string token,

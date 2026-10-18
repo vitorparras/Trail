@@ -112,6 +112,14 @@ public sealed class TestAccountIdentityGateway : IAccountIdentityGateway
         return Task.FromResult(Result.Ok(newUserId));
     }
 
+    public Result ValidatePasswordResult { get; set; } = Result.Ok();
+
+    public Task<Result> ValidatePasswordAsync(string email, string password, CancellationToken cancellationToken = default) =>
+        Task.FromResult(ValidatePasswordResult);
+
+    public Task SimulateAccountCreationAsync(string email, string password, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
     public Task<Result> ConfirmEmailAsync(UserId userId, string token, CancellationToken cancellationToken = default) =>
         Task.FromResult(ConfirmEmailResult);
 

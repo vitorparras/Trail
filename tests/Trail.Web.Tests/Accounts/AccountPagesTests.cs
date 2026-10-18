@@ -444,43 +444,6 @@ public sealed class AccountPagesTests(TrailWebApplicationFactory baseFactory) : 
     }
 
     [Fact]
-    public async Task Post_ResendConfirmation_WhenSmtpSendFails_Returns422AndShowsRetry()
-    {
-        var testUserId = UserId.New();
-        var gateway = new TestAccountIdentityGateway();
-        gateway.Users.Add(new AccountUserDto(testUserId, "pending@example.com", false, true, false, DateTime.UtcNow));
-
-        var emailSender = new TestEmailSender
-        {
-            IsSmtpConfigured = true,
-            SendResult = Result.Invalid(Message.Error("accounts.email.send_failed"))
-        };
-        var settingsStore = new TestUserSettingsStore();
-        var currentUser = new TestCurrentUser { IsAuthenticated = false };
-
-        using var factory = AccountTestHelper.CreateTestFactory(baseFactory, gateway, emailSender, settingsStore, currentUser);
-        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
-
-        var (_, _, csrfHeader, csrfToken) = await AccountTestHelper.GetDocWithAntiforgeryAsync(client, "/Account/ResendConfirmation");
-
-        var formData = new Dictionary<string, string>
-        {
-            ["Email"] = "pending@example.com"
-        };
-
-        using var response = await AccountTestHelper.PostFormWithAntiforgeryAsync(
-            client,
-            "/Account/ResendConfirmation",
-            formData,
-            csrfHeader,
-            csrfToken);
-
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
-        var html = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        Assert.Contains("Tentar novamente", html, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public async Task Post_ForgotPassword_SendsResetEmailAndRendersSentMessage()
     {
         var testUserId = UserId.New();

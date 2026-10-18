@@ -112,6 +112,19 @@ internal sealed class FakeAccountIdentityGateway : IAccountIdentityGateway
         return Task.FromResult(Result.Ok(newUserId));
     }
 
+    public Result ValidatePasswordResult { get; set; } = Result.Ok();
+
+    public List<string> SimulatedAccountCreations { get; } = [];
+
+    public Task<Result> ValidatePasswordAsync(string email, string password, CancellationToken cancellationToken = default) =>
+        Task.FromResult(ValidatePasswordResult);
+
+    public Task SimulateAccountCreationAsync(string email, string password, CancellationToken cancellationToken = default)
+    {
+        SimulatedAccountCreations.Add(email);
+        return Task.CompletedTask;
+    }
+
     public Task<Result> ConfirmEmailAsync(UserId userId, string token, CancellationToken cancellationToken = default) =>
         Task.FromResult(ConfirmEmailResult);
 

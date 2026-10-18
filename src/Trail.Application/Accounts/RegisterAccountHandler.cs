@@ -136,10 +136,17 @@ public sealed class RegisterAccountHandler
             }
         }
 
+        var passwordResult = await _identityGateway.ValidatePasswordAsync(command.Email, command.Password, cancellationToken);
+        if (!passwordResult.IsOk)
+        {
+            return passwordResult.Failure;
+        }
+
         var existingUser = await _identityGateway.GetUserByEmailAsync(command.Email, cancellationToken);
         if (existingUser is not null)
         {
-            return Result.Ok(new RegisterAccountOutcome(RequiresEmailConfirmation: true));
+            await _identityGateway.SimulateAccountCreationAsync(command.Email, command.Password, cancellationToken);
+            return IndistinguishableFromNewAccount();
         }
 
         var createResult = await _identityGateway.CreateUserAsync(
@@ -148,6 +155,11 @@ public sealed class RegisterAccountHandler
             isAdmin: false,
             emailConfirmed: false,
             cancellationToken);
+
+        if (createResult.Status is ResultStatus.Conflict)
+        {
+            return IndistinguishableFromNewAccount();
+        }
 
         if (!createResult.IsOk)
         {
@@ -172,6 +184,9 @@ public sealed class RegisterAccountHandler
 
         return Result.Ok(new RegisterAccountOutcome(RequiresEmailConfirmation: true, UserId: userId));
     }
+
+    private static Result<RegisterAccountOutcome> IndistinguishableFromNewAccount() =>
+        Result.Ok(new RegisterAccountOutcome(RequiresEmailConfirmation: true));
 
     private async Task SendConfirmationEmailAsync(
         UserId userId,

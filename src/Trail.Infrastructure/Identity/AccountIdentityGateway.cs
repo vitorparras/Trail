@@ -95,6 +95,35 @@ public sealed class AccountIdentityGateway : IAccountIdentityGateway
         return Result.Ok(UserId.From(user.Id));
     }
 
+    public async Task<Result> ValidatePasswordAsync(
+        string email,
+        string password,
+        CancellationToken cancellationToken = default)
+    {
+        var candidate = new ApplicationUser { UserName = email, Email = email };
+        var errors = new List<IdentityError>();
+        foreach (var validator in _userManager.PasswordValidators)
+        {
+            var validation = await validator.ValidateAsync(_userManager, candidate, password);
+            errors.AddRange(validation.Errors);
+        }
+
+        return errors.Count == 0
+            ? Result.Ok()
+            : Result.Invalid(IdentityErrorMessages.ToMessages(
+                errors,
+                new IdentityErrorTargets(Password: nameof(RegisterAccountCommand.Password))));
+    }
+
+    public Task SimulateAccountCreationAsync(
+        string email,
+        string password,
+        CancellationToken cancellationToken = default)
+    {
+        _userManager.PasswordHasher.HashPassword(new ApplicationUser { UserName = email, Email = email }, password);
+        return Task.CompletedTask;
+    }
+
     public async Task<Result> ConfirmEmailAsync(
         UserId userId,
         string token,
@@ -103,7 +132,7 @@ public sealed class AccountIdentityGateway : IAccountIdentityGateway
         var user = await _userManager.FindByIdAsync(userId.Value.ToString());
         if (user is null)
         {
-            return Result.NotFound(Message.Error("accounts.confirmation.user_not_found"));
+            return Result.Invalid(Message.Error("accounts.confirmation.invalid_token"));
         }
 
         var confirmResult = await _userManager.ConfirmEmailAsync(user, token);
@@ -237,7 +266,7 @@ public sealed class AccountIdentityGateway : IAccountIdentityGateway
         var user = await _userManager.FindByIdAsync(userId.Value.ToString());
         if (user is null)
         {
-            return Result.NotFound(Message.Error("accounts.reset_password.user_not_found"));
+            return Result.Invalid(Message.Error("accounts.reset_password.invalid_token"));
         }
 
         var result = await _userManager.ResetPasswordAsync(user, token, newPassword);

@@ -60,13 +60,12 @@ public sealed class ResetPasswordFlowTests(TrailWebApplicationFactory factory) :
     }
 
     [Fact]
-    public async Task Post_ResetPassword_ForUnknownUser_ShowsTheInvalidLinkMessage()
+    public async Task Post_ResetPassword_ForUnknownUser_Returns422WithTheInvalidLinkMessage()
     {
         var (statusCode, document) = await PostResetAsync(Guid.NewGuid(), "any-token", ValidNewPassword);
 
-        Assert.Equal(HttpStatusCode.NotFound, statusCode);
-        Assert.Contains(_localizer["accounts.reset_password.user_not_found"].Value, document.QuerySelector("main")?.TextContent, StringComparison.Ordinal);
-        Assert.Equal(_localizer["accounts.reset_password.invalid_token"].Value, _localizer["accounts.reset_password.user_not_found"].Value);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, statusCode);
+        Assert.Equal([_localizer["accounts.reset_password.invalid_token"].Value], FormErrors(document));
     }
 
     private async Task<(Guid UserId, string Token)> CreateUserWithResetTokenAsync()

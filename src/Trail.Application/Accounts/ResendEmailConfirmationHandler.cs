@@ -52,7 +52,7 @@ public sealed class ResendEmailConfirmationHandler
         var tokenResult = await _identityGateway.GenerateEmailConfirmationTokenAsync(user.Id, cancellationToken);
         if (!tokenResult.IsOk)
         {
-            return tokenResult.Failure;
+            return Result.Ok();
         }
 
         var confirmationUrl = command.ConfirmationLinkBuilder?.Invoke(user.Id, tokenResult.Data)
@@ -66,13 +66,15 @@ public sealed class ResendEmailConfirmationHandler
             EmailKinds.Confirmation);
 
         var sendResult = await _emailSender.SendAsync(message, cancellationToken);
-        if (!sendResult.IsOk)
+        if (sendResult.IsOk)
+        {
+            _metrics.RecordEmailSent(EmailKinds.Confirmation);
+        }
+        else
         {
             _metrics.RecordEmailFailed(EmailKinds.Confirmation);
-            return sendResult;
         }
 
-        _metrics.RecordEmailSent(EmailKinds.Confirmation);
         return Result.Ok();
     }
 }

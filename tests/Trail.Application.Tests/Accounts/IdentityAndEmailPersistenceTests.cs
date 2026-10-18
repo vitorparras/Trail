@@ -215,7 +215,7 @@ public sealed class IdentityAndEmailPersistenceTests
 
     [Theory]
     [MemberData(nameof(TestDatabaseProviders.EnabledProviders), MemberType = typeof(TestDatabaseProviders))]
-    public async Task ResetPasswordAsync_WithInvalidTokenOrUnknownUser_ReturnsTheInvalidLinkCodes(DatabaseProvider provider)
+    public async Task ResetPasswordAsync_WithInvalidTokenOrUnknownUser_ReturnsTheSameInvalidLink(DatabaseProvider provider)
     {
         var ct = TestContext.Current.CancellationToken;
         var harness = await CreateHarnessAsync(provider, cancellationToken: ct);
@@ -223,16 +223,65 @@ public sealed class IdentityAndEmailPersistenceTests
         {
             var userId = (await harness.Gateway.CreateUserAsync("reset@trail.local", "InitialPass123!", isAdmin: false, emailConfirmed: true, ct)).Data;
 
-            var invalidTokenResult = await harness.Gateway.ResetPasswordAsync(userId, "invalid-token", "ResetPass456!", ct);
-            var invalidTokenAndShortPasswordResult = await harness.Gateway.ResetPasswordAsync(userId, "invalid-token", "abc", ct);
-            var unknownUserResult = await harness.Gateway.ResetPasswordAsync(UserId.New(), "invalid-token", "ResetPass456!", ct);
+            Result[] results =
+            [
+                await harness.Gateway.ResetPasswordAsync(userId, "invalid-token", "ResetPass456!", ct),
+                await harness.Gateway.ResetPasswordAsync(userId, "invalid-token", "abc", ct),
+                await harness.Gateway.ResetPasswordAsync(UserId.New(), "invalid-token", "ResetPass456!", ct),
+            ];
 
-            Assert.Equal(ResultStatus.Invalid, invalidTokenResult.Status);
-            Assert.Equal("accounts.reset_password.invalid_token", Assert.Single(invalidTokenResult.Messages).Code);
-            Assert.Equal(ResultStatus.Invalid, invalidTokenAndShortPasswordResult.Status);
-            Assert.Equal("accounts.reset_password.invalid_token", Assert.Single(invalidTokenAndShortPasswordResult.Messages).Code);
-            Assert.Equal(ResultStatus.NotFound, unknownUserResult.Status);
-            Assert.Equal("accounts.reset_password.user_not_found", Assert.Single(unknownUserResult.Messages).Code);
+            Assert.All(results, result =>
+            {
+                Assert.Equal(ResultStatus.Invalid, result.Status);
+                var message = Assert.Single(result.Messages);
+                Assert.Equal("accounts.reset_password.invalid_token", message.Code);
+                Assert.Null(message.Target);
+            });
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TestDatabaseProviders.EnabledProviders), MemberType = typeof(TestDatabaseProviders))]
+    public async Task ConfirmEmailAsync_WithInvalidTokenOrUnknownUser_ReturnsTheSameInvalidLink(DatabaseProvider provider)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var harness = await CreateHarnessAsync(provider, cancellationToken: ct);
+        await using (harness.Cleanup)
+        {
+            var userId = (await harness.Gateway.CreateUserAsync("confirm@trail.local", "InitialPass123!", isAdmin: false, emailConfirmed: false, ct)).Data;
+
+            Result[] results =
+            [
+                await harness.Gateway.ConfirmEmailAsync(userId, "invalid-token", ct),
+                await harness.Gateway.ConfirmEmailAsync(UserId.New(), "invalid-token", ct),
+            ];
+
+            Assert.All(results, result =>
+            {
+                Assert.Equal(ResultStatus.Invalid, result.Status);
+                Assert.Equal("accounts.confirmation.invalid_token", Assert.Single(result.Messages).Code);
+            });
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TestDatabaseProviders.EnabledProviders), MemberType = typeof(TestDatabaseProviders))]
+    public async Task ValidatePasswordAsync_AppliesTheConfiguredPasswordRulesWithoutCreatingAUser(DatabaseProvider provider)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var harness = await CreateHarnessAsync(provider, cancellationToken: ct);
+        await using (harness.Cleanup)
+        {
+            var weak = await harness.Gateway.ValidatePasswordAsync("weak@trail.local", "abcde", ct);
+            var strong = await harness.Gateway.ValidatePasswordAsync("strong@trail.local", "StrongPass123!", ct);
+            await harness.Gateway.SimulateAccountCreationAsync("simulated@trail.local", "StrongPass123!", ct);
+
+            Assert.Equal(ResultStatus.Invalid, weak.Status);
+            var message = Assert.Single(weak.Messages);
+            Assert.Equal("accounts.identity.password_too_short", message.Code);
+            Assert.Equal(nameof(RegisterAccountCommand.Password), message.Target);
+            Assert.True(strong.IsOk);
+            Assert.False(await harness.Gateway.AnyUsersExistAsync(ct));
         }
     }
 

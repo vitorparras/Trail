@@ -192,3 +192,7 @@ sem HTMX, respeitam a CSP com nonce e nunca renderizam HTML bruto do Markdown.
    app, liberando só as páginas públicas.
 3. **Para o futuro:** se algum formulário passar a ser enviado por HTMX, a lista de erros
    precisa de `role="alert"` ou de foco no primeiro campo inválido (WCAG 4.1.3).
+4. **Falha encontrada depois do merge:** só a exclusão do plano mostra a confirmação com
+   o que será apagado. Disciplinas e tópicos são excluídos direto, sem confirmação, o que
+   descumpre a regra aprovada. A correção está na
+   [Onda 0, W0-T9](onda-0-base-compartilhada.md).

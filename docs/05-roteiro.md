@@ -24,14 +24,36 @@ surgirem no caminho vão para o backlog pós-1.0.
 flowchart LR
     F0["0. Fundação"] --> F1["1. Contas, e-mail<br/>e isolamento"]
     F1 --> F2["2. Planos e<br/>conteúdo"]
-    F2 --> F3["3. Questões,<br/>desempenho e histórico"]
-    F3 --> F4["4. Simulados<br/>e TAF"]
-    F4 --> F5["5. Tempo<br/>de estudo"]
-    F5 --> F6["6. Importação<br/>e backup"]
-    F6 --> F7["7. PWA e<br/>versão 1.0"]
+    F2 --> W0["Onda 0<br/>Base compartilhada"]
+    subgraph WA["Onda A (em paralelo)"]
+        F3["3. Questões,<br/>desempenho e histórico"]
+        F4["4. Simulados<br/>e TAF"]
+        F5["5. Tempo<br/>de estudo"]
+        F7a["7a. PWA"]
+    end
+    W0 --> F3 & F4 & F5 & F7a
+    WA --> F6["6. Importação e backup<br/>(Onda B)"]
+    F6 --> F7b["7b. Auditoria, guias<br/>e versão 1.0 (Onda C)"]
 ```
 
 O autor pode abandonar a planilha ao fim da **Fase 6**.
+
+## Ondas
+
+Aprovado pelo autor em 17/10/2026. Depois da Fase 2, o trabalho segue em ondas:
+
+| Onda | Conteúdo | Detalhamento |
+|---|---|---|
+| 0 | Base compartilhada: pontos de composição, peças comuns e as decisões pendentes da Fase 2 | [Onda 0](fases/onda-0-base-compartilhada.md) |
+| A | Fases 3, 4, 5 e 7a, em paralelo | [Fase 3](fases/fase-3-questoes-desempenho-historico.md), [Fase 4](fases/fase-4-simulados-e-taf.md), [Fase 5](fases/fase-5-tempo-de-estudo.md) e [Fase 7a](fases/fase-7a-pwa.md) |
+| B | Fase 6 | A detalhar |
+| C | Fase 7b | A detalhar |
+
+Dentro de uma onda, cada fase segue o ciclo acima, com a sua branch e o seu PR. Nenhuma
+fase da Onda A edita os pontos de composição nem os arquivos de outra fase, e as migrações
+são sempre geradas pelo `dotnet ef`, nunca editadas à mão. A ordem dos PRs e a geração das
+migrações na integração seguem a resposta do autor à
+[P5 da Onda 0](fases/onda-0-base-compartilhada.md#p5--fluxo-de-integração-da-onda-a).
 
 ---
 
@@ -120,7 +142,38 @@ nos dois bancos e as regras de arquitetura já verificadas.
 **Pronto quando:** dá para montar à mão uma disciplina da planilha e mudar status pelo
 celular.
 
+### Onda 0 — Base compartilhada
+
+**Objetivo:** preparar a Onda A, para que as Fases 3, 4, 5 e 7a sejam desenvolvidas em
+paralelo sem editar os mesmos arquivos.
+
+**Detalhamento:** [tarefas da Onda 0](fases/onda-0-base-compartilhada.md).
+
+**Entregas:**
+
+- Configuração do EF Core por entidade e métodos de registro de cada módulo novo, já
+  chamados nos pontos de composição.
+- `.resx` por módulo, com a tradução das mensagens pelo prefixo do código.
+- Componente de gráfico com a tabela equivalente, e o painel montado por blocos, com o
+  seletor de plano.
+- `QuestionCount`, calendário do usuário, prévia de exclusão e links do plano abertos às
+  contribuições dos módulos.
+- Erros de formulário com `role="alert"`, usuário novo por teste no E2E, orçamento de
+  desempenho agendado e os ícones da Onda A.
+- As decisões pendentes da Fase 2: convites no modo `Closed` e login no app inteiro.
+
+**Pronto quando:**
+
+- O comportamento da Fase 2 não muda, fora o que a onda decide, e os E2E de planos
+  continuam verdes.
+- A varredura de isolamento do painel passa nos dois bancos.
+- Os detalhamentos da Onda A usam essas peças sem desenho condicional.
+
 ### Fase 3 — Questões, desempenho e histórico
+
+**Onda:** A, em paralelo com as Fases 4, 5 e 7a.
+
+**Detalhamento:** [tarefas da Fase 3](fases/fase-3-questoes-desempenho-historico.md).
 
 **Entregas:**
 
@@ -139,6 +192,10 @@ celular.
 
 ### Fase 4 — Simulados e TAF
 
+**Onda:** A, em paralelo com as Fases 3, 5 e 7a.
+
+**Detalhamento:** [tarefas da Fase 4](fases/fase-4-simulados-e-taf.md).
+
 **Entregas:**
 
 - **Simulados:** cadastro, nota tradicional, nota Cebraspe, mediana de todos e gráfico de
@@ -149,6 +206,10 @@ celular.
 **Pronto quando:** as abas Simulados e Simulado TAF podem ser abandonadas.
 
 ### Fase 5 — Tempo de estudo
+
+**Onda:** A, em paralelo com as Fases 3, 4 e 7a.
+
+**Detalhamento:** [tarefas da Fase 5](fases/fase-5-tempo-de-estudo.md).
 
 **Entregas:**
 
@@ -163,6 +224,8 @@ celular.
 - Os testes com relógio controlado cobrem o pomodoro e a virada do dia.
 
 ### Fase 6 — Importação e backup
+
+**Onda:** B.
 
 **Entregas:**
 
@@ -180,15 +243,35 @@ celular.
 
 ### Fase 7 — PWA e versão 1.0
 
+Dividida em duas partes: a 7a não depende das Fases 3 a 6 e entra na Onda A; a 7b fecha a
+versão 1.0 depois da Fase 6.
+
+#### 7a — PWA
+
+**Onda:** A, em paralelo com as Fases 3, 4 e 5.
+
+**Detalhamento:** [tarefas da Fase 7a](fases/fase-7a-pwa.md).
+
 **Entregas:**
 
 - Manifest, ícones e service worker.
+
+**Pronto quando:** o app é instalável, e nenhuma página com dados nem resposta do HTMX vem
+do cache.
+
+#### 7b — Auditoria, guias e versão 1.0
+
+**Onda:** C.
+
+**Entregas:**
+
 - Auditoria de acessibilidade (axe) e de responsividade.
 - Guia de observabilidade para o modo hospedado, com o backend de exemplo escolhido.
 - Guias de instalação: modo individual, modo hospedado com HTTPS e SMTP, e acesso pelo
   celular.
 - release-please e imagem multi-arquitetura no GHCR.
 - README com capturas de tela, e arquivos de comunidade.
+- Revisão dos atalhos do manifest, com as rotas das Fases 3 a 6.
 
 **Pronto quando:**
 
@@ -216,6 +299,7 @@ Cada funcionalidade só entra depois que o autor valida a utilidade dela.
 
 | Risco | Mitigação |
 |---|---|
+| Conflitos entre fases desenvolvidas em paralelo | A Onda 0 cria antes os pontos de composição e as peças comuns, cada fase declara as suas fronteiras, e as migrações são geradas de novo na integração |
 | Comportamento diferente entre SQLite e PostgreSQL | Testes de integração nos dois bancos em todo PR, e as regras de portabilidade da [seção 3.10](03-arquitetura.md#310-dados-dois-bancos-integridade-e-concorrência) |
 | Planilhas dos alunos alteradas (colunas movidas, abas renomeadas) | O importador localiza os cabeçalhos pelo texto, e a prévia mostra os avisos |
 | E-mails caindo no spam ou SMTP mal configurado | Botão de e-mail de teste, guia de SPF/DKIM e links manuais como alternativa |

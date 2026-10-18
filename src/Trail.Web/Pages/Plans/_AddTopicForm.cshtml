@@ -1,9 +1,9 @@
 @model Trail.Web.Pages.Plans.AddTopicFormModel
 @{
     const string errorsId = "add-topic-errors";
-    var errors = PlanFormErrors.For(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.CodeField, PlanFormErrors.TitleField);
-    var codeInvalid = PlanFormErrors.HasErrors(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.CodeField);
-    var titleInvalid = PlanFormErrors.HasErrors(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.TitleField);
+    var errors = FormErrors.For(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.CodeField, PlanFormErrors.TitleField);
+    var codeInvalid = FormErrors.HasErrors(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.CodeField);
+    var titleInvalid = FormErrors.HasErrors(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.TitleField);
 }
 
 <form id="add-topic-form" aria-labelledby="add-topic-heading"

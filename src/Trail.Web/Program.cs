@@ -14,6 +14,7 @@ using Trail.Web;
 using Trail.Web.Auth;
 using Trail.Web.Cli;
 using Trail.Web.Fitness;
+using Trail.Web.Forms;
 using Trail.Web.Htmx;
 using Trail.Web.Markdown;
 using Trail.Web.Observability;
@@ -68,6 +69,7 @@ builder.Services.Replace(ServiceDescriptor.Singleton(HtmlEncoder.Create(htmlEnco
 
 builder.Services.AddAntiforgery(options => options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest);
 builder.Services.AddHtmx();
+builder.Services.AddFormValidationMessages();
 builder.Services.AddSingleton<IMarkdownRenderer, MarkdigMarkdownRenderer>();
 
 builder.Services.AddScoped<ICspNonceService, CspNonceService>();

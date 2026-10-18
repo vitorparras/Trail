@@ -62,12 +62,18 @@ internal static class AccountTestHelper
         string url,
         Dictionary<string, string> formData,
         string? csrfHeader = null,
-        string? csrfToken = null)
+        string? csrfToken = null,
+        IReadOnlyDictionary<string, string>? headers = null)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, url)
         {
             Content = new FormUrlEncodedContent(formData)
         };
+
+        foreach (var (name, value) in headers ?? new Dictionary<string, string>())
+        {
+            request.Headers.Add(name, value);
+        }
 
         if (!string.IsNullOrWhiteSpace(csrfHeader) && !string.IsNullOrWhiteSpace(csrfToken))
         {
@@ -125,6 +131,25 @@ internal static class AccountTestHelper
         AddFormToken(document, form);
         return await PostFormWithAntiforgeryAsync(client, "/Account/Login", form, csrfHeader, csrfToken);
     }
+
+    public static AngleSharp.Dom.IElement? InvalidField(IHtmlDocument document, string name) =>
+        document.QuerySelector($"[name='{name}'][aria-invalid='true']");
+
+    public static List<string> FieldErrors(IHtmlDocument document, string name)
+    {
+        var describedBy = document.QuerySelector($"[name='{name}']")?.GetAttribute("aria-describedby");
+        return [.. (describedBy ?? string.Empty)
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Select(document.GetElementById)
+            .OfType<AngleSharp.Dom.IElement>()
+            .Select(element => element.TextContent.Trim())
+            .Where(text => text.Length > 0)];
+    }
+
+    public static List<string> SummaryErrors(IHtmlDocument document) =>
+        [.. document.QuerySelectorAll(".validation-summary-errors li")
+            .Select(item => item.TextContent.Trim())
+            .Where(text => text.Length > 0)];
 
     private static void AddFormToken(IHtmlDocument document, Dictionary<string, string> form)
     {

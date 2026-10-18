@@ -1,8 +1,8 @@
 @model Trail.Web.Pages.Plans.SectionNameFormModel
 @{
     var errorsId = $"section-name-errors-{Model.SectionId}";
-    var errors = PlanFormErrors.For(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.NameField);
-    var nameInvalid = PlanFormErrors.HasErrors(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.NameField);
+    var errors = FormErrors.For(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.NameField);
+    var nameInvalid = FormErrors.HasErrors(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.NameField);
 }
 
 <form method="post" asp-page-handler="UpdateSection" asp-route-planId="@Model.PlanId" class="flex flex-wrap items-center gap-2">

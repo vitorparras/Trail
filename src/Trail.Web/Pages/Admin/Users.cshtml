@@ -3,6 +3,12 @@
 @model Trail.Web.Pages.Admin.UsersModel
 @{
     ViewData["Title"] = SharedLocalizer["AdministrationTitle"];
+    const string inviteErrorsId = "invite-email-errors";
+    const string testEmailErrorsId = "test-email-errors";
+    var inviteErrors = FormErrors.ForFieldsOnly(ViewData.ModelState, true, "email");
+    var inviteInvalid = FormErrors.HasErrors(ViewData.ModelState, true, "email");
+    var testEmailErrors = FormErrors.ForFieldsOnly(ViewData.ModelState, true, "recipientEmail");
+    var testEmailInvalid = FormErrors.HasErrors(ViewData.ModelState, true, "recipientEmail");
 }
 
 <div class="mx-auto max-w-6xl flex flex-col gap-8">
@@ -57,7 +63,7 @@
         </div>
     }
 
-    <div asp-validation-summary="All" class="alert alert-error text-sm" role="alert"></div>
+    <div asp-validation-summary="ModelOnly" class="alert alert-error text-sm" role="alert"></div>
 
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
         @if (Model.AcceptsInvitations)
@@ -75,7 +81,10 @@
                                    type="email"
                                    required
                                    placeholder="@SharedLocalizer["InviteEmailPlaceholder"]"
-                                   class="input input-bordered w-full input-sm" />
+                                   aria-invalid="@(inviteInvalid ? "true" : null)"
+                                   aria-describedby="@(inviteInvalid ? inviteErrorsId : null)"
+                                   class="input input-bordered w-full input-sm @(inviteInvalid ? "input-error" : null)" />
+                            <partial name="_FormErrors" model="new FormErrorList(inviteErrorsId, inviteErrors)" />
                         </div>
                         <button type="submit" class="btn btn-primary btn-sm self-start">
                             @SharedLocalizer["SendInvitation"]
@@ -108,7 +117,10 @@
                                type="email"
                                required
                                placeholder="@SharedLocalizer["InviteEmailPlaceholder"]"
-                               class="input input-bordered w-full input-sm" />
+                               aria-invalid="@(testEmailInvalid ? "true" : null)"
+                               aria-describedby="@(testEmailInvalid ? testEmailErrorsId : null)"
+                               class="input input-bordered w-full input-sm @(testEmailInvalid ? "input-error" : null)" />
+                        <partial name="_FormErrors" model="new FormErrorList(testEmailErrorsId, testEmailErrors)" />
                     </div>
                     <button type="submit" class="btn btn-outline btn-sm self-start">
                         @SharedLocalizer["SendTestEmail"]

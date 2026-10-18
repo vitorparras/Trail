@@ -27,7 +27,7 @@
             <label asp-for="Input.Name" class="label">
                 <span class="label-text font-medium">@SharedLocalizer["PlanName"]</span>
             </label>
-            <input asp-for="Input.Name" class="input input-bordered w-full" required />
+            <input asp-for="Input.Name" asp-error-span class="input input-bordered w-full" required />
             <span asp-validation-for="Input.Name" class="text-error text-sm mt-1"></span>
         </div>
 
@@ -35,7 +35,7 @@
             <label asp-for="Input.Description" class="label">
                 <span class="label-text font-medium">@SharedLocalizer["PlanDescription"]</span>
             </label>
-            <textarea asp-for="Input.Description" class="textarea textarea-bordered w-full" rows="3"></textarea>
+            <textarea asp-for="Input.Description" asp-error-span class="textarea textarea-bordered w-full" rows="3"></textarea>
             <span asp-validation-for="Input.Description" class="text-error text-sm mt-1"></span>
         </div>
 
@@ -43,7 +43,7 @@
             <label asp-for="Input.ScoringRule" class="label">
                 <span class="label-text font-medium">@SharedLocalizer["ScoringRule"]</span>
             </label>
-            <select asp-for="Input.ScoringRule" class="select select-bordered w-full">
+            <select asp-for="Input.ScoringRule" asp-error-span class="select select-bordered w-full">
                 <option value="@Trail.Domain.Planning.ScoringRule.Cebraspe">@SharedLocalizer["ScoringRule_Cebraspe"]</option>
                 <option value="@Trail.Domain.Planning.ScoringRule.Standard">@SharedLocalizer["ScoringRule_Standard"]</option>
                 <option value="@Trail.Domain.Planning.ScoringRule.None">@SharedLocalizer["ScoringRule_None"]</option>
@@ -55,7 +55,7 @@
             <label asp-for="Input.PeriodKind" class="label">
                 <span class="label-text font-medium">@SharedLocalizer["DefaultPerformancePeriod"]</span>
             </label>
-            <select asp-for="Input.PeriodKind" class="select select-bordered w-full">
+            <select asp-for="Input.PeriodKind" asp-error-span class="select select-bordered w-full">
                 <option value="@Trail.Domain.Planning.PerformancePeriodKind.All">@SharedLocalizer["Period_All"]</option>
                 <option value="@Trail.Domain.Planning.PerformancePeriodKind.LastDays">@SharedLocalizer["Period_LastDays"]</option>
                 <option value="@Trail.Domain.Planning.PerformancePeriodKind.DateRange">@SharedLocalizer["Period_DateRange"]</option>
@@ -68,21 +68,21 @@
                 <label asp-for="Input.PeriodDays" class="label">
                     <span class="label-text">@SharedLocalizer["Days"]</span>
                 </label>
-                <input asp-for="Input.PeriodDays" type="number" min="1" class="input input-bordered w-full" />
+                <input asp-for="Input.PeriodDays" asp-error-span type="number" min="1" class="input input-bordered w-full" />
                 <span asp-validation-for="Input.PeriodDays" class="text-error text-sm mt-1"></span>
             </div>
             <div class="form-control">
                 <label asp-for="Input.PeriodStartDate" class="label">
                     <span class="label-text">@SharedLocalizer["StartDate"]</span>
                 </label>
-                <input asp-for="Input.PeriodStartDate" type="date" class="input input-bordered w-full" />
+                <input asp-for="Input.PeriodStartDate" asp-error-span type="date" class="input input-bordered w-full" />
                 <span asp-validation-for="Input.PeriodStartDate" class="text-error text-sm mt-1"></span>
             </div>
             <div class="form-control">
                 <label asp-for="Input.PeriodEndDate" class="label">
                     <span class="label-text">@SharedLocalizer["EndDate"]</span>
                 </label>
-                <input asp-for="Input.PeriodEndDate" type="date" class="input input-bordered w-full" />
+                <input asp-for="Input.PeriodEndDate" asp-error-span type="date" class="input input-bordered w-full" />
                 <span asp-validation-for="Input.PeriodEndDate" class="text-error text-sm mt-1"></span>
             </div>
         </div>
@@ -92,14 +92,14 @@
                 <label asp-for="Input.LowBandThreshold" class="label">
                     <span class="label-text font-medium">@SharedLocalizer["LowBandThreshold"]</span>
                 </label>
-                <input asp-for="Input.LowBandThreshold" type="number" class="input input-bordered w-full" />
+                <input asp-for="Input.LowBandThreshold" asp-error-span type="number" class="input input-bordered w-full" />
                 <span asp-validation-for="Input.LowBandThreshold" class="text-error text-sm mt-1"></span>
             </div>
             <div class="form-control">
                 <label asp-for="Input.HighBandThreshold" class="label">
                     <span class="label-text font-medium">@SharedLocalizer["HighBandThreshold"]</span>
                 </label>
-                <input asp-for="Input.HighBandThreshold" type="number" class="input input-bordered w-full" />
+                <input asp-for="Input.HighBandThreshold" asp-error-span type="number" class="input input-bordered w-full" />
                 <span asp-validation-for="Input.HighBandThreshold" class="text-error text-sm mt-1"></span>
             </div>
         </div>
@@ -109,21 +109,21 @@
                 <label asp-for="Input.ExamDate" class="label">
                     <span class="label-text font-medium">@SharedLocalizer["ExamDate"]</span>
                 </label>
-                <input asp-for="Input.ExamDate" type="date" class="input input-bordered w-full" />
+                <input asp-for="Input.ExamDate" asp-error-span type="date" class="input input-bordered w-full" />
                 <span asp-validation-for="Input.ExamDate" class="text-error text-sm mt-1"></span>
             </div>
             <div class="form-control">
                 <label asp-for="Input.DefaultMockExamQuestions" class="label">
                     <span class="label-text font-medium">@SharedLocalizer["DefaultMockExamQuestions"]</span>
                 </label>
-                <input asp-for="Input.DefaultMockExamQuestions" type="number" min="1" class="input input-bordered w-full" />
+                <input asp-for="Input.DefaultMockExamQuestions" asp-error-span type="number" min="1" class="input input-bordered w-full" />
                 <span asp-validation-for="Input.DefaultMockExamQuestions" class="text-error text-sm mt-1"></span>
             </div>
         </div>
 
         <div class="form-control">
             <label class="label cursor-pointer justify-start gap-3">
-                <input asp-for="Input.FitnessTestEnabled" type="checkbox" class="checkbox" />
+                <input asp-for="Input.FitnessTestEnabled" asp-error-span type="checkbox" class="checkbox" />
                 <span class="label-text font-medium">@SharedLocalizer["FitnessTestEnabled"]</span>
             </label>
             <span asp-validation-for="Input.FitnessTestEnabled" class="text-error text-sm mt-1"></span>

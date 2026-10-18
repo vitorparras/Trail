@@ -1,9 +1,9 @@
 @model Trail.Web.Pages.Plans.UpdateTopicFormModel
 @{
     const string errorsId = "update-topic-errors";
-    var errors = PlanFormErrors.For(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.CodeField, PlanFormErrors.TitleField);
-    var codeInvalid = PlanFormErrors.HasErrors(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.CodeField);
-    var titleInvalid = PlanFormErrors.HasErrors(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.TitleField);
+    var errors = FormErrors.For(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.CodeField, PlanFormErrors.TitleField);
+    var codeInvalid = FormErrors.HasErrors(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.CodeField);
+    var titleInvalid = FormErrors.HasErrors(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.TitleField);
 }
 
 <form method="post"

@@ -954,4 +954,25 @@
   <data name="DashboardCreateFirstPlan" xml:space="preserve">
     <value>Criar o primeiro plano</value>
   </data>
+  <data name="ModelBindingAttemptedValueIsInvalid" xml:space="preserve">
+    <value>O valor '{0}' não é válido.</value>
+  </data>
+  <data name="ModelBindingMissingBindRequiredValue" xml:space="preserve">
+    <value>É necessário informar um valor.</value>
+  </data>
+  <data name="ModelBindingMissingKeyOrValue" xml:space="preserve">
+    <value>É necessário informar um valor.</value>
+  </data>
+  <data name="ModelBindingMissingRequestBodyRequiredValue" xml:space="preserve">
+    <value>O corpo da requisição é obrigatório.</value>
+  </data>
+  <data name="ModelBindingUnknownValueIsInvalid" xml:space="preserve">
+    <value>O valor informado não é válido.</value>
+  </data>
+  <data name="ModelBindingValueMustBeANumber" xml:space="preserve">
+    <value>O valor deve ser um número.</value>
+  </data>
+  <data name="ModelBindingValueMustNotBeNull" xml:space="preserve">
+    <value>É necessário informar um valor.</value>
+  </data>
 </root>

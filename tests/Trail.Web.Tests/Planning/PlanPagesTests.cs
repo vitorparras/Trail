@@ -1128,6 +1128,7 @@ public sealed class PlanPagesTests(TrailWebApplicationFactory baseFactory) : ICl
         Assert.Equal(submittedName, invalidInput.GetAttribute("value") ?? string.Empty);
         var errors = document.GetElementById(invalidInput.GetAttribute("aria-describedby")!);
         Assert.NotNull(errors);
+        Assert.Equal("alert", errors.GetAttribute("role"));
         Assert.Equal(expectedMessage, Assert.Single(errors.QuerySelectorAll("li")).TextContent.Trim());
         Assert.Single(document.All, element => element.ChildElementCount == 0 && element.TextContent.Trim() == expectedMessage);
         Assert.DoesNotContain("field is required", html, StringComparison.OrdinalIgnoreCase);
@@ -1219,6 +1220,7 @@ public sealed class PlanPagesTests(TrailWebApplicationFactory baseFactory) : ICl
         var expectedMessage = localizer[messageCode].Value;
         var errors = document.GetElementById(invalidControl.GetAttribute("aria-describedby")!);
         Assert.NotNull(errors);
+        Assert.Equal("alert", errors.GetAttribute("role"));
         Assert.Equal(expectedMessage, Assert.Single(errors.QuerySelectorAll("li")).TextContent.Trim());
         Assert.Single(document.All, element => element.ChildElementCount == 0 && element.TextContent.Trim() == expectedMessage);
         Assert.DoesNotContain("field is required", html, StringComparison.OrdinalIgnoreCase);

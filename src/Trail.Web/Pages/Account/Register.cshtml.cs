@@ -10,6 +10,12 @@ namespace Trail.Web.Pages.Account;
 [AllowAnonymous]
 public sealed class RegisterModel : PageModel
 {
+    private static readonly FieldTargetMap Fields = FieldTargetMap.Empty.Prefixed(
+        nameof(Input),
+        nameof(InputModel.Email),
+        nameof(InputModel.Password),
+        nameof(InputModel.ConfirmPassword));
+
     private readonly RegisterAccountHandler _registerHandler;
 
     public RegisterModel(RegisterAccountHandler registerHandler)
@@ -53,7 +59,7 @@ public sealed class RegisterModel : PageModel
 
         if (!result.IsOk)
         {
-            return this.Respond(result, "account.register");
+            return this.Respond(result, "account.register", options => options.Fields = Fields);
         }
 
         if (result.Data.RequiresEmailConfirmation)

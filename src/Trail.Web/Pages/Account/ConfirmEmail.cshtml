@@ -2,6 +2,7 @@
 @model Trail.Web.Pages.Account.ConfirmEmailModel
 @{
     ViewData["Title"] = SharedLocalizer["ConfirmEmailTitle"];
+    var confirmErrors = FormErrors.For(ViewData.ModelState, true);
 }
 
 <div class="mx-auto max-w-md">
@@ -29,7 +30,7 @@
                     <icon name="circle-alert" class="size-6 shrink-0" />
                     <div>
                         <h1 class="font-bold">@SharedLocalizer["ConfirmEmailErrorTitle"]</h1>
-                        <p class="text-sm">@SharedLocalizer["ConfirmEmailErrorMessage"]</p>
+                        <p class="text-sm">@(confirmErrors.Count > 0 ? string.Join(" ", confirmErrors) : SharedLocalizer["ConfirmEmailErrorMessage"])</p>
                     </div>
                 </div>
 

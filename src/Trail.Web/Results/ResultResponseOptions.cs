@@ -15,6 +15,8 @@ public sealed class ResultResponseOptions
     public object? RedirectRouteValues { get; set; }
 
     public bool RedirectGetRequests { get; set; }
+
+    public FieldTargetMap? Fields { get; set; }
 }
 
 public sealed class ResultResponseOptions<T>
@@ -35,4 +37,6 @@ public sealed class ResultResponseOptions<T>
     public object? RedirectRouteValues { get; set; }
 
     public bool RedirectGetRequests { get; set; }
+
+    public FieldTargetMap? Fields { get; set; }
 }

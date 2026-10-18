@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.Extensions.Options;
 using Trail.Web.Toasts;
 
 namespace Trail.Web.Results;
@@ -23,6 +24,7 @@ public sealed class StatusViewResult(
         httpContext.Response.ContentType = "text/html; charset=utf-8";
 
         var viewEngine = httpContext.RequestServices.GetRequiredService<IRazorViewEngine>();
+        var htmlHelperOptions = httpContext.RequestServices.GetRequiredService<IOptions<MvcViewOptions>>().Value.HtmlHelperOptions;
         var tempDataProvider = httpContext.RequestServices.GetRequiredService<ITempDataProvider>();
         var modelMetadataProvider = httpContext.RequestServices.GetRequiredService<IModelMetadataProvider>();
 
@@ -40,7 +42,7 @@ public sealed class StatusViewResult(
 
         var tempData = new TempDataDictionary(httpContext, tempDataProvider);
         await using var writer = new StringWriter();
-        var viewContext = new ViewContext(context, view, viewData, tempData, writer, new HtmlHelperOptions());
+        var viewContext = new ViewContext(context, view, viewData, tempData, writer, htmlHelperOptions);
 
         await view.RenderAsync(viewContext);
         await httpContext.Response.WriteAsync(writer.ToString());

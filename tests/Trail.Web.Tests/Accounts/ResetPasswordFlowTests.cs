@@ -22,7 +22,10 @@ public sealed class ResetPasswordFlowTests(TrailWebApplicationFactory factory) :
         var (statusCode, document) = await PostResetAsync(userId, token, "abc");
 
         Assert.Equal(HttpStatusCode.UnprocessableEntity, statusCode);
-        Assert.Equal([_localizer["accounts.identity.password_too_short"].Value], FormErrors(document));
+        Assert.NotNull(AccountTestHelper.InvalidField(document, "Input.NewPassword"));
+        Assert.Equal([_localizer["accounts.identity.password_too_short"].Value], AccountTestHelper.FieldErrors(document, "Input.NewPassword"));
+        Assert.Null(AccountTestHelper.InvalidField(document, "Input.ConfirmNewPassword"));
+        Assert.Empty(FormErrors(document));
     }
 
     [Fact]

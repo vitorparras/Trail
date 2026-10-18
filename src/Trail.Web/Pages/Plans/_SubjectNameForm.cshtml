@@ -1,8 +1,8 @@
 @model Trail.Web.Pages.Plans.SubjectNameFormModel
 @{
     const string errorsId = "subject-name-errors";
-    var errors = PlanFormErrors.For(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.NameField);
-    var nameInvalid = PlanFormErrors.HasErrors(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.NameField);
+    var errors = FormErrors.For(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.NameField);
+    var nameInvalid = FormErrors.HasErrors(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.NameField);
 }
 
 <form method="post" asp-page-handler="UpdateSubject" asp-route-planId="@Model.PlanId" asp-route-subjectId="@Model.SubjectId" class="flex flex-wrap items-center gap-2">

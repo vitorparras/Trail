@@ -1,6 +1,6 @@
 # Fase 3 — Questões, desempenho e histórico: detalhamento
 
-> **Situação:** proposta, aguardando aprovação do autor. Desenvolvida na Onda A, em paralelo
+> **Situação:** aprovada pelo autor em 18/10/2026, com todas as opções recomendadas. Desenvolvida na Onda A, em paralelo
 > com as Fases 4 e 5 e a parte de PWA da Fase 7 (7a).
 
 ## Objetivo
@@ -344,6 +344,8 @@ A Onda 0 acrescenta estes ícones do Lucide ao sprite (W0-T13). Todos são decor
 | `info` | Aviso de plano "sem pontuação", no lugar do bloco e dos campos |
 
 ## Perguntas para o autor
+
+> **Respondidas pelo autor em 18/10/2026:** todas as opções recomendadas foram aceitas.
 
 A numeração original foi mantida para as referências cruzadas: a P2 (qual plano o painel
 mostra) e a P9 (peças comuns) passaram para a Onda 0 (P4 e P1), a P5 virou a D11 e a P10

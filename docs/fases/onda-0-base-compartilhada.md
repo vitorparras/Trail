@@ -1,6 +1,6 @@
 # Onda 0 — Base compartilhada: detalhamento
 
-> **Situação:** proposta, aguardando aprovação do autor. Prepara a Onda A, em que as Fases 3,
+> **Situação:** aprovada pelo autor em 18/10/2026, com todas as opções recomendadas. Prepara a Onda A, em que as Fases 3,
 > 4 e 5 e a Fase 7a (PWA) são desenvolvidas em paralelo, conforme o plano em ondas aprovado
 > pelo autor em 17/10/2026 ([roteiro](../05-roteiro.md#ondas)).
 
@@ -436,6 +436,8 @@ necessidade descoberta depois fica para a integração.
 - As perguntas abaixo têm resposta, registrada pela W0-T7.
 
 ## Perguntas para o autor
+
+> **Respondidas pelo autor em 18/10/2026:** todas as opções recomendadas foram aceitas.
 
 ### P1 — Peças comuns: calendário, prévia de exclusão e links do plano
 

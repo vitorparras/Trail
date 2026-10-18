@@ -23,7 +23,7 @@ histórico de questões e controle do tempo de estudo.
 | 2 | [Domínio e regras](02-dominio-e-regras.md) | Glossário, modelo de dados, modelo tático, regras de negócio, fórmulas, período de desempenho, tempo de estudo, importação e backup |
 | 3 | [Arquitetura](03-arquitetura.md) | Padrões adotados, características, camadas e módulos, casos de uso, resultado padrão, eventos, pontos de variação, o que não fazemos, stack, segurança, observabilidade, verificações automáticas e gatilhos de evolução |
 | 4 | [Qualidade e entrega](04-qualidade-e-entrega.md) | Testes, padrões de código, Git, CI/CD, releases, open source |
-| 5 | [Roteiro](05-roteiro.md) | Fases 0 a 7, com entregas e critérios de pronto. Detalhamento: [Fase 0](fases/fase-0-fundacao.md) |
+| 5 | [Roteiro](05-roteiro.md) | Fases 0 a 7 em ondas, com entregas e critérios de pronto. Detalhamentos: [Fase 0](fases/fase-0-fundacao.md), [Fase 1](fases/fase-1-contas-email-isolamento.md), [Fase 2](fases/fase-2-planos-e-conteudo.md), [Onda 0](fases/onda-0-base-compartilhada.md), [Fase 3](fases/fase-3-questoes-desempenho-historico.md), [Fase 4](fases/fase-4-simulados-e-taf.md), [Fase 5](fases/fase-5-tempo-de-estudo.md), [Fase 7a](fases/fase-7a-pwa.md) |
 | — | [ADRs](adr/) | Registros de decisão, um por decisão |
 
 ## Decisões aceitas
@@ -59,5 +59,8 @@ são confirmadas no detalhamento da fase que as usa.
 
 ## Próximo passo
 
-1. Aprovar o [detalhamento da Fase 0](fases/fase-0-fundacao.md).
-2. Começar a [Fase 0 — Fundação](05-roteiro.md#fase-0--fundação).
+Fases 0, 1 e 2 concluídas. Os detalhamentos da Onda 0 e da Onda A foram aprovados em
+18/10/2026, com todas as opções recomendadas.
+
+1. Implementar a [Onda 0 — Base compartilhada](fases/onda-0-base-compartilhada.md).
+2. Em seguida, a Onda A: Fases 3, 4, 5 e 7a em paralelo.

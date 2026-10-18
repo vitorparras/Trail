@@ -1,6 +1,6 @@
 # Fase 7a — PWA: detalhamento
 
-> **Situação:** proposta, aguardando aprovação do autor. Desenvolvida na Onda A, em paralelo
+> **Situação:** aprovada pelo autor em 18/10/2026, com todas as opções recomendadas. Desenvolvida na Onda A, em paralelo
 > com as Fases 3, 4 e 5. Primeira parte da [Fase 7](../05-roteiro.md#fase-7--pwa-e-versão-10);
 > o restante é a [7b](#fica-para-a-7b).
 
@@ -226,6 +226,8 @@ site, mas o navegador **não oferece a instalação**.
 Os passos completos, com capturas, ficam no guia da 7b.
 
 ## Perguntas para o autor
+
+> **Respondidas pelo autor em 18/10/2026:** todas as opções recomendadas foram aceitas.
 
 ### P1 — Origem e desenho do ícone
 

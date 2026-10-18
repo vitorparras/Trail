@@ -1,6 +1,6 @@
 # Fase 4 — Simulados e TAF: detalhamento
 
-> **Situação:** proposta, aguardando aprovação do autor. Desenvolvida na Onda A, em paralelo
+> **Situação:** aprovada pelo autor em 18/10/2026, com todas as opções recomendadas. Desenvolvida na Onda A, em paralelo
 > com as Fases 3 e 5 e a parte de PWA da Fase 7 (7a).
 
 ## Objetivo
@@ -338,6 +338,8 @@ A Onda 0 acrescenta estes ícones do Lucide ao sprite (W0-T13). Todos são decor
 | `dumbbell` | Link e bloco "TAF" |
 
 ## Perguntas para o autor
+
+> **Respondidas pelo autor em 18/10/2026:** todas as opções recomendadas foram aceitas.
 
 A numeração original foi mantida. A pergunta 7 (peças comuns) passou para a
 [Onda 0](onda-0-base-compartilhada.md) (P1), onde também estão as outras perguntas

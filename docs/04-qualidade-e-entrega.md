@@ -67,6 +67,10 @@ testes controlam o tempo.
 - **Branch `main` protegida:** só recebe código por PR, com o CI verde.
 - **Uma branch e um PR por fase** (decisão do autor), com commits atômicos, um por
   tarefa. O autor aprova o PR na apresentação do fim da fase.
+- **Fases em paralelo** (Onda A, decisão do autor): cada fase continua com o seu PR para a
+  `main`, integrado em ordem (3, 4, 5, 7a). Antes de cada merge, a branch é rebaseada na
+  `main` e a migração da fase é gerada de novo. Migrações são sempre geradas, nunca
+  editadas à mão.
 - **Repositório público desde o início** (decisão do autor): o histórico de commits, PRs
   e CI também conta no portfólio.
 
@@ -79,7 +83,9 @@ Em todo PR:
 3. Testes de unidade, de propriedades e de arquitetura.
 4. Verificação de migrações pendentes nos dois contextos.
 5. Testes de casos de uso e de integração, em matriz: `sqlite` e `postgresql`.
-6. Testes ponta a ponta (Playwright) contra a imagem Docker gerada.
+6. Testes ponta a ponta (Playwright) contra a imagem Docker gerada. A exceção aprovada são
+   os fluxos que precisam controlar o relógio do servidor (pomodoro e sessão esquecida, Fase
+   5): eles rodam contra o app no processo do teste, com `FakeTimeProvider`.
 7. Verificação de pacotes vulneráveis: o restore do CI trata os avisos de auditoria do
    NuGet (diretos e transitivos) como erro. Uma exceção justificada usa
    `NuGetAuditSuppress`, registrada no repositório.

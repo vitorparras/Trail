@@ -1,6 +1,6 @@
 # Fase 5 — Tempo de estudo: detalhamento
 
-> **Situação:** proposta, aguardando aprovação do autor. Desenvolvida na Onda A, em paralelo
+> **Situação:** aprovada pelo autor em 18/10/2026, com todas as opções recomendadas. Desenvolvida na Onda A, em paralelo
 > com as Fases 3 e 4 e a parte de PWA da Fase 7 (7a), sobre a
 > [Onda 0 — Base compartilhada](onda-0-base-compartilhada.md).
 
@@ -372,6 +372,8 @@ a prévia de exclusão funcionam sem editar a página do painel nem as páginas 
   corrigida ou excluída. Os relatórios do aluno vêm sempre do banco.
 
 ## Perguntas para o autor
+
+> **Respondidas pelo autor em 18/10/2026:** todas as opções recomendadas foram aceitas.
 
 As perguntas sobre os eventos de correção e exclusão (antiga 6) e sobre as peças comuns
 (antiga 10) passaram para a Onda 0 (P6 e P1). A numeração das demais foi mantida, porque

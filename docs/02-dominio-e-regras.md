@@ -63,7 +63,7 @@ erDiagram
 | `TopicNote` | `Id`, `OwnerId`, `TopicId`, `Markdown` |
 | `QuestionEntry` | `Id`, `OwnerId`, `TopicId`, `Date`, `Total`, `Correct`, `Wrong`, `CreatedAt` |
 | `StudySession` | `Id`, `OwnerId`, `SubjectId`, `TopicId?`, `Mode`, `StartedAt`, `EndedAt?`, `PlannedDuration?` (pomodoro), `Notes` |
-| `MockExam` | `Id`, `OwnerId`, `StudyPlanId`, `Number`, `Date?`, `Name`, `Total`, `Blank`, `Correct`, `Wrong`, `Notes` |
+| `MockExam` | `Id`, `OwnerId`, `StudyPlanId`, `Number` (único no plano), `Date?`, `Name`, `Total`, `Correct`, `Wrong`, `Notes`. Os brancos são derivados (`Total − Correct − Wrong`), sem coluna própria |
 | `FitnessTestEvent` | `Id`, `StudyPlanId`, `Name`, `Unit` (repetições, centímetros, milissegundos), `Order` |
 | `FitnessTestAttempt` | `Id`, `OwnerId`, `StudyPlanId`, `Date`, `Comment` |
 | `FitnessTestResult` | `AttemptId`, `EventId`, `Value` (inteiro, na menor unidade), `Points` |
@@ -129,6 +129,7 @@ operação altera. O modelo e todas as regras foram aprovados pelo autor.
 | O tópico da sessão pertence à disciplina da sessão. Continua válido porque tópicos não mudam de disciplina | Caso de uso |
 | Simulado: `Blank + Correct + Wrong = Total` | `QuestionCount` + `CHECK` no banco |
 | Simulados sem data são ordenados pelo número | Consulta de simulados |
+| O número do simulado é único no plano | Índice único `(StudyPlanId, Number)` |
 | TAF: no máximo um resultado por prova, na unidade da prova. A tentativa pode ter só parte das provas | `FitnessTestAttempt` (recebe as provas do plano) |
 | Excluir algo com histórico (tópico, disciplina, prova do TAF, plano) apaga tudo em cascata, depois de uma confirmação que mostra o que será perdido | Caso de uso (contagens) + chaves estrangeiras em cascata |
 | Toda raiz de agregado pertence a um usuário | `OwnerId` + filtro global |
@@ -140,6 +141,10 @@ operação altera. O modelo e todas as regras foram aprovados pelo autor.
 - Criar e excluir uma disciplina alteram a disciplina e o sumário do plano.
 - As exclusões em cascata são feitas pelo banco (chaves estrangeiras), depois da
   confirmação do usuário. Elas não passam pelos agregados filhos nem geram eventos.
+- Excluir uma prova do TAF exclui junto as tentativas que ficam sem nenhum resultado,
+  avisando na prévia (decisão do autor, Onda 0, P7).
+- O acerto do pomodoro vencido (encerrar a sessão no fim planejado) é gravado numa
+  operação própria, antes do comando que o detectou (decisão do autor, Onda 0, P7).
 
 #### Value objects
 

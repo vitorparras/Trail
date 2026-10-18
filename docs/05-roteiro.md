@@ -187,7 +187,8 @@ paralelo sem editar os mesmos arquivos.
 
 **Pronto quando:**
 
-- Os erros E1 a E5 da planilha têm testes que documentam o comportamento corrigido.
+- Os erros E1, E2, E3 e E5 da planilha têm testes que documentam o comportamento
+  corrigido. O E4 (mediana dos simulados) fica na Fase 4, dona dos simulados.
 - Os testes de propriedade do período passam.
 
 ### Fase 4 — Simulados e TAF
@@ -203,7 +204,8 @@ paralelo sem editar os mesmos arquivos.
 - **TAF**, opcional por plano: provas configuráveis (no plano da PF: barra, salto,
   natação e corrida), resultados, pontos, total, comentário e gráfico de evolução.
 
-**Pronto quando:** as abas Simulados e Simulado TAF podem ser abandonadas.
+**Pronto quando:** as abas Simulados e Simulado TAF podem ser abandonadas, e o erro E4 tem
+teste que documenta o comportamento corrigido.
 
 ### Fase 5 — Tempo de estudo
 

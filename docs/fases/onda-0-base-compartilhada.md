@@ -27,7 +27,7 @@ Verificado no código da `main` (`2cf9d81`):
 | Exclusão sem confirmação | Só o plano tem confirmação com contagens (`Details.cshtml:325`). Disciplina e tópico são excluídos direto, e a prévia do tópico existe só como resposta JSON sem uso na tela (`Subject.cshtml.cs:501`) | Com a Fase 3, excluir um tópico apagaria histórico sem aviso |
 | Painel e isolamento | A página inicial (`Trail.Web.Pages.IndexModel`) não tem varredura de isolamento, e as varreduras comparam o namespace por igualdade | O seletor de plano e os blocos ficariam fora de toda varredura |
 | E2E | Um admin, um container e uma coleção sem paralelismo (`DockerAppFixture`). O cadastro é `Closed` por padrão, e convites são recusados nesse modo | As asserções do painel e a regra de uma sessão aberta por usuário dependeriam da ordem da suíte. Depois da 7a, o service worker controlaria as páginas de todos os E2E |
-| Ícones | O sprite tem 4 ícones, gerados da lista `LucideIcon` de `eng/frontend.props`, com o SHA-256 fixado e conferido pelo `VendoredFilesTests` | Duas fases editariam as mesmas linhas e um arquivo gerado com hash |
+| Ícones | O sprite tem 4 ícones (`house`, `menu`, `sun-moon` e `x`), gerados da lista `LucideIcon` de `eng/frontend.props`, com o SHA-256 fixado e conferido pelo `VendoredFilesTests`. As telas de Contas e Administração e o `_Conflict.cshtml` já usam `check-circle`, `alert-circle`, `info` e `alert-triangle`, que não estão no sprite e aparecem vazios; o teste só confere a página inicial | Duas fases editariam as mesmas linhas e um arquivo gerado com hash, e um ícone fora do sprite passaria despercebido |
 | Erros de formulário | `_FormErrors.cshtml` e `FormErrorList` ficam em `Pages/Plans`, sem `role="alert"` (pendência 3 da Fase 2) | Três implementações da mesma lista |
 | Orçamento de desempenho | Nenhum workflow agendado, e o passo de testes do `ci.yml` roda projetos inteiros | Um teste de desempenho rodaria em todo PR, e cada fase criaria o seu workflow |
 
@@ -57,7 +57,7 @@ Verificado no código da `main` (`2cf9d81`):
 | D7 | Gráficos | Tag helper `<chart>` e script externo `charts.js`, carregados pelo layout junto com o Chart.js, para que um gráfico trazido por troca do HTMX encontre o script. A tabela equivalente sai do mesmo modelo do gráfico |
 | D8 | Migrações | 100% geradas pelo `dotnet ef`, nunca editadas à mão. A Onda 0 não cria migração. Cada fase da Onda A mantém uma migração local, e a integração gera de novo uma migração por fase, em ordem, nos dois contextos |
 | D9 | E2E | Um usuário novo por teste, criado por convite e link manual; service worker bloqueado por padrão; sempre contra o container SQLite. As fases não alteram a fixture |
-| D10 | Ícones | A Onda 0 acrescenta de uma vez os ícones listados na seção "Ícones" de cada detalhamento da Onda A. Nenhuma fase acrescenta ícones |
+| D10 | Ícones | A Onda 0 acrescenta de uma vez os ícones listados na seção "Ícones" de cada detalhamento da Onda A e corrige os que as Fases 1 e 2 já usam fora do sprite, sempre com o nome canônico do Lucide fixado (o gerador do sprite não aceita os nomes antigos). Nenhuma fase acrescenta ícones |
 | D11 | Desempenho | A Onda 0 cria o harness e o workflow agendado. As fases só acrescentam cenários |
 
 ## Tarefas e ordem
@@ -78,7 +78,7 @@ flowchart LR
     T4 -.->|"_Layout.cshtml"| T10["W0-T10 — Erros de<br/>formulário compartilhados"]
     T11 -.->|"ci.yml"| T12
     T12 -.->|"ci.yml"| T7["W0-T7 — Processo, migrações<br/>e documentação"]
-    T13["W0-T13 — Ícones<br/>da Onda A"]
+    T13["W0-T13 — Ícones"]
 ```
 
 - Linha cheia: dependência real. Linha pontilhada: o mesmo arquivo, alterado em sequência.
@@ -303,7 +303,7 @@ Conforme a P1 (opção A):
     implementação de reserva na `Application`, como nas outras portas;
   - `Microsoft.Extensions.TimeProvider.Testing` (`FakeTimeProvider`) no
     `Directory.Packages.props` e em `Trail.Application.Tests` e `Trail.Web.Tests`, com os
-    arquivos de lock. No E2E, só se a Fase 5 escolher o host em processo.
+    arquivos de lock. No E2E, conforme a W0-T11.
 - **Prévia de exclusão:**
   - `DeletionTargetKind` passa para `Application/Abstractions`, com
     `DeletionScope(Kind, PlanId, SubjectIds, TopicIds)`, resolvido pelo
@@ -359,20 +359,22 @@ parcial comum.
   A, o modo `InviteOnly` vem de um override do compose só do E2E
   (`tests/Trail.E2E.Tests/compose.e2e.yml`), usado pelo job de E2E do `ci.yml`, e da mesma
   variável no container do Testcontainers.
+- A fixture também abre um segundo contexto autenticado do mesmo usuário, para os testes
+  de "outro aparelho" da Fase 5.
 - O contexto do navegador nasce com `ServiceWorkers = Block`. Só o `PwaE2ETests` pede
   `Allow`.
+- Se a Fase 5 escolher o host em processo para o pomodoro (pergunta 8, opção C), a Onda 0
+  acrescenta ao projeto de E2E `Microsoft.Extensions.TimeProvider.Testing`,
+  `Microsoft.AspNetCore.Mvc.Testing` e a referência ao `Trail.Web`, com o arquivo de lock. A
+  Fase 5 só cria a fixture desse host, num arquivo novo.
 - O lançamento do Chromium não muda: `127.0.0.1` e `localhost` já são contextos seguros.
-- A fixture permite abrir um segundo contexto do navegador já autenticado como o mesmo
-  usuário do teste (pelo `StorageState`), para simular outro aparelho (Fase 5).
-- Se a Fase 5, P8, ficar com a opção C, esta tarefa também acrescenta ao projeto de E2E o
-  `FakeTimeProvider`, o `Microsoft.AspNetCore.Mvc.Testing` e a referência ao `Trail.Web`.
 - Testes existentes: o `PlansE2ETests` passa a usar um usuário novo, e o
   `AccountsE2ETests` passa a conferir a recusa sem convite
   (`accounts.registration.invite_required`). O modo `Closed` continua coberto nos testes
   HTTP e de casos de uso.
 
-**Testes:** dois usuários novos não veem os planos um do outro; com o padrão da fixture,
-nenhum service worker é registrado.
+**Testes:** dois usuários novos não veem os planos um do outro; o segundo contexto vê os
+dados do mesmo usuário; com o padrão da fixture, nenhum service worker é registrado.
 
 **Pronto quando:** os E2E passam contra o container SQLite, e cada classe de teste passa
 também sozinha (`--filter-class`), sem depender da ordem da suíte.
@@ -394,19 +396,31 @@ também sozinha (`--filter-class`), sem depender da ordem da suíte.
 **Pronto quando:** o `performance.yml` passa numa execução manual, e o log do CI de um PR
 mostra que os testes de desempenho não rodaram.
 
-### W0-T13 — Ícones da Onda A (`eng`, `Web`)
+### W0-T13 — Ícones (`eng`, `Web`)
 
+- O gerador do sprite só aceita o nome do arquivo no Lucide fixado (1.58.0), não os nomes
+  antigos. Por isso, os ícones das Fases 1 e 2 que estão fora do sprite trocam de nome nas
+  views e entram na lista: `check-circle` → `circle-check-big` (5 usos em `Account` e
+  `Admin`), `alert-circle` → `circle-alert`, `alert-triangle` → `triangle-alert`, e `info`.
 - Os ícones da seção "Ícones" dos detalhamentos das Fases 3, 4, 5 e 7a entram de uma vez na
-  lista `LucideIcon` de `eng/frontend.props`. O sprite é gerado de novo, e o SHA-256 fixado
-  é atualizado.
-- Os ícones que as páginas das Fases 1 e 2 já usam e que faltam no sprite entram junto
-  (hoje `check-circle`, `alert-circle`, `info` e `alert-triangle` não aparecem nas telas de
-  conta, de administração e no aviso de conflito).
-- Um teste novo confere que todo `<icon name="…">` das views está no sprite (hoje só a página
-  inicial é conferida), para um ícone faltando quebrar o build.
+  lista `LucideIcon` de `eng/frontend.props`, também com o nome canônico. Pedidos até agora:
 
-**Pronto quando:** `VendoredFilesTests` e o teste de ícones passam, e a Onda A não precisa de
-ícone novo. Uma necessidade descoberta depois fica para a integração.
+  | Fase | Ícones |
+  |---|---|
+  | 3 | `plus`, `pencil`, `trash` (era `trash-2`), `rotate-ccw-clock` (era `history`), `chart-bar`, `info` |
+  | 4 | `plus`, `pencil`, `trash` (era `trash-2`), `info`, `clipboard-check`, `dumbbell` |
+  | 5 | `play`, `square`, `skip-forward`, `bell`, `volume-2`, `volume-x`, `plus`, `pencil`, `trash` (era `trash-2`) |
+  | 7a | Conforme o detalhamento |
+
+- O sprite é gerado de novo, e o SHA-256 fixado é atualizado.
+- O `StaticAssetsTests.Get_Home_UsesOnlyIconsPresentInSprite`, que só confere a página
+  inicial, dá lugar a um teste que lê todas as views de `src/Trail.Web`, exige nome literal
+  em todo `<icon name="…">` e confere cada nome no sprite. Um ícone fora do sprite faz o CI
+  falhar.
+
+**Pronto quando:** `VendoredFilesTests` e o teste de ícones passam, os ícones das telas de
+Contas, Administração e conflito aparecem, e a Onda A não precisa de ícone novo. Uma
+necessidade descoberta depois fica para a integração.
 
 ## Pronto quando (onda)
 
@@ -498,7 +512,7 @@ Os detalhamentos da Onda A adotaram cinco ajustes ao modelo aprovado sem pergunt
 
 | Ajuste | Origem | O que muda |
 |---|---|---|
-| (a) Simulado sem a coluna `Blank` | Fase 4, D2 | A 2.2 lista `Blank` entre os campos do `MockExam`; com o `QuestionCount`, os brancos são derivados, e a coluna C da importação (2.4) passa a ser conferida, não gravada |
+| (a) Simulado sem a coluna `Blank` | Fase 4, D2 | A 2.2 lista `Blank` entre os campos do `MockExam`; com o `QuestionCount`, os brancos são derivados. Na planilha, a coluna C (branco) é digitada à mão, sem conferência com B − D − E; a importação (2.4) passa a conferi-la e avisar quando diverge, em vez de gravá-la |
 | (b) Número do simulado único no plano | Fase 4, D2 | Regra nova, com índice único `(StudyPlanId, Number)` |
 | (c) E4 testado na Fase 4 | Fases 3 e 4 | O critério "E1 a E5" da Fase 3 no roteiro passa a "E1, E2, E3 e E5", e o E4 vai para o da Fase 4, dona dos simulados |
 | (d) Acerto do pomodoro numa gravação própria | Fase 5, D3 | Exceção a "um único `SaveChanges`" (3.5 e 3.10) |

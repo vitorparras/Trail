@@ -9,13 +9,18 @@ using Microsoft.Extensions.Options;
 using Trail.Application;
 using Trail.Application.Abstractions;
 using Trail.Infrastructure;
+using Trail.Web;
 using Trail.Web.Auth;
 using Trail.Web.Cli;
+using Trail.Web.Fitness;
 using Trail.Web.Htmx;
 using Trail.Web.Markdown;
 using Trail.Web.Observability;
+using Trail.Web.Practice;
+using Trail.Web.Pwa;
 using Trail.Web.Results;
 using Trail.Web.Security;
+using Trail.Web.StudyTime;
 
 if (args is ["--healthcheck", ..])
 {
@@ -69,6 +74,12 @@ builder.Services.AddOptions<RepositoryOptions>()
     .BindConfiguration(RepositoryOptions.SectionName)
     .ValidateOnStart();
 builder.Services.AddSingleton<IValidateOptions<RepositoryOptions>, RepositoryOptionsValidator>();
+
+builder.Services.AddWebContributorsFrom(typeof(Program).Assembly);
+builder.Services.AddPracticeWeb();
+builder.Services.AddFitnessWeb();
+builder.Services.AddStudyTimeWeb();
+builder.Services.AddPwaWeb();
 
 if (args is ["--reset-admin-password", ..])
 {

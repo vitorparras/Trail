@@ -32,11 +32,11 @@ Substituir as abas **Simulados** e **Simulado TAF** da planilha:
   | W0-T2 | Preenche `AddPracticeApplication`, `AddPracticeInfrastructure`, `AddFitnessApplication` e `AddFitnessInfrastructure`, sem editar nenhum ponto de composição. Métricas, blocos do painel, links do plano e contribuintes da prévia são descobertos por convenção |
   | W0-T3 | Códigos `practice.` e textos dos simulados no `PracticeResource`; códigos `fitness.` e textos do TAF no `FitnessResource`. Os `_ViewImports.cshtml` de `Pages/Practice` e `Pages/Fitness` já existem, e o `UiText` do E2E lê os dois `.resx` |
   | W0-T4 | `<chart>` com série tracejada, dois gráficos com os mesmos rótulos, lacunas, eixo simétrico e formatos pt-BR, sempre com a tabela equivalente |
-  | W0-T5 | Dois `IDashboardBlock` que recebem o `DashboardContext`, com o plano escolhido pela regra da Onda 0, P4 |
+  | W0-T5 | Dois `IDashboardBlock` que recebem o `DashboardContext`, com o plano escolhido pela regra da Onda 0, P4. Nenhum `IPlanActivityContributor`: simulados e tentativas só têm `DateOnly`, sem instante no modelo aprovado |
   | W0-T6 | `QuestionCount` e o auxiliar de mapeamento (colunas `Total`, `Correct` e `Wrong`, com o `CHECK` entre aspas) |
   | W0-T7 | Migração local `AddMockExamsAndFitnessTest`, gerada de novo na integração |
   | W0-T8 | Login nas páginas de `Pages/Practice` e `Pages/Fitness` pela regra da Onda 0, P3. A autorização das duas pastas é registrada pela Onda 0, e esta fase não edita o `Program.cs` |
-  | W0-T9 | `IUserCalendar` (o `Today` que recusa datas futuras), `FakeTimeProvider`, `IDeletionImpactContributor` com `DeletionScope` e `IPlanLinkContributor`. Nenhum `IPlanActivityContributor`: simulados e tentativas só têm `DateOnly`, sem instante no modelo aprovado |
+  | W0-T9 | `IUserCalendar` (o `Today` que recusa datas futuras), `FakeTimeProvider`, `IDeletionImpactContributor` com `DeletionScope` e `IPlanLinkContributor` |
   | W0-T10 | `_FormErrors` e `FormErrorList` em `Pages/Shared`, com `role="alert"` e foco no primeiro campo inválido |
   | W0-T11 | Fixture do E2E com um usuário novo por teste e o service worker bloqueado |
   | W0-T12 | Harness de desempenho, ao qual esta fase acrescenta um cenário |

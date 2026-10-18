@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using AngleSharp.Html.Parser;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Localization;
 using Trail.Application.Accounts;
 using Trail.Domain.Common;
 
@@ -15,6 +16,7 @@ public sealed class OpenRegistrationWebApplicationFactory : TrailWebApplicationF
         builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["Registration:Mode"] = "Open",
+            ["Security:AuthRateLimitPermitLimit"] = "1000",
         }));
     }
 }
@@ -22,6 +24,7 @@ public sealed class OpenRegistrationWebApplicationFactory : TrailWebApplicationF
 public sealed partial class UniformAccountResponsesTests(OpenRegistrationWebApplicationFactory factory) : IClassFixture<OpenRegistrationWebApplicationFactory>
 {
     private const string ValidPassword = "ValidPassword123!";
+    private const string WrongPassword = "WrongPassword123!";
 
     [Theory]
     [InlineData(ValidPassword, HttpStatusCode.OK)]
@@ -94,10 +97,44 @@ public sealed partial class UniformAccountResponsesTests(OpenRegistrationWebAppl
         Assert.Equal(unknownUser, invalidToken);
     }
 
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    public async Task Post_Login_WithAWrongPasswordForAnExistingEmail_AnswersAsForAnUnknownEmail(bool emailConfirmed, bool isActive)
+    {
+        var existingEmail = await CreateUserAsync(emailConfirmed, isActive);
+
+        var unknown = await LoginAsync($"unknown-{Guid.NewGuid():N}@trail.local", WrongPassword);
+        var existing = await LoginAsync(existingEmail, WrongPassword);
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, unknown.StatusCode);
+        Assert.Contains(Text("accounts.login.invalid_credentials"), unknown.MainText, StringComparison.Ordinal);
+        Assert.Equal(unknown, existing);
+    }
+
+    [Theory]
+    [InlineData(false, true, "accounts.login.email_not_confirmed")]
+    [InlineData(true, false, "accounts.login.deactivated")]
+    [InlineData(false, false, "accounts.login.deactivated")]
+    public async Task Post_Login_WithTheCorrectPassword_ReportsTheAccountState(bool emailConfirmed, bool isActive, string expectedCode)
+    {
+        var email = await CreateUserAsync(emailConfirmed, isActive);
+
+        var response = await LoginAsync(email, ValidPassword);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Contains(Text(expectedCode), response.MainText, StringComparison.Ordinal);
+    }
+
     private HttpClient CreateClient() =>
         factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
 
-    private async Task<string> CreateUserAsync(bool emailConfirmed = true)
+    private string Text(string key) =>
+        factory.Services.GetRequiredService<IStringLocalizer<SharedResource>>()[key].Value;
+
+    private async Task<string> CreateUserAsync(bool emailConfirmed = true, bool isActive = true)
     {
         using var scope = factory.Services.CreateScope();
         var gateway = scope.ServiceProvider.GetRequiredService<IAccountIdentityGateway>();
@@ -105,8 +142,19 @@ public sealed partial class UniformAccountResponsesTests(OpenRegistrationWebAppl
 
         var created = await gateway.CreateUserAsync(email, ValidPassword, isAdmin: false, emailConfirmed, TestContext.Current.CancellationToken);
         Assert.True(created.IsOk);
+        if (!isActive)
+        {
+            Assert.True((await gateway.SetUserActiveStatusAsync(created.Data, isActive: false, TestContext.Current.CancellationToken)).IsOk);
+        }
 
         return email;
+    }
+
+    private async Task<AccountResponse> LoginAsync(string email, string password)
+    {
+        using var client = CreateClient();
+
+        return await ReadAsync(await AccountTestHelper.SignInAsync(client, email, password, rememberMe: false));
     }
 
     private async Task<Guid> UserIdOfAsync(string email)

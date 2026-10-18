@@ -120,7 +120,7 @@ public sealed class AccountIdentityGateway : IAccountIdentityGateway
         string password,
         CancellationToken cancellationToken = default)
     {
-        _userManager.PasswordHasher.HashPassword(new ApplicationUser { UserName = email, Email = email }, password);
+        SpendPasswordHashingTime(email, password);
         return Task.CompletedTask;
     }
 
@@ -167,17 +167,8 @@ public sealed class AccountIdentityGateway : IAccountIdentityGateway
         var user = await _userManager.FindByEmailAsync(email);
         if (user is null)
         {
+            SpendPasswordHashingTime(email, password);
             return PasswordSignInResult.InvalidCredentials;
-        }
-
-        if (!user.IsActive)
-        {
-            return PasswordSignInResult.Deactivated;
-        }
-
-        if (!user.EmailConfirmed)
-        {
-            return PasswordSignInResult.EmailNotConfirmed;
         }
 
         var checkResult = await _signInManager.CheckPasswordSignInAsync(user, password, lockoutOnFailure: true);
@@ -189,6 +180,16 @@ public sealed class AccountIdentityGateway : IAccountIdentityGateway
         if (!checkResult.Succeeded)
         {
             return PasswordSignInResult.InvalidCredentials;
+        }
+
+        if (!user.IsActive)
+        {
+            return PasswordSignInResult.Deactivated;
+        }
+
+        if (!user.EmailConfirmed)
+        {
+            return PasswordSignInResult.EmailNotConfirmed;
         }
 
         var extraClaims = new List<Claim>();
@@ -553,6 +554,9 @@ public sealed class AccountIdentityGateway : IAccountIdentityGateway
         await _userManager.UpdateSecurityStampAsync(admin);
         return Result.Ok();
     }
+
+    private void SpendPasswordHashingTime(string email, string password) =>
+        _userManager.PasswordHasher.HashPassword(new ApplicationUser { UserName = email, Email = email }, password);
 
     private static Failure EmailAlreadyExists() =>
         Result.Conflict(Message.Error("accounts.registration.email_already_exists"));

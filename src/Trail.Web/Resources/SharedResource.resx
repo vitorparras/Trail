@@ -252,6 +252,36 @@
   <data name="accounts.email.smtp_not_configured" xml:space="preserve">
     <value>O servidor SMTP não está configurado.</value>
   </data>
+  <data name="accounts.identity.default_error" xml:space="preserve">
+    <value>Não foi possível concluir a operação. Tente novamente.</value>
+  </data>
+  <data name="accounts.identity.concurrency_failure" xml:space="preserve">
+    <value>A conta foi alterada por outra operação. Tente novamente.</value>
+  </data>
+  <data name="accounts.identity.password_mismatch" xml:space="preserve">
+    <value>A senha atual está incorreta.</value>
+  </data>
+  <data name="accounts.identity.invalid_token" xml:space="preserve">
+    <value>O link é inválido ou expirou.</value>
+  </data>
+  <data name="accounts.identity.invalid_user_name" xml:space="preserve">
+    <value>O e-mail só pode conter letras sem acento, números e os caracteres - . _ @ +.</value>
+  </data>
+  <data name="accounts.identity.invalid_email" xml:space="preserve">
+    <value>Informe um endereço de e-mail válido.</value>
+  </data>
+  <data name="accounts.identity.duplicate_user_name" xml:space="preserve">
+    <value>Não foi possível concluir o cadastro. Tente novamente.</value>
+  </data>
+  <data name="accounts.identity.duplicate_email" xml:space="preserve">
+    <value>Não foi possível concluir o cadastro. Tente novamente.</value>
+  </data>
+  <data name="accounts.identity.password_too_short" xml:space="preserve">
+    <value>A senha deve ter pelo menos 6 caracteres.</value>
+  </data>
+  <data name="accounts.identity.password_requires_unique_chars" xml:space="preserve">
+    <value>A senha deve ter mais caracteres diferentes.</value>
+  </data>
   <data name="Login" xml:space="preserve">
     <value>Entrar</value>
   </data>

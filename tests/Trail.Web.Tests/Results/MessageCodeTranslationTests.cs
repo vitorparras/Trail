@@ -15,7 +15,7 @@ public sealed class MessageCodeTranslationTests(TrailWebApplicationFactory facto
     private static readonly HashSet<(string Type, string Expression)> AllowedComputedCodes =
     [
         ("Notification", "code"),
-        ("AccountIdentityGateway", "$\"accounts.identity.{e.Code.ToLowerInvariant()}\""),
+        ("IdentityErrorMessages", "CodeFor(error)"),
     ];
 
     private static readonly Lazy<MessageCodeScan> Scan = new(ScanSources);

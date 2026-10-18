@@ -38,7 +38,7 @@ public sealed partial class MailKitEmailSender : IEmailSender
         if (!IsSmtpConfigured)
         {
             activity?.SetStatus(ActivityStatusCode.Error, "SMTP is not configured");
-            return Result.Invalid(Message.Error("accounts.email.smtp_not_configured", "SMTP host is not configured."));
+            return Result.Invalid(Message.Error("accounts.email.smtp_not_configured"));
         }
 
         try
@@ -78,7 +78,7 @@ public sealed partial class MailKitEmailSender : IEmailSender
         {
             LogEmailSendFailed(_logger, ex, message.ToAddress, message.Kind);
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-            return Result.Invalid(Message.Error("accounts.email.send_failed", "Failed to send email."));
+            return Result.Invalid(Message.Error("accounts.email.send_failed"));
         }
     }
 

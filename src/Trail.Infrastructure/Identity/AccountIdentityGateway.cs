@@ -62,7 +62,7 @@ public sealed class AccountIdentityGateway : IAccountIdentityGateway
         var existing = await _userManager.FindByEmailAsync(email);
         if (existing is not null)
         {
-            return Result.Conflict(Message.Error("accounts.registration.email_already_exists", nameof(email)));
+            return EmailAlreadyExists();
         }
 
         var now = _timeProvider.GetUtcNow().UtcDateTime;
@@ -78,12 +78,18 @@ public sealed class AccountIdentityGateway : IAccountIdentityGateway
         };
 
         var createResult = await _userManager.CreateAsync(user, password);
+        if (createResult.Errors.Any(IdentityErrorMessages.IsDuplicateAccount))
+        {
+            return EmailAlreadyExists();
+        }
+
         if (!createResult.Succeeded)
         {
-            var messages = createResult.Errors
-                .Select(e => Message.Error($"accounts.identity.{e.Code.ToLowerInvariant()}", e.Description))
-                .ToList();
-            return Result.Invalid(messages);
+            return Result.Invalid(IdentityErrorMessages.ToMessages(
+                createResult.Errors,
+                new IdentityErrorTargets(
+                    Password: nameof(RegisterAccountCommand.Password),
+                    Email: nameof(RegisterAccountCommand.Email))));
         }
 
         return Result.Ok(UserId.From(user.Id));
@@ -193,10 +199,11 @@ public sealed class AccountIdentityGateway : IAccountIdentityGateway
         var changeResult = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
         if (!changeResult.Succeeded)
         {
-            var messages = changeResult.Errors
-                .Select(e => Message.Error($"accounts.identity.{e.Code.ToLowerInvariant()}", e.Description))
-                .ToList();
-            return Result.Invalid(messages);
+            return Result.Invalid(IdentityErrorMessages.ToMessages(
+                changeResult.Errors,
+                new IdentityErrorTargets(
+                    Password: nameof(ChangePasswordCommand.NewPassword),
+                    CurrentPassword: nameof(ChangePasswordCommand.CurrentPassword))));
         }
 
         if (_httpContextAccessor.HttpContext is not null)
@@ -236,7 +243,11 @@ public sealed class AccountIdentityGateway : IAccountIdentityGateway
         var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
         if (!result.Succeeded)
         {
-            return Result.Invalid(Message.Error("accounts.reset_password.invalid_token"));
+            return result.Errors.Any(IdentityErrorMessages.IsInvalidToken)
+                ? Result.Invalid(Message.Error("accounts.reset_password.invalid_token"))
+                : Result.Invalid(IdentityErrorMessages.ToMessages(
+                    result.Errors,
+                    new IdentityErrorTargets(Password: nameof(ResetPasswordCommand.NewPassword))));
         }
 
         return Result.Ok();
@@ -465,7 +476,7 @@ public sealed class AccountIdentityGateway : IAccountIdentityGateway
 
             if (admin is null)
             {
-                return Result.NotFound(Message.Error("accounts.admin.not_found", "Admin user not found."));
+                return Result.NotFound(Message.Error("accounts.admin.not_found"));
             }
         }
         else
@@ -476,12 +487,12 @@ public sealed class AccountIdentityGateway : IAccountIdentityGateway
 
             if (user is null)
             {
-                return Result.NotFound(Message.Error("accounts.admin.not_found", $"User '{email}' not found."));
+                return Result.NotFound(Message.Error("accounts.admin.not_found"));
             }
 
             if (!user.IsAdmin)
             {
-                return Result.Invalid(Message.Error("accounts.admin.not_admin", $"User '{email}' is not an administrator."));
+                return Result.Invalid(Message.Error("accounts.admin.not_admin"));
             }
 
             admin = user;
@@ -491,10 +502,9 @@ public sealed class AccountIdentityGateway : IAccountIdentityGateway
         var resetResult = await _userManager.ResetPasswordAsync(admin, resetToken, newPassword);
         if (!resetResult.Succeeded)
         {
-            var messages = resetResult.Errors
-                .Select(e => Message.Error($"accounts.identity.{e.Code.ToLowerInvariant()}", e.Description))
-                .ToList();
-            return Result.Invalid(messages);
+            return Result.Invalid(IdentityErrorMessages.ToMessages(
+                resetResult.Errors,
+                new IdentityErrorTargets(Password: nameof(newPassword))));
         }
 
         if (await _userManager.IsLockedOutAsync(admin))
@@ -508,13 +518,13 @@ public sealed class AccountIdentityGateway : IAccountIdentityGateway
         var updateResult = await _userManager.UpdateAsync(admin);
         if (!updateResult.Succeeded)
         {
-            var messages = updateResult.Errors
-                .Select(e => Message.Error($"accounts.identity.{e.Code.ToLowerInvariant()}", e.Description))
-                .ToList();
-            return Result.Invalid(messages);
+            return Result.Invalid(IdentityErrorMessages.ToMessages(updateResult.Errors, new IdentityErrorTargets()));
         }
 
         await _userManager.UpdateSecurityStampAsync(admin);
         return Result.Ok();
     }
+
+    private static Failure EmailAlreadyExists() =>
+        Result.Conflict(Message.Error("accounts.registration.email_already_exists"));
 }

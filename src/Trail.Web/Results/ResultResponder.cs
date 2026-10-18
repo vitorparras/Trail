@@ -10,7 +10,7 @@ using Trail.Web.Toasts;
 
 namespace Trail.Web.Results;
 
-public static class ResultResponder
+public static partial class ResultResponder
 {
     private const string PageHandlerQueryKey = "handler";
 
@@ -225,16 +225,14 @@ public static class ResultResponder
         IReadOnlyList<Message> messages,
         bool isHtmx)
     {
-        var localizer = httpContext.RequestServices.GetService<IStringLocalizer<SharedResource>>();
+        var localizerFactory = httpContext.RequestServices.GetService<IStringLocalizerFactory>();
+        var logger = httpContext.RequestServices.GetService<ILoggerFactory>()?.CreateLogger(typeof(ResultResponder));
         var toasts = new List<Toast>();
         string? primaryMessage = null;
 
         foreach (var message in messages)
         {
-            var localized = localizer?[message.Code];
-            var text = localized is not null && !localized.ResourceNotFound
-                ? localized.Value
-                : message.Code;
+            var text = Translate(localizerFactory, logger, message.Code);
 
             primaryMessage ??= text;
 
@@ -261,4 +259,31 @@ public static class ResultResponder
 
         return (toasts, primaryMessage);
     }
+
+    private static string Translate(IStringLocalizerFactory? localizerFactory, ILogger? logger, string code)
+    {
+        if (localizerFactory is null)
+        {
+            return code;
+        }
+
+        var localized = localizerFactory.CreateForCode(code)[code];
+        if (!localized.ResourceNotFound)
+        {
+            return localized.Value;
+        }
+
+        if (logger is not null)
+        {
+            LogUntranslatedMessageCode(logger, code, MessageResourceRegistry.ResourceTypeFor(code).Name);
+        }
+
+        return code;
+    }
+
+    [LoggerMessage(
+        EventId = 1,
+        Level = LogLevel.Warning,
+        Message = "Message code {Code} has no translation in {Resource}; showing the code.")]
+    private static partial void LogUntranslatedMessageCode(ILogger logger, string code, string resource);
 }

@@ -111,7 +111,16 @@
   <data name="accounts.change_password.passwords_do_not_match" xml:space="preserve">
     <value>A confirmação da nova senha não confere.</value>
   </data>
+  <data name="accounts.change_password.user_not_found" xml:space="preserve">
+    <value>Conta não encontrada. Faça login novamente.</value>
+  </data>
   <data name="accounts.confirm_email.invalid_token" xml:space="preserve">
+    <value>O link de confirmação de e-mail é inválido ou expirou.</value>
+  </data>
+  <data name="accounts.confirmation.invalid_token" xml:space="preserve">
+    <value>O link de confirmação de e-mail é inválido ou expirou.</value>
+  </data>
+  <data name="accounts.confirmation.user_not_found" xml:space="preserve">
     <value>O link de confirmação de e-mail é inválido ou expirou.</value>
   </data>
   <data name="accounts.admin.forbidden" xml:space="preserve">
@@ -123,11 +132,32 @@
   <data name="accounts.admin.cannot_deactivate_self" xml:space="preserve">
     <value>Não é possível desativar a própria conta de administrador.</value>
   </data>
+  <data name="accounts.admin.update_failed" xml:space="preserve">
+    <value>Não foi possível atualizar o usuário. Tente novamente.</value>
+  </data>
+  <data name="accounts.admin.not_found" xml:space="preserve">
+    <value>Administrador não encontrado.</value>
+  </data>
+  <data name="accounts.admin.not_admin" xml:space="preserve">
+    <value>O usuário informado não é administrador.</value>
+  </data>
   <data name="accounts.invitation.email_required" xml:space="preserve">
     <value>O e-mail para convite é obrigatório.</value>
   </data>
   <data name="accounts.invitation.user_already_exists" xml:space="preserve">
     <value>Já existe um usuário cadastrado com este e-mail.</value>
+  </data>
+  <data name="accounts.invitation.invalid_token" xml:space="preserve">
+    <value>O link do convite é inválido.</value>
+  </data>
+  <data name="accounts.invitation.already_accepted" xml:space="preserve">
+    <value>Este convite já foi utilizado.</value>
+  </data>
+  <data name="accounts.invitation.expired" xml:space="preserve">
+    <value>Este convite expirou. Peça um novo ao administrador.</value>
+  </data>
+  <data name="accounts.invitation.not_found" xml:space="preserve">
+    <value>Convite não encontrado.</value>
   </data>
   <data name="accounts.login.email_required" xml:space="preserve">
     <value>O e-mail é obrigatório.</value>
@@ -168,6 +198,9 @@
   <data name="accounts.registration.invite_invalid" xml:space="preserve">
     <value>O convite informado é inválido ou já foi utilizado.</value>
   </data>
+  <data name="accounts.registration.email_already_exists" xml:space="preserve">
+    <value>Não foi possível concluir o cadastro. Tente novamente.</value>
+  </data>
   <data name="accounts.password_reset.email_required" xml:space="preserve">
     <value>O e-mail é obrigatório.</value>
   </data>
@@ -185,6 +218,15 @@
   </data>
   <data name="accounts.password_reset.passwords_do_not_match" xml:space="preserve">
     <value>A confirmação de senha não confere.</value>
+  </data>
+  <data name="accounts.reset_password.invalid_token" xml:space="preserve">
+    <value>O link de redefinição de senha é inválido ou expirou.</value>
+  </data>
+  <data name="accounts.reset_password.user_not_found" xml:space="preserve">
+    <value>O link de redefinição de senha é inválido ou expirou.</value>
+  </data>
+  <data name="accounts.reset_password.password_required" xml:space="preserve">
+    <value>A nova senha é obrigatória.</value>
   </data>
   <data name="accounts.test_email.email_required" xml:space="preserve">
     <value>O e-mail de destino é obrigatório.</value>
@@ -206,6 +248,9 @@
   </data>
   <data name="accounts.email.send_failed" xml:space="preserve">
     <value>Falha ao enviar e-mail. Tente novamente.</value>
+  </data>
+  <data name="accounts.email.smtp_not_configured" xml:space="preserve">
+    <value>O servidor SMTP não está configurado.</value>
   </data>
   <data name="Login" xml:space="preserve">
     <value>Entrar</value>

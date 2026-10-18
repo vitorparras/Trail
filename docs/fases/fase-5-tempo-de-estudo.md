@@ -111,7 +111,7 @@ um texto visível (o `<icon>` já sai com `aria-hidden`):
 | `bell` | "Avisar por notificação" (P1) |
 | `volume-2` e `volume-x` | Botão "Som", ligado e desligado (P2) |
 | `plus` | "Lançar sessão" |
-| `pencil` e `trash-2` | Corrigir e excluir sessão |
+| `pencil` e `trash` | Corrigir e excluir sessão |
 
 O item "Tempo de estudo" da navegação não tem ícone, como o item "Planos".
 

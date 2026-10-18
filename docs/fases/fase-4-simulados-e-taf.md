@@ -332,7 +332,7 @@ A Onda 0 acrescenta estes ícones do Lucide ao sprite (W0-T13). Todos são decor
 |---|---|
 | `plus` | Novo simulado, nova tentativa e nova prova |
 | `pencil` | Editar simulado, tentativa e prova |
-| `trash-2` | Excluir simulado, tentativa e prova |
+| `trash` | Excluir simulado, tentativa e prova |
 | `info` | Aviso de TAF desativado e convite do bloco sem simulados |
 | `clipboard-check` | Link e bloco "Simulados" |
 | `dumbbell` | Link e bloco "TAF" |

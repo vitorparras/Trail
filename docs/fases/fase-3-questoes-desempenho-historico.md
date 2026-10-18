@@ -338,8 +338,8 @@ A Onda 0 acrescenta estes ícones do Lucide ao sprite (W0-T13). Todos são decor
 |---|---|
 | `plus` | Botão "Lançar questões", na árvore da disciplina e na página do tópico |
 | `pencil` | Corrigir um lançamento |
-| `trash-2` | Excluir um lançamento |
-| `history` | Link "Histórico" na página do plano |
+| `trash` | Excluir um lançamento |
+| `rotate-ccw-clock` | Link "Histórico" na página do plano |
 | `chart-bar` | Título do bloco de desempenho no painel |
 | `info` | Aviso de plano "sem pontuação", no lugar do bloco e dos campos |
 

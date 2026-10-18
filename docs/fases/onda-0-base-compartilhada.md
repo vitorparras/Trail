@@ -8,10 +8,11 @@
 
 Criar, antes da Onda A, as peças que mais de uma fase usa e os pontos de composição que
 deixam as quatro fases trabalharem em paralelo sem editar os mesmos arquivos. A Onda 0 não
-entrega funcionalidade nova para o aluno, exceto as decisões pendentes da Fase 2 e a
+entrega funcionalidade nova para o aluno, exceto as decisões pendentes da Fase 2, a
 confirmação com contagens na exclusão de disciplina e de tópico, exigida pela
 [2.2](../02-dominio-e-regras.md#regras-de-negócio-e-onde-são-garantidas) e que hoje só existe
-na exclusão do plano.
+na exclusão do plano, e os ícones que hoje aparecem vazios nas telas de Contas e
+Administração.
 
 ## Por que antes
 

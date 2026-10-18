@@ -28,6 +28,17 @@ public sealed class EfPlanningStore : IPlanningStore
             .Include(p => p.Sections)
             .Include(p => p.Outline)
             .OrderBy(p => p.Name)
+            .ThenBy(p => p.Id)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<StudyPlanOptionView>> ListStudyPlanOptionsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.StudyPlans
+            .AsNoTracking()
+            .OrderBy(p => p.Name)
+            .ThenBy(p => p.Id)
+            .Select(p => new StudyPlanOptionView(p.Id, p.Name))
             .ToListAsync(cancellationToken);
     }
 

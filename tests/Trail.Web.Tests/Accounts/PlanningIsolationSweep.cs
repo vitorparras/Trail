@@ -68,6 +68,7 @@ internal sealed record PlanningRouteCase(
     bool Htmx,
     HttpStatusCode ExpectedStatus);
 
+[IsolationSweep("Trail.Web.Pages.Plans")]
 internal static class PlanningIsolationSweep
 {
     public static IReadOnlyList<PlanningRouteCase> Build(SeededPlan victim, SeededPlan attacker)

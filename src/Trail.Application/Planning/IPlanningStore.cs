@@ -8,6 +8,8 @@ public interface IPlanningStore
 
     Task<IReadOnlyList<StudyPlan>> ListStudyPlansAsync(CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<StudyPlanOptionView>> ListStudyPlanOptionsAsync(CancellationToken cancellationToken = default);
+
     Task AddStudyPlanAsync(StudyPlan plan, CancellationToken cancellationToken = default);
 
     Task RemoveStudyPlanAsync(StudyPlan plan, CancellationToken cancellationToken = default);

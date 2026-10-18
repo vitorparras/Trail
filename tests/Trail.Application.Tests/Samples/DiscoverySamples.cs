@@ -20,10 +20,19 @@ public sealed class GenericSampleExtension<T> : ISampleExtension;
 
 public sealed class OutOfNamespaceSampleMetrics;
 
-public sealed class SamplePlanActivityContributor : IPlanActivityContributor;
+public sealed class SamplePlanActivityContributor : IPlanActivityContributor
+{
+    public Task<IReadOnlyList<PlanActivity>> GetLatestActivityAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<PlanActivity>>([]);
+}
 
 public sealed class SampleDeletionImpactContributor : IDeletionImpactContributor;
 
-public sealed class SampleDashboardBlock : IDashboardBlock;
+public sealed class SampleDashboardBlock : IDashboardBlock
+{
+    public int Order => 0;
+
+    public Type ViewComponent => typeof(SampleDashboardBlock);
+}
 
 public sealed class SamplePlanLinkContributor : IPlanLinkContributor;

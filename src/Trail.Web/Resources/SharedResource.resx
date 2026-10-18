@@ -840,4 +840,31 @@
   <data name="TopicStatusFor" xml:space="preserve">
     <value>Status do tópico {0}</value>
   </data>
+  <data name="Dashboard" xml:space="preserve">
+    <value>Painel</value>
+  </data>
+  <data name="DashboardPlan" xml:space="preserve">
+    <value>Plano</value>
+  </data>
+  <data name="DashboardShowPlan" xml:space="preserve">
+    <value>Mostrar</value>
+  </data>
+  <data name="DashboardShowingPlan" xml:space="preserve">
+    <value>Painel do plano {0}.</value>
+  </data>
+  <data name="DashboardOpenPlan" xml:space="preserve">
+    <value>Abrir o plano</value>
+  </data>
+  <data name="DashboardNoBlocks" xml:space="preserve">
+    <value>Ainda não há resumos para mostrar. Abra o plano para acompanhar as disciplinas e os tópicos.</value>
+  </data>
+  <data name="DashboardWelcomeHeading" xml:space="preserve">
+    <value>Boas-vindas ao Trail</value>
+  </data>
+  <data name="DashboardWelcomeDescription" xml:space="preserve">
+    <value>Crie o seu primeiro plano de estudo para acompanhar aqui o seu progresso.</value>
+  </data>
+  <data name="DashboardCreateFirstPlan" xml:space="preserve">
+    <value>Criar o primeiro plano</value>
+  </data>
 </root>

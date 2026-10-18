@@ -1,0 +1,36 @@
+@using Trail.Web.Dashboard
+@using Trail.Web.Htmx
+@model DashboardViewModel
+@if (Model.Context.Plan is { } plan)
+{
+    <section class="flex flex-col gap-4" aria-labelledby="dashboard-plan-heading">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <h2 id="dashboard-plan-heading" class="text-xl font-semibold">@plan.Name</h2>
+            <a asp-page="/Plans/Details" asp-route-planId="@plan.Id.Value" class="btn btn-outline btn-sm" aria-describedby="dashboard-plan-heading">@SharedLocalizer["DashboardOpenPlan"]</a>
+        </div>
+        @if (Model.Blocks.Count == 0)
+        {
+            <p class="text-base-content/80">@SharedLocalizer["DashboardNoBlocks"]</p>
+        }
+        else
+        {
+            <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                @foreach (var block in Model.Blocks)
+                {
+                    @await Component.InvokeAsync(block.ViewComponent, Model.Context)
+                }
+            </div>
+        }
+    </section>
+    @if (Context.Request.IsHtmxPartialRequest())
+    {
+        <span hx-swap-oob="innerHTML:#dashboard-status">@SharedLocalizer["DashboardShowingPlan", plan.Name]</span>
+    }
+}
+else
+{
+    <p class="text-base-content/80">@SharedLocalizer["DashboardWelcomeDescription"]</p>
+    <div>
+        <a asp-page="/Plans/Create" class="btn btn-primary">@SharedLocalizer["DashboardCreateFirstPlan"]</a>
+    </div>
+}

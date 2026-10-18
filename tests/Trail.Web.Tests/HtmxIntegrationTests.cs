@@ -51,16 +51,17 @@ public sealed class HtmxIntegrationTests(TrailWebApplicationFactory factory) : I
     }
 
     [Fact]
-    public async Task Post_Home_WithTokenFromMetaInConfiguredHeader_IsAccepted()
+    public async Task Post_WithTokenFromHomeMetaInConfiguredHeader_IsAccepted()
     {
         using var client = HomePage.CreateClient(factory);
         using var document = await HomePage.LoadAsync(client);
         var meta = document.Head!.QuerySelector("meta[name='csrf-token']")!;
 
-        using var accepted = await PostHomeAsync(client, meta.GetAttribute("data-header-name"), meta.GetAttribute("content"));
-        using var rejected = await PostHomeAsync(client, headerName: null, token: null);
+        using var accepted = await PostLogoutAsync(client, meta.GetAttribute("data-header-name"), meta.GetAttribute("content"));
+        using var rejected = await PostLogoutAsync(client, headerName: null, token: null);
 
-        Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
+        Assert.Equal(HttpStatusCode.Redirect, accepted.StatusCode);
+        Assert.Equal("/", accepted.Headers.Location?.OriginalString);
         Assert.Equal(HttpStatusCode.BadRequest, rejected.StatusCode);
     }
 
@@ -103,9 +104,9 @@ public sealed class HtmxIntegrationTests(TrailWebApplicationFactory factory) : I
         Assert.Equal(expected, context.Request.IsHtmxPartialRequest());
     }
 
-    private static async Task<HttpResponseMessage> PostHomeAsync(HttpClient client, string? headerName, string? token)
+    private static async Task<HttpResponseMessage> PostLogoutAsync(HttpClient client, string? headerName, string? token)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, HomePage.Url);
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/Account/Logout");
         if (headerName is not null)
         {
             request.Headers.Add(headerName, token);

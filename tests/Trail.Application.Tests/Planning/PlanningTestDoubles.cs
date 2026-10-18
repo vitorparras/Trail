@@ -38,6 +38,12 @@ internal sealed class FakePlanningStore : IPlanningStore
     public Task<IReadOnlyList<StudyPlan>> ListStudyPlansAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<StudyPlan>>(Plans.Values.ToList());
 
+    public Task<IReadOnlyList<StudyPlanOptionView>> ListStudyPlanOptionsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<StudyPlanOptionView>>([.. Plans.Values
+            .OrderBy(plan => plan.Name, StringComparer.Ordinal)
+            .ThenBy(plan => plan.Id.Value)
+            .Select(plan => new StudyPlanOptionView(plan.Id, plan.Name))]);
+
     public Task AddStudyPlanAsync(StudyPlan plan, CancellationToken cancellationToken = default)
     {
         Plans[plan.Id] = plan;

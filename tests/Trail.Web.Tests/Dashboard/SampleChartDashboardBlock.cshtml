@@ -1,0 +1,6 @@
+@model Trail.Web.Tests.Dashboard.SampleChartBlockModel
+@addTagHelper *, Trail.Web
+<section id="sample-chart-block" class="card border border-base-300 bg-base-100 p-4" data-plan-id="@Model.Plan.Id.Value" aria-labelledby="sample-chart-block-heading">
+    <h3 id="sample-chart-block-heading" class="text-lg font-semibold">@Model.Chart.Title</h3>
+    <chart model="Model.Chart" />
+</section>

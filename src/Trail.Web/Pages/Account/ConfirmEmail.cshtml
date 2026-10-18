@@ -10,7 +10,7 @@
             @if (Model.IsSuccess)
             {
                 <div class="alert alert-success" role="status">
-                    <icon name="check-circle" class="size-6 shrink-0" />
+                    <icon name="circle-check-big" class="size-6 shrink-0" />
                     <div>
                         <h1 class="font-bold">@SharedLocalizer["ConfirmEmailSuccessTitle"]</h1>
                         <p class="text-sm">@SharedLocalizer["ConfirmEmailSuccessMessage"]</p>
@@ -26,7 +26,7 @@
             else
             {
                 <div class="alert alert-error" role="alert">
-                    <icon name="alert-circle" class="size-6 shrink-0" />
+                    <icon name="circle-alert" class="size-6 shrink-0" />
                     <div>
                         <h1 class="font-bold">@SharedLocalizer["ConfirmEmailErrorTitle"]</h1>
                         <p class="text-sm">@SharedLocalizer["ConfirmEmailErrorMessage"]</p>

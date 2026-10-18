@@ -1,8 +1,9 @@
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace Trail.Web.Tests;
 
-public sealed class StaticAssetsTests(TrailWebApplicationFactory factory) : IClassFixture<TrailWebApplicationFactory>
+public sealed partial class StaticAssetsTests(TrailWebApplicationFactory factory) : IClassFixture<TrailWebApplicationFactory>
 {
     [Fact]
     public async Task Get_AssetsReferencedByLayout_AreServed()
@@ -56,21 +57,32 @@ public sealed class StaticAssetsTests(TrailWebApplicationFactory factory) : ICla
     }
 
     [Fact]
-    public async Task Get_Home_UsesOnlyIconsPresentInSprite()
+    public void Views_UseOnlyIconsPresentInSprite()
     {
-        using var client = HomePage.CreateClient(factory);
-        using var document = await HomePage.LoadAsync(client);
-        var references = document.QuerySelectorAll("svg[aria-hidden='true'] > use")
-            .Select(use => use.GetAttribute("href")!.Split('#'))
+        var repository = VendoredFilesTests.RepositoryRoot();
+        var symbols = XDocument.Load(Path.Combine(repository.FullName, "src", "Trail.Web", "wwwroot", "lib", "lucide", "sprite.svg"))
+            .Root!.Elements()
+            .Select(symbol => (string?)symbol.Attribute("id"))
+            .ToHashSet();
+        var usages = Directory.EnumerateFiles(Path.Combine(repository.FullName, "src", "Trail.Web"), "*.cshtml", SearchOption.AllDirectories)
+            .SelectMany(path => IconTag().Matches(File.ReadAllText(path)).Select(tag => (
+                Path: Path.GetRelativePath(repository.FullName, path),
+                Tag: tag.Value,
+                Name: IconName().Match(tag.Value).Groups["name"].Value)))
             .ToList();
-        Assert.NotEmpty(references);
+        Assert.NotEmpty(usages);
 
-        foreach (var spriteUrl in references.Select(reference => reference[0]).Distinct())
-        {
-            var sprite = XDocument.Parse(await client.GetStringAsync(new Uri(spriteUrl, UriKind.Relative), TestContext.Current.CancellationToken));
-            var symbols = sprite.Root!.Elements().Select(symbol => (string?)symbol.Attribute("id")).ToHashSet();
+        var invalid = usages
+            .Where(usage => usage.Name.Length == 0 || usage.Name.Contains('@', StringComparison.Ordinal) || !symbols.Contains(usage.Name))
+            .Select(usage => $"{(usage.Name.Length == 0 ? "(empty)" : usage.Name)} in {usage.Path}: {usage.Tag}")
+            .ToList();
 
-            Assert.All(references.Where(reference => reference[0] == spriteUrl), reference => Assert.Contains(reference[1], symbols));
-        }
+        Assert.True(invalid.Count == 0, string.Join(Environment.NewLine, invalid));
     }
+
+    [GeneratedRegex(@"<icon\b[^>]*>", RegexOptions.IgnoreCase)]
+    private static partial Regex IconTag();
+
+    [GeneratedRegex(@"(?<![\w-])name=""(?<name>[^""]*)""")]
+    private static partial Regex IconName();
 }

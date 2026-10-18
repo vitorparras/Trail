@@ -64,7 +64,7 @@
     <VendoredFile Include="lucide-sprite"
                   File="src/Trail.Web/wwwroot/lib/lucide/sprite.svg"
                   SpriteOf="lucide-icons-$(LucideVersion).zip"
-                  Sha256="d8b5703a90bca6e5b0173545651a344a65773e04f9b3ad43bbf18be6a61a883b" />
+                  Sha256="ea2662393eeb5a4fe88959c5f170312e16738203162f5eccae003626ed9c53ab" />
     <VendoredFile Include="lucide-license"
                   File="src/Trail.Web/wwwroot/lib/lucide/LICENSE"
                   Url="https://raw.githubusercontent.com/lucide-icons/lucide/$(LucideVersion)/LICENSE"
@@ -72,9 +72,26 @@
   </ItemGroup>
 
   <ItemGroup>
+    <LucideIcon Include="bell" />
+    <LucideIcon Include="chart-bar" />
+    <LucideIcon Include="circle-alert" />
+    <LucideIcon Include="circle-check-big" />
+    <LucideIcon Include="clipboard-check" />
+    <LucideIcon Include="dumbbell" />
     <LucideIcon Include="house" />
+    <LucideIcon Include="info" />
     <LucideIcon Include="menu" />
+    <LucideIcon Include="pencil" />
+    <LucideIcon Include="play" />
+    <LucideIcon Include="plus" />
+    <LucideIcon Include="rotate-ccw-clock" />
+    <LucideIcon Include="skip-forward" />
+    <LucideIcon Include="square" />
     <LucideIcon Include="sun-moon" />
+    <LucideIcon Include="trash" />
+    <LucideIcon Include="triangle-alert" />
+    <LucideIcon Include="volume-2" />
+    <LucideIcon Include="volume-x" />
     <LucideIcon Include="x" />
   </ItemGroup>
 </Project>

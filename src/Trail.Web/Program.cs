@@ -9,8 +9,10 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Trail.Application;
 using Trail.Application.Abstractions;
+using Trail.Application.Accounts;
 using Trail.Infrastructure;
 using Trail.Web;
+using Trail.Web.Accounts;
 using Trail.Web.Auth;
 using Trail.Web.Cli;
 using Trail.Web.Fitness;
@@ -37,6 +39,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.Replace(ServiceDescriptor.Scoped<ICurrentUser, HttpCurrentUser>());
+builder.Services.Replace(ServiceDescriptor.Singleton<IAccountEmailContent, LocalizedAccountEmailContent>());
 
 var culture = CultureInfo.GetCultureInfo("pt-BR");
 
@@ -52,6 +55,8 @@ builder.Services.AddRazorPages(options =>
 {
     options.Conventions.AddPageApplicationModelConvention("/Account/Login", page => page.EndpointMetadata.Add(new EnableRateLimitingAttribute(RateLimitingExtensions.AuthPolicyName)));
     options.Conventions.AddPageApplicationModelConvention("/Account/ForgotPassword", page => page.EndpointMetadata.Add(new EnableRateLimitingAttribute(RateLimitingExtensions.AuthPolicyName)));
+    options.Conventions.AddPageApplicationModelConvention("/Account/Register", page => page.EndpointMetadata.Add(new EnableRateLimitingAttribute(RateLimitingExtensions.AuthPolicyName)));
+    options.Conventions.AddPageApplicationModelConvention("/Account/ResendConfirmation", page => page.EndpointMetadata.Add(new EnableRateLimitingAttribute(RateLimitingExtensions.AuthPolicyName)));
     options.Conventions.ConfigureFilter(new UnknownPageHandlerFilter());
 });
 builder.Services.AddAuthorizationBuilder()

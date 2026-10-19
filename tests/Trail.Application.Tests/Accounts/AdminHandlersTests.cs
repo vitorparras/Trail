@@ -10,6 +10,7 @@ public sealed class AdminHandlersTests
     private readonly TestCurrentUser _currentUser = new() { IsAdmin = true };
     private readonly FakeAccountIdentityGateway _identityGateway = new();
     private readonly FakeEmailSender _emailSender = new();
+    private readonly FallbackAccountEmailContent _emailContent = new();
     private readonly ApplicationMetrics _metrics = new(new RecordingMeterFactory());
 
     [Fact]
@@ -117,7 +118,7 @@ public sealed class AdminHandlersTests
     public async Task CreateInvitation_NonAdmin_ReturnsForbidden()
     {
         _currentUser.IsAdmin = false;
-        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _metrics);
+        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _emailContent, _metrics);
 
         var result = await handler.HandleAsync(new CreateInvitationCommand("invitee@example.com"), TestContext.Current.CancellationToken);
 
@@ -130,7 +131,7 @@ public sealed class AdminHandlersTests
     {
         _identityGateway.RegistrationMode = RegistrationMode.Closed;
         _emailSender.IsSmtpConfigured = true;
-        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _metrics);
+        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _emailContent, _metrics);
 
         var result = await handler.HandleAsync(new CreateInvitationCommand("invitee@example.com"), TestContext.Current.CancellationToken);
 
@@ -147,7 +148,7 @@ public sealed class AdminHandlersTests
     {
         _identityGateway.RegistrationMode = RegistrationMode.Closed;
         _currentUser.IsAdmin = false;
-        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _metrics);
+        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _emailContent, _metrics);
 
         var result = await handler.HandleAsync(new CreateInvitationCommand("invitee@example.com"), TestContext.Current.CancellationToken);
 
@@ -162,7 +163,7 @@ public sealed class AdminHandlersTests
     public async Task CreateInvitation_RegistrationAcceptsInvitations_CreatesTheInvitation(RegistrationMode mode)
     {
         _identityGateway.RegistrationMode = mode;
-        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _metrics);
+        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _emailContent, _metrics);
 
         var result = await handler.HandleAsync(new CreateInvitationCommand("invitee@example.com"), TestContext.Current.CancellationToken);
 
@@ -176,7 +177,7 @@ public sealed class AdminHandlersTests
     [InlineData("   ")]
     public async Task CreateInvitation_MissingEmail_ReturnsInvalid(string? email)
     {
-        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _metrics);
+        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _emailContent, _metrics);
 
         var result = await handler.HandleAsync(new CreateInvitationCommand(email!), TestContext.Current.CancellationToken);
 
@@ -190,7 +191,7 @@ public sealed class AdminHandlersTests
     public async Task CreateInvitation_UserAlreadyExists_ReturnsConflict()
     {
         _identityGateway.Users.Add(new AccountUserDto(UserId.New(), "existing@example.com", false, true, true, DateTime.UtcNow));
-        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _metrics);
+        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _emailContent, _metrics);
 
         var result = await handler.HandleAsync(new CreateInvitationCommand("existing@example.com"), TestContext.Current.CancellationToken);
 
@@ -204,7 +205,7 @@ public sealed class AdminHandlersTests
     public async Task CreateInvitation_GatewayFails_ReturnsFailure()
     {
         _identityGateway.CreateInvitationResult = Result.Invalid(Message.Error("invitation.failed"));
-        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _metrics);
+        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _emailContent, _metrics);
 
         var result = await handler.HandleAsync(new CreateInvitationCommand("new@example.com"), TestContext.Current.CancellationToken);
 
@@ -217,7 +218,7 @@ public sealed class AdminHandlersTests
     public async Task CreateInvitation_SmtpConfiguredSendSucceeds_SendsEmailAndReturnsOutcome()
     {
         _emailSender.IsSmtpConfigured = true;
-        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _metrics);
+        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _emailContent, _metrics);
 
         var result = await handler.HandleAsync(
             new CreateInvitationCommand("new@example.com", token => $"https://trail.app/invite/{token}"),
@@ -237,7 +238,7 @@ public sealed class AdminHandlersTests
     public async Task CreateInvitation_SmtpNotConfigured_DoesNotSendEmailAndReturnsManualLink()
     {
         _emailSender.IsSmtpConfigured = false;
-        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _metrics);
+        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _emailContent, _metrics);
 
         var result = await handler.HandleAsync(new CreateInvitationCommand("new@example.com"), TestContext.Current.CancellationToken);
 
@@ -252,7 +253,7 @@ public sealed class AdminHandlersTests
     {
         _emailSender.IsSmtpConfigured = true;
         _emailSender.SendResult = Result.Invalid(Message.Error("smtp.offline"));
-        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _metrics);
+        var handler = new CreateInvitationHandler(_currentUser, _identityGateway, _emailSender, _emailContent, _metrics);
 
         var result = await handler.HandleAsync(new CreateInvitationCommand("new@example.com"), TestContext.Current.CancellationToken);
 
@@ -366,7 +367,7 @@ public sealed class AdminHandlersTests
     public async Task SendTestEmail_NonAdmin_ReturnsForbidden()
     {
         _currentUser.IsAdmin = false;
-        var handler = new SendTestEmailHandler(_currentUser, _emailSender, _metrics);
+        var handler = new SendTestEmailHandler(_currentUser, _emailSender, _emailContent, _metrics);
 
         var result = await handler.HandleAsync(
             new SendTestEmailCommand("test@example.com"),
@@ -382,7 +383,7 @@ public sealed class AdminHandlersTests
     [InlineData("   ")]
     public async Task SendTestEmail_MissingEmail_ReturnsInvalid(string? email)
     {
-        var handler = new SendTestEmailHandler(_currentUser, _emailSender, _metrics);
+        var handler = new SendTestEmailHandler(_currentUser, _emailSender, _emailContent, _metrics);
 
         var result = await handler.HandleAsync(
             new SendTestEmailCommand(email!),
@@ -398,7 +399,7 @@ public sealed class AdminHandlersTests
     public async Task SendTestEmail_SmtpNotConfigured_ReturnsInvalid()
     {
         _emailSender.IsSmtpConfigured = false;
-        var handler = new SendTestEmailHandler(_currentUser, _emailSender, _metrics);
+        var handler = new SendTestEmailHandler(_currentUser, _emailSender, _emailContent, _metrics);
 
         var result = await handler.HandleAsync(
             new SendTestEmailCommand("test@example.com"),
@@ -414,7 +415,7 @@ public sealed class AdminHandlersTests
     public async Task SendTestEmail_SmtpConfiguredSendSucceeds_ReturnsOk()
     {
         _emailSender.IsSmtpConfigured = true;
-        var handler = new SendTestEmailHandler(_currentUser, _emailSender, _metrics);
+        var handler = new SendTestEmailHandler(_currentUser, _emailSender, _emailContent, _metrics);
 
         var result = await handler.HandleAsync(
             new SendTestEmailCommand("test@example.com"),
@@ -431,7 +432,7 @@ public sealed class AdminHandlersTests
     {
         _emailSender.IsSmtpConfigured = true;
         _emailSender.SendResult = Result.Invalid(Message.Error("smtp.failed"));
-        var handler = new SendTestEmailHandler(_currentUser, _emailSender, _metrics);
+        var handler = new SendTestEmailHandler(_currentUser, _emailSender, _emailContent, _metrics);
 
         var result = await handler.HandleAsync(
             new SendTestEmailCommand("test@example.com"),

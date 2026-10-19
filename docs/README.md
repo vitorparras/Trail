@@ -53,20 +53,20 @@ histórico de questões e controle do tempo de estudo.
 
 ## Aguardando aprovação
 
-Quatro perguntas levantadas na implementação da Onda 0 aguardam o autor, sem bloquear a
-Onda A ([P8 a P11](fases/onda-0-base-compartilhada.md#perguntas-levantadas-na-implementação)):
-o envio de e-mail fora da requisição, a mensagem do bloqueio no login, a regra do plural
-nos textos com quantidade e o formato da prévia de exclusão. As ferramentas ainda marcadas
-como proposta (na [stack](03-arquitetura.md#38-stack) e em
+As ferramentas ainda marcadas como proposta (na [stack](03-arquitetura.md#38-stack) e em
 [Qualidade e entrega](04-qualidade-e-entrega.md)) são confirmadas no detalhamento da fase
-que as usa.
+que as usa. As perguntas levantadas na implementação da Onda 0
+([P8 a P11](fases/onda-0-base-compartilhada.md#perguntas-levantadas-na-implementação))
+foram respondidas em 19/10/2026.
 
 ## Próximo passo
 
 Fases 0, 1 e 2 concluídas. A [Onda 0 — Base compartilhada](fases/onda-0-base-compartilhada.md)
-foi implementada, com as convenções registradas na arquitetura e as correções às Fases 1 e
-2 listadas no detalhamento.
+foi integrada à `main`, com as convenções registradas na arquitetura e as correções às
+Fases 1 e 2 listadas no detalhamento.
 
-1. Apresentar a Onda 0 ao autor, com as perguntas P8 a P11, e integrá-la à `main`.
+1. Integrar à `main` o PR da
+   [W0-T14](fases/onda-0-base-compartilhada.md#w0-t14--e-mails-de-conta-e-bloqueio-no-login-accounts-web)
+   (e-mails de conta e bloqueio no login), que fecha a Onda 0.
 2. Em seguida, a Onda A: Fases 3, 4, 5 e 7a em paralelo, com os PRs integrados na ordem
    3 → 4 → 5 → 7a ([4.3](04-qualidade-e-entrega.md#43-fluxo-de-trabalho-no-git)).

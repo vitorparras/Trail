@@ -10,19 +10,23 @@ public sealed class SendTestEmailHandler
 {
     private readonly ICurrentUser _currentUser;
     private readonly IEmailSender _emailSender;
+    private readonly IAccountEmailContent _emailContent;
     private readonly ApplicationMetrics _metrics;
 
     public SendTestEmailHandler(
         ICurrentUser currentUser,
         IEmailSender emailSender,
+        IAccountEmailContent emailContent,
         ApplicationMetrics metrics)
     {
         ArgumentNullException.ThrowIfNull(currentUser);
         ArgumentNullException.ThrowIfNull(emailSender);
+        ArgumentNullException.ThrowIfNull(emailContent);
         ArgumentNullException.ThrowIfNull(metrics);
 
         _currentUser = currentUser;
         _emailSender = emailSender;
+        _emailContent = emailContent;
         _metrics = metrics;
     }
 
@@ -47,12 +51,7 @@ public sealed class SendTestEmailHandler
             return Result.Invalid(Message.Error("accounts.test_email.smtp_not_configured"));
         }
 
-        var message = new EmailMessage(
-            command.TargetEmail,
-            "Trail - Test Email",
-            "<p>This is a test email sent from Trail.</p>",
-            "This is a test email sent from Trail.",
-            EmailKinds.Test);
+        var message = _emailContent.Test(command.TargetEmail);
 
         var sendResult = await _emailSender.SendAsync(message, cancellationToken);
         if (!sendResult.IsOk)

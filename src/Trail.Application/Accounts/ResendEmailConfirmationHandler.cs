@@ -1,4 +1,3 @@
-using Trail.Application.Telemetry;
 using Trail.Domain.Common;
 
 namespace Trail.Application.Accounts;
@@ -11,20 +10,24 @@ public sealed class ResendEmailConfirmationHandler
 {
     private readonly IAccountIdentityGateway _identityGateway;
     private readonly IEmailSender _emailSender;
-    private readonly ApplicationMetrics _metrics;
+    private readonly IAccountEmailContent _emailContent;
+    private readonly IAccountEmailDelivery _emailDelivery;
 
     public ResendEmailConfirmationHandler(
         IAccountIdentityGateway identityGateway,
         IEmailSender emailSender,
-        ApplicationMetrics metrics)
+        IAccountEmailContent emailContent,
+        IAccountEmailDelivery emailDelivery)
     {
         ArgumentNullException.ThrowIfNull(identityGateway);
         ArgumentNullException.ThrowIfNull(emailSender);
-        ArgumentNullException.ThrowIfNull(metrics);
+        ArgumentNullException.ThrowIfNull(emailContent);
+        ArgumentNullException.ThrowIfNull(emailDelivery);
 
         _identityGateway = identityGateway;
         _emailSender = emailSender;
-        _metrics = metrics;
+        _emailContent = emailContent;
+        _emailDelivery = emailDelivery;
     }
 
     public async Task<Result> HandleAsync(
@@ -58,22 +61,7 @@ public sealed class ResendEmailConfirmationHandler
         var confirmationUrl = command.ConfirmationLinkBuilder?.Invoke(user.Id, tokenResult.Data)
             ?? $"/Account/ConfirmEmail?userId={user.Id}&token={Uri.EscapeDataString(tokenResult.Data)}";
 
-        var message = new EmailMessage(
-            command.Email,
-            "Confirm your account",
-            $"<p>Please confirm your account by clicking <a href=\"{confirmationUrl}\">here</a>.</p>",
-            $"Please confirm your account by visiting: {confirmationUrl}",
-            EmailKinds.Confirmation);
-
-        var sendResult = await _emailSender.SendAsync(message, cancellationToken);
-        if (sendResult.IsOk)
-        {
-            _metrics.RecordEmailSent(EmailKinds.Confirmation);
-        }
-        else
-        {
-            _metrics.RecordEmailFailed(EmailKinds.Confirmation);
-        }
+        _emailDelivery.Schedule(_emailContent.EmailConfirmation(command.Email, confirmationUrl));
 
         return Result.Ok();
     }

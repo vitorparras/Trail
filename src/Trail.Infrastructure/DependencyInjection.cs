@@ -56,6 +56,9 @@ public static class DependencyInjection
             .BindConfiguration(EmailOptions.SectionName)
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<EmailOptions>, EmailOptionsValidator>();
+        services.AddOptions<AccountEmailDeliveryOptions>();
+        services.AddSingleton<InMemoryAccountEmailDelivery>();
+        services.AddHostedService<AccountEmailDispatcher>();
 
         services.AddOptions<DataProtectionPersistenceOptions>()
             .BindConfiguration(DataProtectionPersistenceOptions.SectionName)
@@ -162,6 +165,7 @@ public static class DependencyInjection
 
         services.Replace(ServiceDescriptor.Scoped<IAccountIdentityGateway, AccountIdentityGateway>());
         services.Replace(ServiceDescriptor.Scoped<IEmailSender, MailKitEmailSender>());
+        services.Replace(ServiceDescriptor.Singleton<IAccountEmailDelivery>(sp => sp.GetRequiredService<InMemoryAccountEmailDelivery>()));
         services.Replace(ServiceDescriptor.Scoped<IUserSettingsStore, EfUserSettingsStore>());
         services.Replace(ServiceDescriptor.Scoped<IUserCalendar, UserCalendar>());
         services.Replace(ServiceDescriptor.Scoped<IPlanningStore, EfPlanningStore>());

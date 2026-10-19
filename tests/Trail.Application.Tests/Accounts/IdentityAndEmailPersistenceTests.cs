@@ -27,7 +27,7 @@ public sealed class IdentityAndEmailPersistenceTests
     public async Task AccountIdentityGateway_And_UserSettings_DualDatabase_FullLifecycle(DatabaseProvider provider)
     {
         var ct = TestContext.Current.CancellationToken;
-        var harness = await CreateHarnessAsync(provider, RegistrationMode.InviteOnly, ct);
+        var harness = await CreateHarnessAsync(provider, RegistrationMode.InviteOnly, cancellationToken: ct);
         await using (harness.Cleanup)
         {
             var initialUsersExist = await harness.Gateway.AnyUsersExistAsync(ct);
@@ -290,6 +290,71 @@ public sealed class IdentityAndEmailPersistenceTests
             }
 
             Assert.Equal(PasswordSignInResult.InvalidCredentials, await harness.Gateway.SignInWithPasswordAsync("unknown@trail.local", wrongPassword, isPersistent: false, ct));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TestDatabaseProviders.EnabledProviders), MemberType = typeof(TestDatabaseProviders))]
+    public async Task SignInWithPasswordAsync_WrongUnknownAndLockedOutAttempts_EachComputeExactlyOnePasswordHash(DatabaseProvider provider)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var hasher = new CountingPasswordHasher();
+        var harness = await CreateHarnessAsync(
+            provider,
+            configureServices: services => services.AddSingleton<IPasswordHasher<ApplicationUser>>(hasher),
+            cancellationToken: ct);
+        await using (harness.Cleanup)
+        {
+            const string email = "locked@trail.local";
+            const string password = "RightPass123!";
+            const string wrongPassword = "WrongPass123!";
+            await harness.Gateway.CreateUserAsync(email, password, isAdmin: false, emailConfirmed: true, ct);
+
+            async Task<(PasswordSignInResult Result, int Hashes)> SignInAsync(string address, string attempt)
+            {
+                var before = hasher.Operations;
+                var result = await harness.Gateway.SignInWithPasswordAsync(address, attempt, isPersistent: false, ct);
+                return (result, hasher.Operations - before);
+            }
+
+            Assert.Equal((PasswordSignInResult.InvalidCredentials, 1), await SignInAsync("unknown@trail.local", wrongPassword));
+
+            for (var attempt = 1; attempt < 5; attempt++)
+            {
+                Assert.Equal((PasswordSignInResult.InvalidCredentials, 1), await SignInAsync(email, wrongPassword));
+            }
+
+            Assert.Equal((PasswordSignInResult.LockedOut, 1), await SignInAsync(email, wrongPassword));
+            Assert.Equal((PasswordSignInResult.LockedOut, 1), await SignInAsync(email, wrongPassword));
+            Assert.Equal((PasswordSignInResult.LockedOut, 1), await SignInAsync(email, password));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TestDatabaseProviders.EnabledProviders), MemberType = typeof(TestDatabaseProviders))]
+    public async Task SignInWithPasswordAsync_FourWrongAttemptsThenTheCorrectPassword_StillSignsInAndTheFifthWrongAttemptLocks(DatabaseProvider provider)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var harness = await CreateHarnessAsync(provider, cancellationToken: ct);
+        await using (harness.Cleanup)
+        {
+            const string email = "counting@trail.local";
+            const string password = "RightPass123!";
+            await harness.Gateway.CreateUserAsync(email, password, isAdmin: false, emailConfirmed: true, ct);
+
+            for (var attempt = 1; attempt < 5; attempt++)
+            {
+                Assert.Equal(PasswordSignInResult.InvalidCredentials, await harness.Gateway.SignInWithPasswordAsync(email, "WrongPass123!", isPersistent: false, ct));
+            }
+
+            Assert.Equal(PasswordSignInResult.Success, await harness.Gateway.SignInWithPasswordAsync(email, password, isPersistent: false, ct));
+
+            for (var attempt = 1; attempt < 5; attempt++)
+            {
+                Assert.Equal(PasswordSignInResult.InvalidCredentials, await harness.Gateway.SignInWithPasswordAsync(email, "WrongPass123!", isPersistent: false, ct));
+            }
+
+            Assert.Equal(PasswordSignInResult.LockedOut, await harness.Gateway.SignInWithPasswordAsync(email, "WrongPass123!", isPersistent: false, ct));
         }
     }
 
@@ -641,6 +706,7 @@ public sealed class IdentityAndEmailPersistenceTests
     private static async Task<(ServiceProvider Services, AppDbContext DbContext, IAccountIdentityGateway Gateway, IUserSettingsStore SettingsStore, TestCurrentUser CurrentUser, IAsyncDisposable Cleanup)> CreateHarnessAsync(
         DatabaseProvider provider,
         RegistrationMode registrationMode = RegistrationMode.Open,
+        Action<IServiceCollection>? configureServices = null,
         CancellationToken cancellationToken = default)
     {
         DbConnection? sqliteConnection = null;
@@ -690,6 +756,8 @@ public sealed class IdentityAndEmailPersistenceTests
 
         services.AddAuthentication(IdentityConstants.ApplicationScheme)
             .AddCookie(IdentityConstants.ApplicationScheme);
+
+        configureServices?.Invoke(services);
 
         services.AddIdentityCore<ApplicationUser>(opt =>
         {
@@ -741,6 +809,26 @@ public sealed class IdentityAndEmailPersistenceTests
         var cleanup = new HarnessCleanup(sqliteConnection, postgresSchema, postgresConnectionString, serviceProvider);
 
         return (serviceProvider, dbContext, gateway, settingsStore, currentUser, cleanup);
+    }
+
+    private sealed class CountingPasswordHasher : IPasswordHasher<ApplicationUser>
+    {
+        private readonly PasswordHasher<ApplicationUser> _inner = new();
+        private int _operations;
+
+        public int Operations => Volatile.Read(ref _operations);
+
+        public string HashPassword(ApplicationUser user, string password)
+        {
+            Interlocked.Increment(ref _operations);
+            return _inner.HashPassword(user, password);
+        }
+
+        public PasswordVerificationResult VerifyHashedPassword(ApplicationUser user, string hashedPassword, string providedPassword)
+        {
+            Interlocked.Increment(ref _operations);
+            return _inner.VerifyHashedPassword(user, hashedPassword, providedPassword);
+        }
     }
 
     private sealed class HarnessCleanup : IAsyncDisposable

@@ -441,7 +441,7 @@ public sealed class AccountPagesTests(TrailWebApplicationFactory baseFactory) : 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var html = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.Contains("um novo link foi enviado", html, StringComparison.Ordinal);
-        Assert.Single(emailSender.SentMessages);
+        Assert.Single(await emailSender.WaitForMessagesAsync(1));
     }
 
     [Fact]
@@ -475,7 +475,7 @@ public sealed class AccountPagesTests(TrailWebApplicationFactory baseFactory) : 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var html = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.Contains("as instruções de recuperação foram enviadas", html, StringComparison.Ordinal);
-        Assert.Single(emailSender.SentMessages);
+        Assert.Single(await emailSender.WaitForMessagesAsync(1));
     }
 
     [Fact]

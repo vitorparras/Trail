@@ -1,13 +1,16 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 using Trail.Application.Accounts;
 using Trail.Domain.Common;
 using Trail.Web.Results;
+using Trail.Web.Security;
 
 namespace Trail.Web.Pages.Account;
 
 [AllowAnonymous]
+[EnableRateLimiting(RateLimitingExtensions.AuthPolicyName)]
 public sealed class ResendConfirmationModel : PageModel
 {
     private readonly ResendEmailConfirmationHandler _resendHandler;

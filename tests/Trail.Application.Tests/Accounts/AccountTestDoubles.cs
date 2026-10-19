@@ -29,6 +29,13 @@ internal sealed class FakeEmailSender : IEmailSender
     }
 }
 
+internal sealed class FakeAccountEmailDelivery : IAccountEmailDelivery
+{
+    public List<EmailMessage> Scheduled { get; } = [];
+
+    public void Schedule(EmailMessage message) => Scheduled.Add(message);
+}
+
 internal sealed class FakeUserSettingsStore : IUserSettingsStore
 {
     public UserSettings? Settings { get; set; }
@@ -103,6 +110,11 @@ internal sealed class FakeAccountIdentityGateway : IAccountIdentityGateway
     {
         if (CreateUserResult is not null)
         {
+            if (ConcurrentlyCreatedUser is not null)
+            {
+                Users.Add(ConcurrentlyCreatedUser);
+            }
+
             return Task.FromResult(CreateUserResult);
         }
 
@@ -111,6 +123,8 @@ internal sealed class FakeAccountIdentityGateway : IAccountIdentityGateway
         Users.Add(user);
         return Task.FromResult(Result.Ok(newUserId));
     }
+
+    public AccountUserDto? ConcurrentlyCreatedUser { get; set; }
 
     public Result ValidatePasswordResult { get; set; } = Result.Ok();
 

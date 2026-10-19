@@ -2,9 +2,11 @@
 
 > **Situação:** aprovada pelo autor em 18/10/2026, com todas as opções recomendadas. Prepara a Onda A, em que as Fases 3,
 > 4 e 5 e a Fase 7a (PWA) são desenvolvidas em paralelo, conforme o plano em ondas aprovado
-> pelo autor em 17/10/2026 ([roteiro](../05-roteiro.md#ondas)). Implementada na branch
-> `wave/0-shared-foundation` ([situação das tarefas](#situação-das-tarefas)), com quatro
-> [perguntas novas](#perguntas-levantadas-na-implementação) para a apresentação.
+> pelo autor em 17/10/2026 ([roteiro](../05-roteiro.md#ondas)). Implementada e integrada à
+> `main` em 19/10/2026 (PR #8, [situação das tarefas](#situação-das-tarefas)). As quatro
+> [perguntas levantadas na implementação](#perguntas-levantadas-na-implementação) foram
+> respondidas no mesmo dia, e a P8 e a P9 viraram a
+> [W0-T14](#w0-t14--e-mails-de-conta-e-bloqueio-no-login-accounts-web), num PR próprio.
 
 ## Objetivo
 
@@ -82,6 +84,7 @@ flowchart LR
     T11 -.->|"ci.yml"| T12
     T12 -.->|"ci.yml"| T7["W0-T7 — Processo, migrações<br/>e documentação"]
     T13["W0-T13 — Ícones"]
+    T7 --> T14["W0-T14 — E-mails de conta<br/>e bloqueio no login"]
 ```
 
 - Linha cheia: dependência real. Linha pontilhada: o mesmo arquivo, alterado em sequência.
@@ -108,6 +111,7 @@ flowchart LR
 | W0-T11 | Concluída | O override do E2E também eleva o limite de tentativas do login, só no E2E |
 | W0-T12 | Concluída | O `performance.yml` também roda num PR que altera o harness ou o workflow |
 | W0-T13 | Concluída | — |
+| W0-T14 | Concluída | Criada depois do PR da onda, com as respostas da P8 e da P9. Também traduziu os e-mails de conta, que estavam em inglês no código |
 
 As convenções que as tarefas criaram estão na arquitetura, e os detalhamentos da Onda A as
 citam:
@@ -493,6 +497,47 @@ workflow, para o PR provar a mudança
 Contas, Administração e conflito aparecem, e a Onda A não precisa de ícone novo. Uma
 necessidade descoberta depois fica para a integração.
 
+### W0-T14 — E-mails de conta e bloqueio no login (`Accounts`, `Web`)
+
+Criada com as respostas do autor à [P8](#p8--envio-de-e-mail-fora-da-requisição) e à
+[P9](#p9--mensagem-do-bloqueio-no-login), num PR próprio depois do PR da onda.
+
+- **E-mails traduzidos:** os cinco e-mails de conta (confirmação, redefinição de senha,
+  aviso de tentativa de cadastro, convite e e-mail de teste) tinham o texto em inglês no
+  código. O assunto e o corpo passam a vir do `SharedResource.resx`, em pt-BR, por uma porta
+  da `Application` implementada na `Web`, com os valores interpolados codificados no HTML.
+- **Envio fora da requisição (P8):** a confirmação, a redefinição de senha, o reenvio da
+  confirmação e o aviso de tentativa de cadastro entram numa fila em memória, enviada por um
+  `BackgroundService`, e a resposta não espera o SMTP. O cadastro que chega a uma conta
+  confirmada envia ao dono o aviso de que alguém tentou cadastrá-lo, com o link da
+  recuperação de senha; a uma conta sem confirmação, uma confirmação nova; a uma conta
+  desativada, nada. O convite e o e-mail de teste do admin continuam síncronos. Sem SMTP,
+  os links manuais não mudam.
+- **Contra o abuso:** o cadastro e o reenvio da confirmação ganharam o mesmo limite de
+  tentativas do login, e o envio manda no máximo um e-mail por destinatário e tipo a cada
+  15 minutos ([3.11](../03-arquitetura.md#e-mail)).
+- **Mensagem única no bloqueio (P9):** senha errada, e-mail desconhecido e conta bloqueada
+  respondem "E-mail ou senha incorretos, ou conta bloqueada temporariamente.", com o mesmo
+  status (422) e o hash calculado também na conta bloqueada. A contagem do bloqueio não
+  muda.
+
+**Testes:** com um SMTP falso lento, o cadastro, a recuperação de senha e o reenvio da
+confirmação respondem antes do envio, com o mesmo status e o mesmo texto para e-mail
+cadastrado e desconhecido; o serviço de envio manda o que entrou na fila, registra as
+métricas e a falha sem dados pessoais e esvazia a fila ao parar; o login responde igual nos
+três casos, nos dois bancos.
+
+**Pronto quando:** os dois riscos residuais de contas da
+[3.14](../03-arquitetura.md#riscos-residuais) estão fechados, os testes passam nos dois
+bancos, e nenhum e-mail de conta tem texto fora do `.resx`.
+
+**Na implementação:** com um SMTP falso de 500 ms, a recuperação de senha e o reenvio da
+confirmação para um e-mail cadastrado caíram de cerca de 510 ms para 3 ms (SQLite) e 4 ms
+(PostgreSQL), como os de um e-mail desconhecido, e o cadastro de um e-mail novo, de
+591 ms para 65 ms (SQLite), perto dos 63 ms de um e-mail existente. Resta a diferença de
+poucos milissegundos da escrita no banco, aceita como risco residual da
+[3.14](../03-arquitetura.md#riscos-residuais).
+
 ## Correções no comportamento das Fases 1 e 2
 
 Além das decisões pendentes da Fase 2 (P2 e P3) e da confirmação na exclusão de disciplina
@@ -506,11 +551,14 @@ e de tópico, a Onda 0 corrigiu:
   senha, em vez da mensagem de link inválido, que fica para o link inválido ou vencido e o
   usuário desconhecido.
 - **Respostas uniformes nas contas:** o cadastro, a recuperação de senha, o reenvio da
-  confirmação e o login respondem igual para e-mail cadastrado e desconhecido, inclusive
-  quando o envio do e-mail falha, fora o bloqueio após 5 senhas erradas
-  ([P9](#p9--mensagem-do-bloqueio-no-login)), e o login confere a senha antes de informar
-  que a conta está desativada ou sem confirmação
-  ([3.14](../03-arquitetura.md#314-segurança)).
+  confirmação e o login respondem igual para e-mail cadastrado e desconhecido, no status,
+  no texto e no hash da senha, sem esperar o SMTP, inclusive quando o envio do e-mail falha
+  e quando a conta está bloqueada. O login confere a senha antes de informar que a conta
+  está desativada ou sem confirmação, e os e-mails de conta saem fora da requisição
+  ([W0-T14](#w0-t14--e-mails-de-conta-e-bloqueio-no-login-accounts-web) e
+  [3.14](../03-arquitetura.md#314-segurança)).
+- **E-mails em pt-BR:** os e-mails de conta tinham o texto em inglês no código e passaram a
+  vir do `.resx`.
 - **Logs sem dados pessoais:** a falha de envio de e-mail não registra mais o destinatário
   nem a mensagem da exceção, que pode repetir o endereço. A categoria de log que imprime a
   URL completa, com o token dos links, fica fixada em `Warning`.
@@ -540,8 +588,8 @@ e de tópico, a Onda 0 corrigiu:
 - Nenhuma mudança pendente no modelo e nenhuma migração nova.
 - Os detalhamentos das Fases 3, 4, 5 e 7a usam estas peças com estes nomes, sem desenho
   condicional, e listam os seus ícones.
-- As perguntas P1 a P7 têm resposta, registrada pela W0-T7. As P8 a P11, levantadas na
-  implementação, vão para a apresentação da onda.
+- As perguntas têm resposta: as P1 a P7 em 18/10/2026, registradas pela W0-T7, e as P8 a
+  P11, levantadas na implementação, em 19/10/2026.
 
 ## Perguntas para o autor
 
@@ -637,12 +685,9 @@ Os detalhamentos da Onda A adotaram cinco ajustes ao modelo aprovado sem pergunt
 
 ## Perguntas levantadas na implementação
 
-> **Aguardando resposta do autor.** Nenhuma bloqueia a Onda A. As P8 e P9 tratam do
-> módulo `Accounts`, que nenhuma fase da Onda A altera. Nas P10 e P11, as opções
-> recomendadas mantêm o que já existe; as demais mudam o `CountedMessage`, o parcial
-> `_DeletionImpact`, o teste de tradução e as chaves dos `.resx` de todos os módulos. As
-> Fases 3, 4 e 5 seguem as opções recomendadas e ajustam as suas chaves na integração, se
-> o autor escolher outra.
+> **Respondidas pelo autor em 19/10/2026:** P8, opção A, implementada na Onda 0 como a
+> [W0-T14](#w0-t14--e-mails-de-conta-e-bloqueio-no-login-accounts-web), num PR logo depois
+> do PR da onda; P9, opção B, também na W0-T14; P10 e P11, opção A (o que já existe).
 
 ### P8 — Envio de e-mail fora da requisição
 

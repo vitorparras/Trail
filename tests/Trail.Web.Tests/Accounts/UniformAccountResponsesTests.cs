@@ -53,7 +53,7 @@ public sealed partial class UniformAccountResponsesTests(OpenRegistrationWebAppl
 
         Assert.Equal(HttpStatusCode.OK, unknown.StatusCode);
         Assert.Equal(unknown, failedDelivery);
-        Assert.Single(failingSender.SentMessages);
+        Assert.Single(await failingSender.WaitForMessagesAsync(1));
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public sealed partial class UniformAccountResponsesTests(OpenRegistrationWebAppl
 
         Assert.Equal(HttpStatusCode.OK, unknown.StatusCode);
         Assert.Equal(unknown, failedDelivery);
-        Assert.Single(failingSender.SentMessages);
+        Assert.Single(await failingSender.WaitForMessagesAsync(1));
     }
 
     [Fact]
@@ -115,6 +115,30 @@ public sealed partial class UniformAccountResponsesTests(OpenRegistrationWebAppl
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Post_Login_ForAWrongPasswordAnUnknownEmailAndALockedOutAccount_AnswersWithTheSameStatusAndText(bool htmx)
+    {
+        var wrongPasswordEmail = await CreateUserAsync();
+        var lockedOutEmail = await CreateUserAsync();
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            await LoginAsync(lockedOutEmail, WrongPassword, htmx);
+        }
+
+        var wrongPassword = await LoginAsync(wrongPasswordEmail, WrongPassword, htmx);
+        var unknown = await LoginAsync($"unknown-{Guid.NewGuid():N}@trail.local", WrongPassword, htmx);
+        var lockedOut = await LoginAsync(lockedOutEmail, WrongPassword, htmx);
+        var lockedOutWithTheCorrectPassword = await LoginAsync(lockedOutEmail, ValidPassword, htmx);
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, wrongPassword.StatusCode);
+        Assert.Contains(Text("accounts.login.invalid_credentials"), wrongPassword.MainText, StringComparison.Ordinal);
+        Assert.Equal(wrongPassword, unknown);
+        Assert.Equal(wrongPassword, lockedOut);
+        Assert.Equal(wrongPassword, lockedOutWithTheCorrectPassword);
+    }
+
+    [Theory]
     [InlineData(false, true, "accounts.login.email_not_confirmed")]
     [InlineData(true, false, "accounts.login.deactivated")]
     [InlineData(false, false, "accounts.login.deactivated")]
@@ -150,11 +174,24 @@ public sealed partial class UniformAccountResponsesTests(OpenRegistrationWebAppl
         return email;
     }
 
-    private async Task<AccountResponse> LoginAsync(string email, string password)
+    private async Task<AccountResponse> LoginAsync(string email, string password, bool htmx = false)
     {
         using var client = CreateClient();
+        if (!htmx)
+        {
+            return await ReadAsync(await AccountTestHelper.SignInAsync(client, email, password, rememberMe: false));
+        }
 
-        return await ReadAsync(await AccountTestHelper.SignInAsync(client, email, password, rememberMe: false));
+        var (_, page, csrfHeader, csrfToken) = await AccountTestHelper.GetDocWithAntiforgeryAsync(client, "/Account/Login");
+        var form = WithFormToken(page, new Dictionary<string, string> { ["Input.Email"] = email, ["Input.Password"] = password });
+
+        return await ReadAsync(await AccountTestHelper.PostFormWithAntiforgeryAsync(
+            client,
+            "/Account/Login",
+            form,
+            csrfHeader,
+            csrfToken,
+            new Dictionary<string, string> { ["HX-Request-Type"] = "partial" }));
     }
 
     private async Task<Guid> UserIdOfAsync(string email)
@@ -215,7 +252,8 @@ public sealed partial class UniformAccountResponsesTests(OpenRegistrationWebAppl
         using (response)
         {
             var html = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-            var main = new HtmlParser().ParseDocument(html).QuerySelector("main")?.TextContent ?? string.Empty;
+            var document = new HtmlParser().ParseDocument(html);
+            var main = (document.QuerySelector("main") ?? document.Body)?.TextContent ?? string.Empty;
 
             return new AccountResponse(response.StatusCode, Whitespace().Replace(main, " ").Trim());
         }

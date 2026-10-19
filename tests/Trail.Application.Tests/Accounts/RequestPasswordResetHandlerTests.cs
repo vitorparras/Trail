@@ -1,6 +1,4 @@
-using System.Diagnostics.Metrics;
 using Trail.Application.Accounts;
-using Trail.Application.Telemetry;
 using Trail.Domain.Common;
 
 namespace Trail.Application.Tests.Accounts;
@@ -9,10 +7,10 @@ public sealed class RequestPasswordResetHandlerTests
 {
     private readonly FakeAccountIdentityGateway _identityGateway = new();
     private readonly FakeEmailSender _emailSender = new();
-    private readonly ApplicationMetrics _metrics = new(new RecordingMeterFactory());
+    private readonly FakeAccountEmailDelivery _emailDelivery = new();
 
     private RequestPasswordResetHandler CreateHandler() =>
-        new(_identityGateway, _emailSender, _metrics);
+        new(_identityGateway, _emailSender, new FallbackAccountEmailContent(), _emailDelivery);
 
     [Theory]
     [InlineData(null)]
@@ -40,7 +38,7 @@ public sealed class RequestPasswordResetHandlerTests
         var result = await handler.HandleAsync(command, TestContext.Current.CancellationToken);
 
         Assert.True(result.IsOk);
-        Assert.Empty(_emailSender.SentMessages);
+        Assert.Empty(_emailDelivery.Scheduled);
     }
 
     [Fact]
@@ -53,7 +51,7 @@ public sealed class RequestPasswordResetHandlerTests
         var result = await handler.HandleAsync(command, TestContext.Current.CancellationToken);
 
         Assert.True(result.IsOk);
-        Assert.Empty(_emailSender.SentMessages);
+        Assert.Empty(_emailDelivery.Scheduled);
     }
 
     [Fact]
@@ -67,7 +65,7 @@ public sealed class RequestPasswordResetHandlerTests
         var result = await handler.HandleAsync(command, TestContext.Current.CancellationToken);
 
         Assert.True(result.IsOk);
-        Assert.Empty(_emailSender.SentMessages);
+        Assert.Empty(_emailDelivery.Scheduled);
     }
 
     [Fact]
@@ -83,26 +81,15 @@ public sealed class RequestPasswordResetHandlerTests
         Assert.True(result.IsOk);
         Assert.Empty(result.Messages);
         Assert.Equal(unknown.Status, result.Status);
-        Assert.Empty(_emailSender.SentMessages);
+        Assert.Empty(_emailDelivery.Scheduled);
     }
 
     [Fact]
-    public async Task HandleAsync_EmailSendFails_ReturnsTheSameOkAsAnUnknownEmailAndRecordsTheFailure()
+    public async Task HandleAsync_KnownEmail_QueuesTheEmailWithoutCallingTheSenderAndAnswersAsForAnUnknownEmail()
     {
         _emailSender.SendResult = Result.Invalid(Message.Error("smtp.error"));
         _identityGateway.Users.Add(new AccountUserDto(UserId.New(), "user@example.com", false, true, true, DateTime.UtcNow));
         var handler = CreateHandler();
-        long failures = 0;
-        using var listener = new MeterListener();
-        listener.InstrumentPublished = (instrument, meterListener) =>
-        {
-            if (instrument.Meter == _metrics.Meter && instrument.Name == ApplicationMetrics.EmailsFailedInstrumentName)
-            {
-                meterListener.EnableMeasurementEvents(instrument);
-            }
-        };
-        listener.SetMeasurementEventCallback<long>((_, measurement, _, _) => failures += measurement);
-        listener.Start();
 
         var result = await handler.HandleAsync(new RequestPasswordResetCommand("user@example.com"), TestContext.Current.CancellationToken);
         var unknown = await handler.HandleAsync(new RequestPasswordResetCommand("unknown@example.com"), TestContext.Current.CancellationToken);
@@ -110,7 +97,8 @@ public sealed class RequestPasswordResetHandlerTests
         Assert.True(result.IsOk);
         Assert.Empty(result.Messages);
         Assert.Equal(unknown.Status, result.Status);
-        Assert.Equal(1, failures);
+        Assert.Equal("user@example.com", Assert.Single(_emailDelivery.Scheduled).ToAddress);
+        Assert.Empty(_emailSender.SentMessages);
     }
 
     [Fact]
@@ -126,29 +114,9 @@ public sealed class RequestPasswordResetHandlerTests
         var result = await handler.HandleAsync(command, TestContext.Current.CancellationToken);
 
         Assert.True(result.IsOk);
-        var message = Assert.Single(_emailSender.SentMessages);
+        var message = Assert.Single(_emailDelivery.Scheduled);
         Assert.Equal("user@example.com", message.ToAddress);
         Assert.Equal(EmailKinds.PasswordReset, message.Kind);
         Assert.Contains($"https://trail.app/reset/{userId}/sample-reset-token", message.HtmlBody);
-    }
-
-    private sealed class RecordingMeterFactory : IMeterFactory
-    {
-        private readonly List<Meter> _meters = [];
-
-        public Meter Create(MeterOptions options)
-        {
-            var meter = new Meter(options);
-            _meters.Add(meter);
-            return meter;
-        }
-
-        public void Dispose()
-        {
-            foreach (var meter in _meters)
-            {
-                meter.Dispose();
-            }
-        }
     }
 }

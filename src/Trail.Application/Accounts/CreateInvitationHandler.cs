@@ -13,22 +13,26 @@ public sealed class CreateInvitationHandler
     private readonly ICurrentUser _currentUser;
     private readonly IAccountIdentityGateway _identityGateway;
     private readonly IEmailSender _emailSender;
+    private readonly IAccountEmailContent _emailContent;
     private readonly ApplicationMetrics _metrics;
 
     public CreateInvitationHandler(
         ICurrentUser currentUser,
         IAccountIdentityGateway identityGateway,
         IEmailSender emailSender,
+        IAccountEmailContent emailContent,
         ApplicationMetrics metrics)
     {
         ArgumentNullException.ThrowIfNull(currentUser);
         ArgumentNullException.ThrowIfNull(identityGateway);
         ArgumentNullException.ThrowIfNull(emailSender);
+        ArgumentNullException.ThrowIfNull(emailContent);
         ArgumentNullException.ThrowIfNull(metrics);
 
         _currentUser = currentUser;
         _identityGateway = identityGateway;
         _emailSender = emailSender;
+        _emailContent = emailContent;
         _metrics = metrics;
     }
 
@@ -76,12 +80,7 @@ public sealed class CreateInvitationHandler
         var emailSent = false;
         if (_emailSender.IsSmtpConfigured)
         {
-            var message = new EmailMessage(
-                command.Email,
-                "You have been invited to Trail",
-                $"<p>You have been invited to Trail. Accept your invitation by clicking <a href=\"{link}\">here</a>.</p>",
-                $"You have been invited to Trail. Accept your invitation by visiting: {link}",
-                EmailKinds.Invitation);
+            var message = _emailContent.Invitation(command.Email, link);
 
             var sendResult = await _emailSender.SendAsync(message, cancellationToken);
             if (sendResult.IsOk)

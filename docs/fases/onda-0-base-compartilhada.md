@@ -508,10 +508,14 @@ Criada com as respostas do autor à [P8](#p8--envio-de-e-mail-fora-da-requisiç�
   da `Application` implementada na `Web`, com os valores interpolados codificados no HTML.
 - **Envio fora da requisição (P8):** a confirmação, a redefinição de senha, o reenvio da
   confirmação e o aviso de tentativa de cadastro entram numa fila em memória, enviada por um
-  `BackgroundService`, e a resposta não espera o SMTP. O cadastro que chega a um e-mail
-  existente envia ao dono da conta o aviso de que alguém tentou cadastrá-lo, com o link da
-  recuperação de senha, para os dois caminhos custarem o mesmo. O convite e o e-mail de
-  teste do admin continuam síncronos. Sem SMTP, os links manuais não mudam.
+  `BackgroundService`, e a resposta não espera o SMTP. O cadastro que chega a uma conta
+  confirmada envia ao dono o aviso de que alguém tentou cadastrá-lo, com o link da
+  recuperação de senha; a uma conta sem confirmação, uma confirmação nova; a uma conta
+  desativada, nada. O convite e o e-mail de teste do admin continuam síncronos. Sem SMTP,
+  os links manuais não mudam.
+- **Contra o abuso:** o cadastro e o reenvio da confirmação ganharam o mesmo limite de
+  tentativas do login, e o envio manda no máximo um e-mail por destinatário e tipo a cada
+  15 minutos ([3.11](../03-arquitetura.md#e-mail)).
 - **Mensagem única no bloqueio (P9):** senha errada, e-mail desconhecido e conta bloqueada
   respondem "E-mail ou senha incorretos, ou conta bloqueada temporariamente.", com o mesmo
   status (422) e o hash calculado também na conta bloqueada. A contagem do bloqueio não
@@ -529,9 +533,10 @@ bancos, e nenhum e-mail de conta tem texto fora do `.resx`.
 
 **Na implementação:** com um SMTP falso de 500 ms, a recuperação de senha e o reenvio da
 confirmação para um e-mail cadastrado caíram de cerca de 510 ms para 3 ms (SQLite) e 4 ms
-(PostgreSQL), iguais aos de um e-mail desconhecido, e o cadastro de um e-mail novo, de
-591 ms para 65 ms (SQLite), igual ao de um e-mail existente. No login, as medianas dos três
-casos ficaram entre 50 e 54 ms.
+(PostgreSQL), como os de um e-mail desconhecido, e o cadastro de um e-mail novo, de
+591 ms para 65 ms (SQLite), perto dos 63 ms de um e-mail existente. Resta a diferença de
+poucos milissegundos da escrita no banco, aceita como risco residual da
+[3.14](../03-arquitetura.md#riscos-residuais).
 
 ## Correções no comportamento das Fases 1 e 2
 
@@ -547,9 +552,9 @@ e de tópico, a Onda 0 corrigiu:
   usuário desconhecido.
 - **Respostas uniformes nas contas:** o cadastro, a recuperação de senha, o reenvio da
   confirmação e o login respondem igual para e-mail cadastrado e desconhecido, no status,
-  no texto e no tempo, inclusive quando o envio do e-mail falha e quando a conta está
-  bloqueada. O login confere a senha antes de informar que a conta está desativada ou sem
-  confirmação, e os e-mails de conta saem fora da requisição
+  no texto e no hash da senha, sem esperar o SMTP, inclusive quando o envio do e-mail falha
+  e quando a conta está bloqueada. O login confere a senha antes de informar que a conta
+  está desativada ou sem confirmação, e os e-mails de conta saem fora da requisição
   ([W0-T14](#w0-t14--e-mails-de-conta-e-bloqueio-no-login-accounts-web) e
   [3.14](../03-arquitetura.md#314-segurança)).
 - **E-mails em pt-BR:** os e-mails de conta tinham o texto em inglês no código e passaram a

@@ -65,7 +65,8 @@ Fases 0, 1 e 2 concluídas. A [Onda 0 — Base compartilhada](fases/onda-0-base-
 foi integrada à `main`, com as convenções registradas na arquitetura e as correções às
 Fases 1 e 2 listadas no detalhamento.
 
-1. Concluir a [W0-T14](fases/onda-0-base-compartilhada.md#w0-t14--e-mails-de-conta-e-bloqueio-no-login-accounts-web)
+1. Integrar à `main` o PR da
+   [W0-T14](fases/onda-0-base-compartilhada.md#w0-t14--e-mails-de-conta-e-bloqueio-no-login-accounts-web)
    (e-mails de conta e bloqueio no login), que fecha a Onda 0.
 2. Em seguida, a Onda A: Fases 3, 4, 5 e 7a em paralelo, com os PRs integrados na ordem
    3 → 4 → 5 → 7a ([4.3](04-qualidade-e-entrega.md#43-fluxo-de-trabalho-no-git)).

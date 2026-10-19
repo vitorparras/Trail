@@ -11,19 +11,23 @@ public sealed class ResendEmailConfirmationHandler
 {
     private readonly IAccountIdentityGateway _identityGateway;
     private readonly IEmailSender _emailSender;
+    private readonly IAccountEmailContent _emailContent;
     private readonly ApplicationMetrics _metrics;
 
     public ResendEmailConfirmationHandler(
         IAccountIdentityGateway identityGateway,
         IEmailSender emailSender,
+        IAccountEmailContent emailContent,
         ApplicationMetrics metrics)
     {
         ArgumentNullException.ThrowIfNull(identityGateway);
         ArgumentNullException.ThrowIfNull(emailSender);
+        ArgumentNullException.ThrowIfNull(emailContent);
         ArgumentNullException.ThrowIfNull(metrics);
 
         _identityGateway = identityGateway;
         _emailSender = emailSender;
+        _emailContent = emailContent;
         _metrics = metrics;
     }
 
@@ -58,12 +62,7 @@ public sealed class ResendEmailConfirmationHandler
         var confirmationUrl = command.ConfirmationLinkBuilder?.Invoke(user.Id, tokenResult.Data)
             ?? $"/Account/ConfirmEmail?userId={user.Id}&token={Uri.EscapeDataString(tokenResult.Data)}";
 
-        var message = new EmailMessage(
-            command.Email,
-            "Confirm your account",
-            $"<p>Please confirm your account by clicking <a href=\"{confirmationUrl}\">here</a>.</p>",
-            $"Please confirm your account by visiting: {confirmationUrl}",
-            EmailKinds.Confirmation);
+        var message = _emailContent.EmailConfirmation(command.Email, confirmationUrl);
 
         var sendResult = await _emailSender.SendAsync(message, cancellationToken);
         if (sendResult.IsOk)

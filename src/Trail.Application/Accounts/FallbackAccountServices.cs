@@ -1,3 +1,4 @@
+using System.Net;
 using Trail.Domain.Accounts;
 using Trail.Domain.Common;
 
@@ -98,6 +99,24 @@ internal sealed class FallbackEmailSender : IEmailSender
 
     public Task<Result> SendAsync(EmailMessage message, CancellationToken cancellationToken = default) =>
         Task.FromResult(Result.Ok());
+}
+
+internal sealed class FallbackAccountEmailContent : IAccountEmailContent
+{
+    public EmailMessage EmailConfirmation(string toAddress, string confirmationLink) =>
+        Neutral(toAddress, EmailKinds.Confirmation, confirmationLink);
+
+    public EmailMessage PasswordReset(string toAddress, string resetLink) =>
+        Neutral(toAddress, EmailKinds.PasswordReset, resetLink);
+
+    public EmailMessage Invitation(string toAddress, string invitationLink) =>
+        Neutral(toAddress, EmailKinds.Invitation, invitationLink);
+
+    public EmailMessage Test(string toAddress) =>
+        Neutral(toAddress, EmailKinds.Test, string.Empty);
+
+    private static EmailMessage Neutral(string toAddress, string kind, string link) =>
+        new(toAddress, kind, WebUtility.HtmlEncode(link), link, kind);
 }
 
 internal sealed class FallbackUserSettingsStore : IUserSettingsStore

@@ -16,22 +16,26 @@ public sealed class RegisterAccountHandler
     private readonly IAccountIdentityGateway _identityGateway;
     private readonly IUserSettingsStore _userSettingsStore;
     private readonly IEmailSender _emailSender;
+    private readonly IAccountEmailContent _emailContent;
     private readonly ApplicationMetrics _metrics;
 
     public RegisterAccountHandler(
         IAccountIdentityGateway identityGateway,
         IUserSettingsStore userSettingsStore,
         IEmailSender emailSender,
+        IAccountEmailContent emailContent,
         ApplicationMetrics metrics)
     {
         ArgumentNullException.ThrowIfNull(identityGateway);
         ArgumentNullException.ThrowIfNull(userSettingsStore);
         ArgumentNullException.ThrowIfNull(emailSender);
+        ArgumentNullException.ThrowIfNull(emailContent);
         ArgumentNullException.ThrowIfNull(metrics);
 
         _identityGateway = identityGateway;
         _userSettingsStore = userSettingsStore;
         _emailSender = emailSender;
+        _emailContent = emailContent;
         _metrics = metrics;
     }
 
@@ -203,12 +207,7 @@ public sealed class RegisterAccountHandler
         var confirmationUrl = linkBuilder?.Invoke(userId, tokenResult.Data)
             ?? $"/Account/ConfirmEmail?userId={userId}&token={Uri.EscapeDataString(tokenResult.Data)}";
 
-        var message = new EmailMessage(
-            email,
-            "Confirm your account",
-            $"<p>Please confirm your account by clicking <a href=\"{confirmationUrl}\">here</a>.</p>",
-            $"Please confirm your account by visiting: {confirmationUrl}",
-            EmailKinds.Confirmation);
+        var message = _emailContent.EmailConfirmation(email, confirmationUrl);
 
         var sendResult = await _emailSender.SendAsync(message, cancellationToken);
         if (sendResult.IsOk)

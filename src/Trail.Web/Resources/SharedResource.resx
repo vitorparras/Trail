@@ -255,6 +255,48 @@
   <data name="accounts.email.smtp_not_configured" xml:space="preserve">
     <value>O servidor SMTP não está configurado.</value>
   </data>
+  <data name="accounts.email.confirmation.subject" xml:space="preserve">
+    <value>Confirme seu e-mail no Trail</value>
+  </data>
+  <data name="accounts.email.confirmation.body" xml:space="preserve">
+    <value>Para ativar sua conta no Trail, confirme seu e-mail pelo link abaixo.</value>
+  </data>
+  <data name="accounts.email.confirmation.action" xml:space="preserve">
+    <value>Confirmar e-mail</value>
+  </data>
+  <data name="accounts.email.confirmation.footer" xml:space="preserve">
+    <value>Se você não criou uma conta no Trail, ignore este e-mail.</value>
+  </data>
+  <data name="accounts.email.password_reset.subject" xml:space="preserve">
+    <value>Redefinição de senha do Trail</value>
+  </data>
+  <data name="accounts.email.password_reset.body" xml:space="preserve">
+    <value>Recebemos um pedido para redefinir a senha da sua conta no Trail. Para criar uma nova senha, use o link abaixo.</value>
+  </data>
+  <data name="accounts.email.password_reset.action" xml:space="preserve">
+    <value>Redefinir senha</value>
+  </data>
+  <data name="accounts.email.password_reset.footer" xml:space="preserve">
+    <value>Se você não pediu a redefinição, ignore este e-mail: sua senha continua a mesma.</value>
+  </data>
+  <data name="accounts.email.invitation.subject" xml:space="preserve">
+    <value>Convite para o Trail</value>
+  </data>
+  <data name="accounts.email.invitation.body" xml:space="preserve">
+    <value>Você recebeu um convite para criar uma conta no Trail. Para aceitar, use o link abaixo.</value>
+  </data>
+  <data name="accounts.email.invitation.action" xml:space="preserve">
+    <value>Aceitar convite</value>
+  </data>
+  <data name="accounts.email.invitation.footer" xml:space="preserve">
+    <value>Se você não esperava este convite, ignore este e-mail.</value>
+  </data>
+  <data name="accounts.email.test.subject" xml:space="preserve">
+    <value>E-mail de teste do Trail</value>
+  </data>
+  <data name="accounts.email.test.body" xml:space="preserve">
+    <value>Este é um e-mail de teste enviado pela administração do Trail. Se você o recebeu, o envio por SMTP está funcionando.</value>
+  </data>
   <data name="accounts.identity.default_error" xml:space="preserve">
     <value>Não foi possível concluir a operação. Tente novamente.</value>
   </data>

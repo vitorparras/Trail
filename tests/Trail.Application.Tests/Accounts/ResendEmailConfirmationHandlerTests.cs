@@ -12,7 +12,7 @@ public sealed class ResendEmailConfirmationHandlerTests
     private readonly ApplicationMetrics _metrics = new(new RecordingMeterFactory());
 
     private ResendEmailConfirmationHandler CreateHandler() =>
-        new(_identityGateway, _emailSender, _metrics);
+        new(_identityGateway, _emailSender, new FallbackAccountEmailContent(), _metrics);
 
     [Theory]
     [InlineData(null)]

@@ -12,7 +12,7 @@ public sealed class RequestPasswordResetHandlerTests
     private readonly ApplicationMetrics _metrics = new(new RecordingMeterFactory());
 
     private RequestPasswordResetHandler CreateHandler() =>
-        new(_identityGateway, _emailSender, _metrics);
+        new(_identityGateway, _emailSender, new FallbackAccountEmailContent(), _metrics);
 
     [Theory]
     [InlineData(null)]

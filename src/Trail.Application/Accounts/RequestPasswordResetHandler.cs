@@ -11,19 +11,23 @@ public sealed class RequestPasswordResetHandler
 {
     private readonly IAccountIdentityGateway _identityGateway;
     private readonly IEmailSender _emailSender;
+    private readonly IAccountEmailContent _emailContent;
     private readonly ApplicationMetrics _metrics;
 
     public RequestPasswordResetHandler(
         IAccountIdentityGateway identityGateway,
         IEmailSender emailSender,
+        IAccountEmailContent emailContent,
         ApplicationMetrics metrics)
     {
         ArgumentNullException.ThrowIfNull(identityGateway);
         ArgumentNullException.ThrowIfNull(emailSender);
+        ArgumentNullException.ThrowIfNull(emailContent);
         ArgumentNullException.ThrowIfNull(metrics);
 
         _identityGateway = identityGateway;
         _emailSender = emailSender;
+        _emailContent = emailContent;
         _metrics = metrics;
     }
 
@@ -58,12 +62,7 @@ public sealed class RequestPasswordResetHandler
         var resetUrl = command.ResetLinkBuilder?.Invoke(user.Id, tokenResult.Data)
             ?? $"/Account/ResetPassword?userId={user.Id}&token={Uri.EscapeDataString(tokenResult.Data)}";
 
-        var message = new EmailMessage(
-            command.Email,
-            "Reset your password",
-            $"<p>Please reset your password by clicking <a href=\"{resetUrl}\">here</a>.</p>",
-            $"Please reset your password by visiting: {resetUrl}",
-            EmailKinds.PasswordReset);
+        var message = _emailContent.PasswordReset(command.Email, resetUrl);
 
         var sendResult = await _emailSender.SendAsync(message, cancellationToken);
         if (sendResult.IsOk)

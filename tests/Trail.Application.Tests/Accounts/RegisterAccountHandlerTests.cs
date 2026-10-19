@@ -13,7 +13,7 @@ public sealed class RegisterAccountHandlerTests
     private readonly ApplicationMetrics _metrics = new(new RecordingMeterFactory());
 
     private RegisterAccountHandler CreateHandler() =>
-        new(_identityGateway, _userSettingsStore, _emailSender, _metrics);
+        new(_identityGateway, _userSettingsStore, _emailSender, new FallbackAccountEmailContent(), _metrics);
 
     [Fact]
     public async Task HandleAsync_FirstUserWithoutSmtp_CreatesAdminAutoConfirmedAndDefaultSettings()

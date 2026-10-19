@@ -208,6 +208,26 @@ internal static class PlanningIsolationSweep
                 ["direction"] = "up",
                 ["expectedPlanVersion"] = Version(a.PlanVersion),
             }),
+            Get<DetailsModel>("Subject deletion impact of foreign plan", "DeleteSubjectImpact", v.PlanId, null, new()
+            {
+                ["subjectId"] = v.SubjectId.ToString(),
+            }),
+            Get<DetailsModel>("Subject deletion impact of foreign plan as partial", "DeleteSubjectImpact", v.PlanId, null, new()
+            {
+                ["subjectId"] = v.SubjectId.ToString(),
+            }, htmx: true),
+            Get<DetailsModel>("Foreign subject deletion impact through own plan", "DeleteSubjectImpact", a.PlanId, null, new()
+            {
+                ["subjectId"] = v.SubjectId.ToString(),
+            }),
+            Get<DetailsModel>("Foreign subject deletion impact through own plan as partial", "DeleteSubjectImpact", a.PlanId, null, new()
+            {
+                ["subjectId"] = v.SubjectId.ToString(),
+            }, htmx: true),
+            Get<DetailsModel>("Own subject deletion impact through foreign plan as partial", "DeleteSubjectImpact", v.PlanId, null, new()
+            {
+                ["subjectId"] = a.SubjectId.ToString(),
+            }, htmx: true),
             Post<DetailsModel>("Delete subject of foreign plan", "DeleteSubject", v.PlanId, null, new()
             {
                 ["subjectId"] = v.SubjectId.ToString(),
@@ -278,6 +298,10 @@ internal static class PlanningIsolationSweep
         {
             ["topicId"] = children.TopicId.ToString(),
         });
+        yield return Get<SubjectModel>($"Topic deletion impact with {scenario} as partial", "DeleteTopicImpact", planId, subjectId, new()
+        {
+            ["topicId"] = children.TopicId.ToString(),
+        }, htmx: true);
         yield return Post<SubjectModel>($"Save note with {scenario}", "SaveNote", planId, subjectId, new()
         {
             ["topicId"] = children.TopicId.ToString(),

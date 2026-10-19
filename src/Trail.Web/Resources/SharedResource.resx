@@ -783,9 +783,6 @@
   <data name="Subtopics" xml:space="preserve">
     <value>Subtópicos</value>
   </data>
-  <data name="Notes" xml:space="preserve">
-    <value>Anotações</value>
-  </data>
   <data name="SectionName" xml:space="preserve">
     <value>Nome do bloco</value>
   </data>
@@ -902,6 +899,42 @@
   </data>
   <data name="planning.deletion.topic_required" xml:space="preserve">
     <value>O tópico é obrigatório para exclusão.</value>
+  </data>
+  <data name="planning.deletion.sections.one" xml:space="preserve">
+    <value>{0:N0} bloco</value>
+  </data>
+  <data name="planning.deletion.sections.other" xml:space="preserve">
+    <value>{0:N0} blocos</value>
+  </data>
+  <data name="planning.deletion.subjects.one" xml:space="preserve">
+    <value>{0:N0} disciplina</value>
+  </data>
+  <data name="planning.deletion.subjects.other" xml:space="preserve">
+    <value>{0:N0} disciplinas</value>
+  </data>
+  <data name="planning.deletion.topics.one" xml:space="preserve">
+    <value>{0:N0} tópico</value>
+  </data>
+  <data name="planning.deletion.topics.other" xml:space="preserve">
+    <value>{0:N0} tópicos</value>
+  </data>
+  <data name="planning.deletion.notes.one" xml:space="preserve">
+    <value>{0:N0} anotação</value>
+  </data>
+  <data name="planning.deletion.notes.other" xml:space="preserve">
+    <value>{0:N0} anotações</value>
+  </data>
+  <data name="DeleteSubject" xml:space="preserve">
+    <value>Excluir disciplina</value>
+  </data>
+  <data name="DeleteTopic" xml:space="preserve">
+    <value>Excluir tópico</value>
+  </data>
+  <data name="DeleteNamed" xml:space="preserve">
+    <value>Excluir {0}</value>
+  </data>
+  <data name="PlanLinks" xml:space="preserve">
+    <value>Acompanhamento do plano</value>
   </data>
   <data name="NewParentTopic" xml:space="preserve">
     <value>Novo tópico pai</value>

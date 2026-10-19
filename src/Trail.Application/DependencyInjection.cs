@@ -23,6 +23,8 @@ public static class DependencyInjection
         services.AddHandlersFrom(assembly);
         services.AddMetricsFrom(assembly, typeof(ApplicationMetrics).Namespace!);
         services.AddContributorsFrom(assembly);
+        services.TryAddSingleton(TimeProvider.System);
+        services.TryAddScoped<IUserCalendar, FallbackUserCalendar>();
         services.TryAddScoped<IAccountIdentityGateway, FallbackAccountIdentityGateway>();
         services.TryAddScoped<IEmailSender, FallbackEmailSender>();
         services.TryAddScoped<IUserSettingsStore, FallbackUserSettingsStore>();

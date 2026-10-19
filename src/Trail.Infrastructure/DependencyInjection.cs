@@ -163,6 +163,7 @@ public static class DependencyInjection
         services.Replace(ServiceDescriptor.Scoped<IAccountIdentityGateway, AccountIdentityGateway>());
         services.Replace(ServiceDescriptor.Scoped<IEmailSender, MailKitEmailSender>());
         services.Replace(ServiceDescriptor.Scoped<IUserSettingsStore, EfUserSettingsStore>());
+        services.Replace(ServiceDescriptor.Scoped<IUserCalendar, UserCalendar>());
         services.Replace(ServiceDescriptor.Scoped<IPlanningStore, EfPlanningStore>());
 
         services.AddContributorsFrom(typeof(DependencyInjection).Assembly);

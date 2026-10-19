@@ -1,4 +1,5 @@
 using Trail.Application.Abstractions;
+using Trail.Application.Planning;
 using Trail.Web.Dashboard;
 using Trail.Web.Planning;
 
@@ -26,7 +27,11 @@ public sealed class SamplePlanActivityContributor : IPlanActivityContributor
         Task.FromResult<IReadOnlyList<PlanActivity>>([]);
 }
 
-public sealed class SampleDeletionImpactContributor : IDeletionImpactContributor;
+public sealed class SampleDeletionImpactContributor : IDeletionImpactContributor
+{
+    public Task<IReadOnlyList<DeletionImpactItem>> GetImpactAsync(DeletionScope scope, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<DeletionImpactItem>>([]);
+}
 
 public sealed class SampleDashboardBlock : IDashboardBlock
 {
@@ -35,4 +40,9 @@ public sealed class SampleDashboardBlock : IDashboardBlock
     public Type ViewComponent => typeof(SampleDashboardBlock);
 }
 
-public sealed class SamplePlanLinkContributor : IPlanLinkContributor;
+public sealed class SamplePlanLinkContributor : IPlanLinkContributor
+{
+    public int Order => 0;
+
+    public PlanLink? GetLink(StudyPlanDetailView plan) => null;
+}

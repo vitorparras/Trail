@@ -286,7 +286,7 @@ public sealed class BindingErrorsSweepTests : IDisposable
             var main = new HtmlParser().ParseDocument(html).QuerySelector("main");
             return new PageSignature(
                 main?.QuerySelector("h1")?.TextContent.Trim() ?? string.Empty,
-                main?.QuerySelectorAll("form:not(#topic-notes-container form)").Length ?? 0,
+                main?.QuerySelectorAll("form").Length ?? 0,
                 main?.QuerySelectorAll("table").Length ?? 0);
         }
     }

@@ -2,9 +2,11 @@ using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Trail.Application.Abstractions;
 using Trail.Application.Planning;
 using Trail.Domain.Common;
 using Trail.Domain.Planning;
+using Trail.Web.Planning;
 using Trail.Web.Results;
 
 namespace Trail.Web.Pages.Plans;
@@ -23,6 +25,7 @@ public sealed class DetailsModel : PageModel
     private readonly DeleteSubjectHandler _deleteSubjectHandler;
     private readonly GetDeletionImpactHandler _getDeletionImpactHandler;
     private readonly DeleteStudyPlanHandler _deleteStudyPlanHandler;
+    private readonly IReadOnlyList<IPlanLinkContributor> _linkContributors;
 
     public DetailsModel(
         GetStudyPlanHandler getStudyPlanHandler,
@@ -36,7 +39,8 @@ public sealed class DetailsModel : PageModel
         ReorderSubjectsHandler reorderSubjectsHandler,
         DeleteSubjectHandler deleteSubjectHandler,
         GetDeletionImpactHandler getDeletionImpactHandler,
-        DeleteStudyPlanHandler deleteStudyPlanHandler)
+        DeleteStudyPlanHandler deleteStudyPlanHandler,
+        IEnumerable<IPlanLinkContributor> linkContributors)
     {
         ArgumentNullException.ThrowIfNull(getStudyPlanHandler);
         ArgumentNullException.ThrowIfNull(searchPlanTopicsHandler);
@@ -50,6 +54,7 @@ public sealed class DetailsModel : PageModel
         ArgumentNullException.ThrowIfNull(deleteSubjectHandler);
         ArgumentNullException.ThrowIfNull(getDeletionImpactHandler);
         ArgumentNullException.ThrowIfNull(deleteStudyPlanHandler);
+        ArgumentNullException.ThrowIfNull(linkContributors);
 
         _getStudyPlanHandler = getStudyPlanHandler;
         _searchPlanTopicsHandler = searchPlanTopicsHandler;
@@ -63,6 +68,9 @@ public sealed class DetailsModel : PageModel
         _deleteSubjectHandler = deleteSubjectHandler;
         _getDeletionImpactHandler = getDeletionImpactHandler;
         _deleteStudyPlanHandler = deleteStudyPlanHandler;
+        _linkContributors = [.. linkContributors
+            .OrderBy(contributor => contributor.Order)
+            .ThenBy(contributor => contributor.GetType().FullName, StringComparer.Ordinal)];
     }
 
     public StudyPlanDetailView Plan { get; private set; } = null!;
@@ -70,6 +78,10 @@ public sealed class DetailsModel : PageModel
     public IReadOnlyList<TopicTreeItemView>? SearchResults { get; private set; }
 
     public DeletionImpactView? PlanImpact { get; private set; }
+
+    public DeletionConfirmationModel? SubjectDeletion { get; private set; }
+
+    public IReadOnlyList<PlanLink> PlanLinks { get; private set; } = [];
 
     public Guid? FilterSubjectId { get; set; }
 
@@ -140,6 +152,8 @@ public sealed class DetailsModel : PageModel
             {
                 PlanImpact = impactResult.Data;
             }
+
+            PlanLinks = [.. _linkContributors.Select(contributor => contributor.GetLink(Plan)).OfType<PlanLink>()];
         }
     }
 
@@ -390,6 +404,25 @@ public sealed class DetailsModel : PageModel
         {
             options.RedirectPage = "/Plans/Details";
             options.RedirectRouteValues = new { planId };
+        });
+    }
+
+    public async Task<IActionResult> OnGetDeleteSubjectImpactAsync(
+        Guid planId,
+        Guid subjectId,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetDeletionImpactQuery(DeletionTargetKind.Subject, Plan.Id, SubjectId: SubjectId.From(subjectId));
+        var result = await _getDeletionImpactHandler.HandleAsync(query, cancellationToken);
+        if (result.IsOk)
+        {
+            SubjectDeletion = DeletionConfirmationModel.ForSubject(result.Data, planId, DeletionConfirmationModel.SubjectSectionDescriptionId);
+        }
+
+        return this.Respond(result, "planning.get_subject_deletion_impact", options =>
+        {
+            options.PartialViewName = DeletionConfirmationModel.PartialViewName;
+            options.PartialModelFactory = impact => DeletionConfirmationModel.ForSubject(impact, planId);
         });
     }
 

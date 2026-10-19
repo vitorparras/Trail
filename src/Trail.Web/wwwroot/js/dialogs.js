@@ -30,6 +30,9 @@
         if (closer) {
             const dialog = closer.closest('dialog');
             if (dialog instanceof HTMLDialogElement && dialog.open) {
+                if (closer instanceof HTMLAnchorElement) {
+                    event.preventDefault();
+                }
                 dialog.close();
             }
             return;
@@ -50,5 +53,18 @@
         }
 
         dialog.showModal();
+    });
+
+    document.addEventListener('htmx:after:swap', (event) => {
+        const source = event.target instanceof Element ? event.target.closest('[data-dialog-open-after-swap]') : null;
+        const status = event.detail?.ctx?.response?.status;
+        if (!source || typeof status !== 'number' || status < 200 || status >= 300) {
+            return;
+        }
+
+        const dialog = document.getElementById(source.dataset.dialogOpenAfterSwap);
+        if (dialog instanceof HTMLDialogElement && !dialog.open) {
+            dialog.showModal();
+        }
     });
 })();

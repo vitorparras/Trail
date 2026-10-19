@@ -11,6 +11,8 @@ public sealed class MessageCodeTranslationTests(TrailWebApplicationFactory facto
     private static readonly string[] ScannedProjects = ["Trail.Domain", "Trail.Application", "Trail.Infrastructure", "Trail.Web"];
     private static readonly string[] MessageFactoryMethods = ["Error", "Warning", "Info", "Success"];
     private static readonly string[] BuildOutputDirectories = ["bin", "obj"];
+    private const string CountedCodeFactoryType = "DeletionImpactItem";
+    private const string CountedCodeFactoryMethod = "Create";
 
     private static readonly HashSet<(string Type, string Expression)> AllowedComputedCodes =
     [
@@ -53,6 +55,59 @@ public sealed class MessageCodeTranslationTests(TrailWebApplicationFactory facto
         Assert.Empty(untranslated);
     }
 
+    [Fact]
+    public void CountedMessageCodes_InProductionCode_HaveTheOneAndOtherFormsInTheResourceOfTheirPrefix()
+    {
+        var localizerFactory = factory.Services.GetRequiredService<IStringLocalizerFactory>();
+        var codes = Scan.Value.CountedCodes;
+
+        Assert.Contains("planning.deletion.topics", codes);
+        Assert.Empty(MissingCountedForms(localizerFactory, codes));
+    }
+
+    [Fact]
+    public void MissingCountedForms_WhenAFormIsMissing_ReportsTheKeyAndItsResource()
+    {
+        var missing = MissingCountedForms(new OneFormOnlyLocalizerFactory(), ["practice.sample.entries", "planning.sample.items"]);
+
+        Assert.Equal(
+            [$"practice.sample.entries.other ({nameof(PracticeResource)}.resx)", $"planning.sample.items.other ({nameof(SharedResource)}.resx)"],
+            missing);
+    }
+
+    [Fact]
+    public void ScanRoots_DeletionImpactItems_CollectsTheirCodesAsCountedAndFlagsComputedOnes()
+    {
+        const string source = """
+            public sealed class SampleContributor
+            {
+                private const string EntriesCode = "practice.sample.entries";
+
+                public object Literal() => DeletionImpactItem.Create("fitness.sample.attempts", 1);
+
+                public object FromConstant() => DeletionImpactItem.Create(EntriesCode, 2);
+
+                public object Named() => DeletionImpactItem.Create(count: 3, code: "studytime.sample.sessions");
+
+                public object Computed(string code) => DeletionImpactItem.Create(code, 4);
+
+                public object Text() => Message.Error("planning.sample.message");
+            }
+            """;
+
+        var scan = ScanRoots([CSharpSyntaxTree.ParseText(source, cancellationToken: TestContext.Current.CancellationToken).GetRoot(TestContext.Current.CancellationToken)]);
+
+        Assert.Equal(["fitness.sample.attempts", "practice.sample.entries", "studytime.sample.sessions"], scan.CountedCodes);
+        Assert.Equal(["planning.sample.message"], scan.Codes);
+        var computed = Assert.Single(scan.Unresolved);
+        Assert.Equal(("SampleContributor", "code"), (computed.Type, computed.Expression));
+    }
+
+    private static List<string> MissingCountedForms(IStringLocalizerFactory localizerFactory, IEnumerable<string> codes) =>
+        [.. codes.SelectMany(code => CountedMessage.KeysFor(code)
+            .Where(key => localizerFactory.CreateForCode(code)[key].ResourceNotFound)
+            .Select(key => $"{key} ({MessageResourceRegistry.ResourceTypeFor(code).Name}.resx)"))];
+
     private static MessageCodeScan ScanSources()
     {
         var sourceRoot = Path.Combine(RepositoryRoot().FullName, "src");
@@ -61,12 +116,19 @@ public sealed class MessageCodeTranslationTests(TrailWebApplicationFactory facto
             .Where(path => !IsBuildOutput(sourceRoot, path))
             .Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: Path.GetRelativePath(sourceRoot, path)).GetRoot())
             .ToList();
+
+        return ScanRoots(roots);
+    }
+
+    private static MessageCodeScan ScanRoots(IReadOnlyList<SyntaxNode> roots)
+    {
         var constants = StringConstants(roots);
 
         var codes = new SortedSet<string>(StringComparer.Ordinal);
+        var countedCodes = new SortedSet<string>(StringComparer.Ordinal);
         var unresolved = new List<UnresolvedCode>();
 
-        foreach (var argument in roots.SelectMany(root => root.DescendantNodes().OfType<InvocationExpressionSyntax>()).Select(CodeArgument).OfType<ArgumentSyntax>())
+        foreach (var (argument, counted) in roots.SelectMany(root => root.DescendantNodes().OfType<InvocationExpressionSyntax>()).Select(CodeArgument).OfType<CodeArgumentMatch>())
         {
             var containingType = ContainingTypeName(argument);
             var resolved = Resolve(argument.Expression, containingType, constants);
@@ -76,11 +138,11 @@ public sealed class MessageCodeTranslationTests(TrailWebApplicationFactory facto
             }
             else
             {
-                codes.UnionWith(resolved);
+                (counted ? countedCodes : codes).UnionWith(resolved);
             }
         }
 
-        return new MessageCodeScan(codes, unresolved);
+        return new MessageCodeScan(codes, countedCodes, unresolved);
     }
 
     private static List<string>? Resolve(ExpressionSyntax expression, string containingType, Dictionary<string, List<string>> constants) =>
@@ -128,15 +190,20 @@ public sealed class MessageCodeTranslationTests(TrailWebApplicationFactory facto
         return constants;
     }
 
-    private static ArgumentSyntax? CodeArgument(InvocationExpressionSyntax invocation) =>
+    private static CodeArgumentMatch? CodeArgument(InvocationExpressionSyntax invocation) =>
         invocation.Expression switch
         {
             MemberAccessExpressionSyntax { Name.Identifier.ValueText: var method } access
-                when IsMessageType(access.Expression) && MessageFactoryMethods.Contains(method) => Argument(invocation, position: 0),
-            MemberAccessExpressionSyntax { Name.Identifier.ValueText: "AddErrorIf" } => Argument(invocation, position: 1),
-            IdentifierNameSyntax { Identifier.ValueText: "AddErrorIf" } => Argument(invocation, position: 1),
+                when IsMessageType(access.Expression) && MessageFactoryMethods.Contains(method) => Match(Argument(invocation, position: 0), counted: false),
+            MemberAccessExpressionSyntax { Name.Identifier.ValueText: CountedCodeFactoryMethod } access
+                when SimpleName(access.Expression) == CountedCodeFactoryType => Match(Argument(invocation, position: 0), counted: true),
+            MemberAccessExpressionSyntax { Name.Identifier.ValueText: "AddErrorIf" } => Match(Argument(invocation, position: 1), counted: false),
+            IdentifierNameSyntax { Identifier.ValueText: "AddErrorIf" } => Match(Argument(invocation, position: 1), counted: false),
             _ => null,
         };
+
+    private static CodeArgumentMatch? Match(ArgumentSyntax? argument, bool counted) =>
+        argument is null ? null : new CodeArgumentMatch(argument, counted);
 
     private static bool IsMessageType(ExpressionSyntax expression) => SimpleName(expression) == "Message";
 
@@ -185,5 +252,24 @@ public sealed class MessageCodeTranslationTests(TrailWebApplicationFactory facto
 
     private sealed record UnresolvedCode(string Type, string Expression, string Location);
 
-    private sealed record MessageCodeScan(SortedSet<string> Codes, IReadOnlyList<UnresolvedCode> Unresolved);
+    private sealed record CodeArgumentMatch(ArgumentSyntax Argument, bool Counted);
+
+    private sealed record MessageCodeScan(SortedSet<string> Codes, SortedSet<string> CountedCodes, IReadOnlyList<UnresolvedCode> Unresolved);
+
+    private sealed class OneFormOnlyLocalizerFactory : IStringLocalizerFactory
+    {
+        public IStringLocalizer Create(Type resourceSource) => new OneFormOnlyLocalizer();
+
+        public IStringLocalizer Create(string baseName, string location) => new OneFormOnlyLocalizer();
+    }
+
+    private sealed class OneFormOnlyLocalizer : IStringLocalizer
+    {
+        public LocalizedString this[string name] =>
+            new(name, name, resourceNotFound: !name.EndsWith(CountedMessage.OneSuffix, StringComparison.Ordinal));
+
+        public LocalizedString this[string name, params object[] arguments] => this[name];
+
+        public IEnumerable<LocalizedString> GetAllStrings(bool includeParentCultures) => [];
+    }
 }

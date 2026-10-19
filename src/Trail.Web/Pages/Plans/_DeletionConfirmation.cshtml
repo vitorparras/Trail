@@ -1,0 +1,11 @@
+@model Trail.Web.Pages.Plans.DeletionConfirmationModel
+<div id="@Model.DescriptionId">
+    <p class="pt-2 font-semibold text-base-content break-words">@Model.Impact.TargetName</p>
+    <p class="py-2 text-sm text-base-content/80">@SharedLocalizer["DeletionImpactWarning"]</p>
+    <partial name="_DeletionImpact" model="Model.Impact.Items" />
+</div>
+<form method="post" asp-page="@Model.Page" asp-page-handler="@Model.Handler" asp-route-planId="@Model.PlanId" asp-route-subjectId="@Model.SubjectId" class="modal-action">
+    <input type="hidden" name="@Model.TargetField" value="@Model.Impact.TargetId" />
+    <button type="submit" class="btn btn-error">@SharedLocalizer["ConfirmDelete"]</button>
+    <a asp-page="@Model.Page" asp-route-planId="@Model.PlanId" asp-route-subjectId="@Model.SubjectId" class="btn btn-ghost" data-dialog-close autofocus>@SharedLocalizer["Cancel"]</a>
+</form>

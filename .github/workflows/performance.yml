@@ -1,0 +1,59 @@
+name: Performance
+
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  pull_request:
+    branches: [main, 'phase/**']
+    paths:
+      - tests/Trail.Web.Tests/Performance/**
+      - .github/workflows/performance.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: performance-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  TESTINGPLATFORM_TELEMETRY_OPTOUT: "1"
+
+jobs:
+  performance:
+    name: Performance (${{ matrix.provider }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [sqlite, postgresql]
+    env:
+      TRAIL_TEST_DATABASE_PROVIDER: ${{ matrix.provider }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .tools/tailwindcss
+          key: tailwindcss-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('eng/frontend.props') }}
+
+      - name: Restore
+        run: dotnet restore tests/Trail.Web.Tests/Trail.Web.Tests.csproj --locked-mode "-warnaserror:NU1901;NU1902;NU1903;NU1904"
+
+      - name: Build
+        run: dotnet build tests/Trail.Web.Tests/Trail.Web.Tests.csproj --no-restore --configuration Release
+
+      - name: Run performance tests
+        run: dotnet test tests/Trail.Web.Tests/Trail.Web.Tests.csproj --no-build --configuration Release --filter-trait "Category=Performance" --output Detailed

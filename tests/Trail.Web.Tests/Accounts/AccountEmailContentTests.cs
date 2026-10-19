@@ -18,7 +18,7 @@ public sealed partial class AccountEmailContentTests(TrailWebApplicationFactory 
     private static readonly string[] BuildOutputDirectories = ["bin", "obj"];
 
     public static TheoryData<string> Kinds =>
-        [EmailKinds.Confirmation, EmailKinds.PasswordReset, EmailKinds.Invitation, EmailKinds.Test];
+        [EmailKinds.Confirmation, EmailKinds.PasswordReset, EmailKinds.RegistrationAttempt, EmailKinds.Invitation, EmailKinds.Test];
 
     [Fact]
     public void Composition_RegistersTheLocalizedAccountEmailContent()
@@ -64,6 +64,7 @@ public sealed partial class AccountEmailContentTests(TrailWebApplicationFactory 
     [Theory]
     [InlineData(EmailKinds.Confirmation)]
     [InlineData(EmailKinds.PasswordReset)]
+    [InlineData(EmailKinds.RegistrationAttempt)]
     [InlineData(EmailKinds.Invitation)]
     public void AccountEmail_EncodesTheLinkInTheHtmlBodyAndKeepsItInTheTextBody(string kind)
     {
@@ -98,6 +99,7 @@ public sealed partial class AccountEmailContentTests(TrailWebApplicationFactory 
         {
             EmailKinds.Confirmation => content.EmailConfirmation(Recipient, Link),
             EmailKinds.PasswordReset => content.PasswordReset(Recipient, Link),
+            EmailKinds.RegistrationAttempt => content.RegistrationAttempt(Recipient, Link),
             EmailKinds.Invitation => content.Invitation(Recipient, Link),
             EmailKinds.Test => content.Test(Recipient),
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),

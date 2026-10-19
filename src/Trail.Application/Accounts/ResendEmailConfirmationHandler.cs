@@ -1,4 +1,3 @@
-using Trail.Application.Telemetry;
 using Trail.Domain.Common;
 
 namespace Trail.Application.Accounts;
@@ -12,23 +11,23 @@ public sealed class ResendEmailConfirmationHandler
     private readonly IAccountIdentityGateway _identityGateway;
     private readonly IEmailSender _emailSender;
     private readonly IAccountEmailContent _emailContent;
-    private readonly ApplicationMetrics _metrics;
+    private readonly IAccountEmailDelivery _emailDelivery;
 
     public ResendEmailConfirmationHandler(
         IAccountIdentityGateway identityGateway,
         IEmailSender emailSender,
         IAccountEmailContent emailContent,
-        ApplicationMetrics metrics)
+        IAccountEmailDelivery emailDelivery)
     {
         ArgumentNullException.ThrowIfNull(identityGateway);
         ArgumentNullException.ThrowIfNull(emailSender);
         ArgumentNullException.ThrowIfNull(emailContent);
-        ArgumentNullException.ThrowIfNull(metrics);
+        ArgumentNullException.ThrowIfNull(emailDelivery);
 
         _identityGateway = identityGateway;
         _emailSender = emailSender;
         _emailContent = emailContent;
-        _metrics = metrics;
+        _emailDelivery = emailDelivery;
     }
 
     public async Task<Result> HandleAsync(
@@ -62,17 +61,7 @@ public sealed class ResendEmailConfirmationHandler
         var confirmationUrl = command.ConfirmationLinkBuilder?.Invoke(user.Id, tokenResult.Data)
             ?? $"/Account/ConfirmEmail?userId={user.Id}&token={Uri.EscapeDataString(tokenResult.Data)}";
 
-        var message = _emailContent.EmailConfirmation(command.Email, confirmationUrl);
-
-        var sendResult = await _emailSender.SendAsync(message, cancellationToken);
-        if (sendResult.IsOk)
-        {
-            _metrics.RecordEmailSent(EmailKinds.Confirmation);
-        }
-        else
-        {
-            _metrics.RecordEmailFailed(EmailKinds.Confirmation);
-        }
+        _emailDelivery.Schedule(_emailContent.EmailConfirmation(command.Email, confirmationUrl));
 
         return Result.Ok();
     }

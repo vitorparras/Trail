@@ -53,7 +53,8 @@ public sealed class RegisterModel : PageModel
             Input.Password,
             Input.ConfirmPassword,
             Input.InviteToken,
-            LinkBuilder);
+            LinkBuilder,
+            Url.Page("/Account/ForgotPassword", pageHandler: null, values: null, protocol: Request.Scheme));
 
         var result = await _registerHandler.HandleAsync(command, cancellationToken);
 

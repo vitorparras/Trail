@@ -8,6 +8,7 @@ public sealed class LocalizedAccountEmailContent : IAccountEmailContent
 {
     private const string ConfirmationPrefix = "accounts.email.confirmation";
     private const string PasswordResetPrefix = "accounts.email.password_reset";
+    private const string RegistrationAttemptPrefix = "accounts.email.registration_attempt";
     private const string InvitationPrefix = "accounts.email.invitation";
     private const string TestPrefix = "accounts.email.test";
     private const string ParagraphBreak = "\n\n";
@@ -25,6 +26,9 @@ public sealed class LocalizedAccountEmailContent : IAccountEmailContent
 
     public EmailMessage PasswordReset(string toAddress, string resetLink) =>
         WithLink(toAddress, EmailKinds.PasswordReset, PasswordResetPrefix, resetLink);
+
+    public EmailMessage RegistrationAttempt(string toAddress, string passwordRecoveryLink) =>
+        WithLink(toAddress, EmailKinds.RegistrationAttempt, RegistrationAttemptPrefix, passwordRecoveryLink);
 
     public EmailMessage Invitation(string toAddress, string invitationLink) =>
         WithLink(toAddress, EmailKinds.Invitation, InvitationPrefix, invitationLink);

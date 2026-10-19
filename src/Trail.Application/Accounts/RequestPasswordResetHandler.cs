@@ -1,4 +1,3 @@
-using Trail.Application.Telemetry;
 using Trail.Domain.Common;
 
 namespace Trail.Application.Accounts;
@@ -12,23 +11,23 @@ public sealed class RequestPasswordResetHandler
     private readonly IAccountIdentityGateway _identityGateway;
     private readonly IEmailSender _emailSender;
     private readonly IAccountEmailContent _emailContent;
-    private readonly ApplicationMetrics _metrics;
+    private readonly IAccountEmailDelivery _emailDelivery;
 
     public RequestPasswordResetHandler(
         IAccountIdentityGateway identityGateway,
         IEmailSender emailSender,
         IAccountEmailContent emailContent,
-        ApplicationMetrics metrics)
+        IAccountEmailDelivery emailDelivery)
     {
         ArgumentNullException.ThrowIfNull(identityGateway);
         ArgumentNullException.ThrowIfNull(emailSender);
         ArgumentNullException.ThrowIfNull(emailContent);
-        ArgumentNullException.ThrowIfNull(metrics);
+        ArgumentNullException.ThrowIfNull(emailDelivery);
 
         _identityGateway = identityGateway;
         _emailSender = emailSender;
         _emailContent = emailContent;
-        _metrics = metrics;
+        _emailDelivery = emailDelivery;
     }
 
     public async Task<Result> HandleAsync(
@@ -62,17 +61,7 @@ public sealed class RequestPasswordResetHandler
         var resetUrl = command.ResetLinkBuilder?.Invoke(user.Id, tokenResult.Data)
             ?? $"/Account/ResetPassword?userId={user.Id}&token={Uri.EscapeDataString(tokenResult.Data)}";
 
-        var message = _emailContent.PasswordReset(command.Email, resetUrl);
-
-        var sendResult = await _emailSender.SendAsync(message, cancellationToken);
-        if (sendResult.IsOk)
-        {
-            _metrics.RecordEmailSent(EmailKinds.PasswordReset);
-        }
-        else
-        {
-            _metrics.RecordEmailFailed(EmailKinds.PasswordReset);
-        }
+        _emailDelivery.Schedule(_emailContent.PasswordReset(command.Email, resetUrl));
 
         return Result.Ok();
     }

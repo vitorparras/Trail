@@ -53,7 +53,7 @@ public sealed partial class UniformAccountResponsesTests(OpenRegistrationWebAppl
 
         Assert.Equal(HttpStatusCode.OK, unknown.StatusCode);
         Assert.Equal(unknown, failedDelivery);
-        Assert.Single(failingSender.SentMessages);
+        Assert.Single(await failingSender.WaitForMessagesAsync(1));
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public sealed partial class UniformAccountResponsesTests(OpenRegistrationWebAppl
 
         Assert.Equal(HttpStatusCode.OK, unknown.StatusCode);
         Assert.Equal(unknown, failedDelivery);
-        Assert.Single(failingSender.SentMessages);
+        Assert.Single(await failingSender.WaitForMessagesAsync(1));
     }
 
     [Fact]

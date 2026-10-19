@@ -160,6 +160,7 @@ public sealed class EmailAndSessionPersistenceTests
             var inviteMsg = await WaitForMailpitMessageAsync(mailpitHttpClient, mailpitBaseUrl, "user2@trail.local", cancellationToken);
             var inviteBody = inviteMsg.GetProperty("HTML").GetString() ?? inviteMsg.GetProperty("Text").GetString()!;
             var registerInviteUrl = ExtractUrlPath(inviteBody, "/Account/Register");
+            await mailpitHttpClient.DeleteAsync($"{mailpitBaseUrl}/api/v1/messages", cancellationToken);
 
             using var client2 = factory.CreateClient(new WebApplicationFactoryClientOptions
             {

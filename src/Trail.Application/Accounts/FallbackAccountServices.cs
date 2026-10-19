@@ -109,6 +109,9 @@ internal sealed class FallbackAccountEmailContent : IAccountEmailContent
     public EmailMessage PasswordReset(string toAddress, string resetLink) =>
         Neutral(toAddress, EmailKinds.PasswordReset, resetLink);
 
+    public EmailMessage RegistrationAttempt(string toAddress, string passwordRecoveryLink) =>
+        Neutral(toAddress, EmailKinds.RegistrationAttempt, passwordRecoveryLink);
+
     public EmailMessage Invitation(string toAddress, string invitationLink) =>
         Neutral(toAddress, EmailKinds.Invitation, invitationLink);
 
@@ -117,6 +120,13 @@ internal sealed class FallbackAccountEmailContent : IAccountEmailContent
 
     private static EmailMessage Neutral(string toAddress, string kind, string link) =>
         new(toAddress, kind, WebUtility.HtmlEncode(link), link, kind);
+}
+
+internal sealed class FallbackAccountEmailDelivery : IAccountEmailDelivery
+{
+    public void Schedule(EmailMessage message)
+    {
+    }
 }
 
 internal sealed class FallbackUserSettingsStore : IUserSettingsStore

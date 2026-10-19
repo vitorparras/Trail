@@ -279,6 +279,18 @@
   <data name="accounts.email.password_reset.footer" xml:space="preserve">
     <value>Se você não pediu a redefinição, ignore este e-mail: sua senha continua a mesma.</value>
   </data>
+  <data name="accounts.email.registration_attempt.subject" xml:space="preserve">
+    <value>Tentativa de cadastro com seu e-mail no Trail</value>
+  </data>
+  <data name="accounts.email.registration_attempt.body" xml:space="preserve">
+    <value>Alguém tentou criar uma conta no Trail com este e-mail, que já tem uma conta. Se foi você, entre com seu e-mail e sua senha. Se esqueceu a senha, peça a redefinição pelo link abaixo.</value>
+  </data>
+  <data name="accounts.email.registration_attempt.action" xml:space="preserve">
+    <value>Redefinir senha</value>
+  </data>
+  <data name="accounts.email.registration_attempt.footer" xml:space="preserve">
+    <value>Se não foi você, ignore este e-mail: nada mudou na sua conta.</value>
+  </data>
   <data name="accounts.email.invitation.subject" xml:space="preserve">
     <value>Convite para o Trail</value>
   </data>

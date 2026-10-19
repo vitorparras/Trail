@@ -29,6 +29,13 @@ internal sealed class FakeEmailSender : IEmailSender
     }
 }
 
+internal sealed class FakeAccountEmailDelivery : IAccountEmailDelivery
+{
+    public List<EmailMessage> Scheduled { get; } = [];
+
+    public void Schedule(EmailMessage message) => Scheduled.Add(message);
+}
+
 internal sealed class FakeUserSettingsStore : IUserSettingsStore
 {
     public UserSettings? Settings { get; set; }

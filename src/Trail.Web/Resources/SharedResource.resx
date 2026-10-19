@@ -169,10 +169,7 @@
     <value>A senha é obrigatória.</value>
   </data>
   <data name="accounts.login.invalid_credentials" xml:space="preserve">
-    <value>E-mail ou senha incorretos.</value>
-  </data>
-  <data name="accounts.login.locked_out" xml:space="preserve">
-    <value>Conta temporariamente bloqueada por excesso de tentativas. Tente novamente mais tarde.</value>
+    <value>E-mail ou senha incorretos, ou conta bloqueada temporariamente.</value>
   </data>
   <data name="accounts.login.email_not_confirmed" xml:space="preserve">
     <value>E-mail ainda não confirmado. Verifique sua caixa de entrada.</value>

@@ -49,8 +49,7 @@ public sealed class LoginHandler
         return outcome switch
         {
             PasswordSignInResult.Success => Result.Ok(),
-            PasswordSignInResult.InvalidCredentials => Result.Invalid(Message.Error("accounts.login.invalid_credentials")),
-            PasswordSignInResult.LockedOut => Result.Forbidden(Message.Error("accounts.login.locked_out")),
+            PasswordSignInResult.InvalidCredentials or PasswordSignInResult.LockedOut => Result.Invalid(Message.Error("accounts.login.invalid_credentials")),
             PasswordSignInResult.EmailNotConfirmed => Result.Forbidden(Message.Error("accounts.login.email_not_confirmed")),
             PasswordSignInResult.Deactivated => Result.Forbidden(Message.Error("accounts.login.deactivated")),
             _ => Result.Invalid(Message.Error("accounts.login.invalid_credentials")),

@@ -54,7 +54,7 @@ public sealed class LoginHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_LockedOut_ReturnsForbidden()
+    public async Task HandleAsync_LockedOut_AnswersAsInvalidCredentials()
     {
         _identityGateway.SignInResult = PasswordSignInResult.LockedOut;
         var handler = CreateHandler();
@@ -63,9 +63,9 @@ public sealed class LoginHandlerTests
         var result = await handler.HandleAsync(command, TestContext.Current.CancellationToken);
 
         Assert.False(result.IsOk);
-        Assert.Equal(ResultStatus.Forbidden, result.Status);
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         var message = Assert.Single(result.Messages);
-        Assert.Equal("accounts.login.locked_out", message.Code);
+        Assert.Equal("accounts.login.invalid_credentials", message.Code);
     }
 
     [Fact]

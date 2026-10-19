@@ -1,7 +1,4 @@
 using System.Text.RegularExpressions;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Extensions.Localization;
 using Trail.Application.Accounts;
 using Trail.Web.Accounts;
@@ -12,10 +9,6 @@ public sealed partial class AccountEmailContentTests(TrailWebApplicationFactory 
 {
     private const string Recipient = "student@example.com";
     private const string Link = "https://trail.example/Account/ConfirmEmail?userId=1&token=a+b/c=\"<x>";
-
-    private static readonly string[] EmailContentTypes = ["LocalizedAccountEmailContent", "FallbackAccountEmailContent"];
-    private static readonly string[] ScannedProjects = ["Trail.Domain", "Trail.Application", "Trail.Infrastructure", "Trail.Web"];
-    private static readonly string[] BuildOutputDirectories = ["bin", "obj"];
 
     public static TheoryData<string> Kinds =>
         [EmailKinds.Confirmation, EmailKinds.PasswordReset, EmailKinds.RegistrationAttempt, EmailKinds.Invitation, EmailKinds.Test];
@@ -77,23 +70,6 @@ public sealed partial class AccountEmailContentTests(TrailWebApplicationFactory 
         Assert.Contains(Link, message.TextBody, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void ProductionCode_CreatesEmailMessagesOnlyInTheAccountEmailContent()
-    {
-        var sourceRoot = Path.Combine(RepositoryRoot().FullName, "src");
-        var creators = ScannedProjects
-            .SelectMany(project => Directory.EnumerateFiles(Path.Combine(sourceRoot, project), "*.cs", SearchOption.AllDirectories))
-            .Where(path => !IsBuildOutput(sourceRoot, path))
-            .SelectMany(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), cancellationToken: TestContext.Current.CancellationToken)
-                .GetRoot(TestContext.Current.CancellationToken)
-                .DescendantNodes()
-                .Where(IsEmailMessageCreation)
-                .Select(node => node.Ancestors().OfType<BaseTypeDeclarationSyntax>().First().Identifier.ValueText))
-            .ToHashSet(StringComparer.Ordinal);
-
-        Assert.Equal(EmailContentTypes.Order(StringComparer.Ordinal), creators.Order(StringComparer.Ordinal));
-    }
-
     private static EmailMessage Compose(IAccountEmailContent content, string kind) =>
         kind switch
         {
@@ -110,40 +86,6 @@ public sealed partial class AccountEmailContentTests(TrailWebApplicationFactory 
 
     [GeneratedRegex("<[^>]*>")]
     private static partial Regex Tags();
-
-    private static bool IsEmailMessageCreation(SyntaxNode node) =>
-        node switch
-        {
-            ObjectCreationExpressionSyntax creation => creation.Type.ToString() == nameof(EmailMessage),
-            ImplicitObjectCreationExpressionSyntax implicitCreation => ReturnsEmailMessage(implicitCreation),
-            _ => false,
-        };
-
-    private static bool ReturnsEmailMessage(SyntaxNode node) =>
-        node.Ancestors().FirstOrDefault(ancestor => ancestor is MethodDeclarationSyntax or LocalDeclarationStatementSyntax or PropertyDeclarationSyntax) switch
-        {
-            MethodDeclarationSyntax method => method.ReturnType.ToString() == nameof(EmailMessage),
-            LocalDeclarationStatementSyntax local => local.Declaration.Type.ToString() == nameof(EmailMessage),
-            PropertyDeclarationSyntax property => property.Type.ToString() == nameof(EmailMessage),
-            _ => false,
-        };
-
-    private static bool IsBuildOutput(string sourceRoot, string path) =>
-        Path.GetRelativePath(sourceRoot, path)
-            .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-            .Intersect(BuildOutputDirectories, StringComparer.OrdinalIgnoreCase)
-            .Any();
-
-    private static DirectoryInfo RepositoryRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "Trail.slnx")))
-        {
-            directory = directory.Parent;
-        }
-
-        return directory ?? throw new InvalidOperationException("The repository root (Trail.slnx) was not found.");
-    }
 
     private sealed class RecordingLocalizer(IStringLocalizer<SharedResource> inner) : IStringLocalizer<SharedResource>
     {

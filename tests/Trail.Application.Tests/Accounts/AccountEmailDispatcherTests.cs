@@ -5,6 +5,7 @@ using System.Globalization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Time.Testing;
 using Trail.Application.Accounts;
 using Trail.Application.Telemetry;
 using Trail.Domain.Common;
@@ -23,6 +24,8 @@ public sealed class AccountEmailDispatcherTests : IDisposable
     private readonly ConcurrentQueue<(string Instrument, string Kind)> _measurements = new();
     private readonly RecordingLogger<InMemoryAccountEmailDelivery> _deliveryLogger = new();
     private readonly RecordingLogger<AccountEmailDispatcher> _dispatcherLogger = new();
+    private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 19, 12, 0, 0, TimeSpan.Zero));
+    private TaskCompletionSource _measured = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public AccountEmailDispatcherTests()
     {
@@ -40,6 +43,7 @@ public sealed class AccountEmailDispatcherTests : IDisposable
                 if (tag.Key == "kind")
                 {
                     _measurements.Enqueue((instrument.Name, (string)tag.Value!));
+                    Interlocked.Exchange(ref _measured, new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)).TrySetResult();
                 }
             }
         });
@@ -154,6 +158,153 @@ public sealed class AccountEmailDispatcherTests : IDisposable
     }
 
     [Fact]
+    public async Task Schedule_TheSameKindToTheSameRecipientWithinTheWindow_SendsOnceAndCountsTheRestAsCoalesced()
+    {
+        var sender = new ControlledEmailSender();
+        var (delivery, dispatcher) = Create(sender);
+        await dispatcher.StartAsync(TestContext.Current.CancellationToken);
+
+        delivery.Schedule(Email(EmailKinds.RegistrationAttempt, Recipient));
+        delivery.Schedule(Email(EmailKinds.RegistrationAttempt, Recipient.ToUpperInvariant()));
+        delivery.Schedule(Email(EmailKinds.RegistrationAttempt, $" {Recipient} "));
+        delivery.Schedule(Email(EmailKinds.Confirmation, Recipient));
+        delivery.Schedule(Email(EmailKinds.RegistrationAttempt, "someone.else@example.com"));
+        await dispatcher.StopAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(
+            [(EmailKinds.RegistrationAttempt, Recipient), (EmailKinds.Confirmation, Recipient), (EmailKinds.RegistrationAttempt, "someone.else@example.com")],
+            sender.Attempts.Select(message => (message.Kind, message.ToAddress)));
+        Assert.Equal([EmailKinds.RegistrationAttempt, EmailKinds.RegistrationAttempt], Measured(ApplicationMetrics.EmailsCoalescedInstrumentName));
+        Assert.Empty(Measured(ApplicationMetrics.EmailsFailedInstrumentName));
+        Assert.All(_dispatcherLogger.Entries, entry =>
+        {
+            Assert.Equal(LogLevel.Information, entry.Level);
+            Assert.Equal(EmailKinds.RegistrationAttempt, entry.State["Kind"]);
+            Assert.DoesNotContain(Recipient, entry.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.All(entry.State.Values, value => Assert.DoesNotContain(Recipient, Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty, StringComparison.OrdinalIgnoreCase));
+        });
+        Assert.Equal(2, _dispatcherLogger.Entries.Count);
+    }
+
+    [Fact]
+    public async Task Schedule_AfterTheCoalescingWindow_SendsAgain()
+    {
+        var sender = new ControlledEmailSender();
+        var (delivery, dispatcher) = Create(sender);
+        await dispatcher.StartAsync(TestContext.Current.CancellationToken);
+
+        delivery.Schedule(Email(EmailKinds.PasswordReset));
+        await WaitForMeasurementsAsync(1);
+        _time.Advance(TimeSpan.FromMinutes(15));
+        delivery.Schedule(Email(EmailKinds.PasswordReset));
+        await dispatcher.StopAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, sender.Attempts.Count);
+        Assert.Empty(Measured(ApplicationMetrics.EmailsCoalescedInstrumentName));
+    }
+
+    [Fact]
+    public async Task Schedule_JustBeforeTheEndOfTheCoalescingWindow_IsCoalesced()
+    {
+        var sender = new ControlledEmailSender();
+        var (delivery, dispatcher) = Create(sender);
+        await dispatcher.StartAsync(TestContext.Current.CancellationToken);
+
+        delivery.Schedule(Email(EmailKinds.PasswordReset));
+        await WaitForMeasurementsAsync(1);
+        _time.Advance(TimeSpan.FromMinutes(15) - TimeSpan.FromSeconds(1));
+        delivery.Schedule(Email(EmailKinds.PasswordReset));
+        await dispatcher.StopAsync(TestContext.Current.CancellationToken);
+
+        Assert.Single(sender.Attempts);
+        Assert.Equal([EmailKinds.PasswordReset], Measured(ApplicationMetrics.EmailsCoalescedInstrumentName));
+    }
+
+    [Fact]
+    public async Task Schedule_AfterAFailedSend_DoesNotCoalesceTheRetry()
+    {
+        var attempts = 0;
+        var sender = new ControlledEmailSender
+        {
+            Outcome = _ => Interlocked.Increment(ref attempts) == 1 ? Result.Invalid(Message.Error("accounts.email.send_failed")) : Result.Ok(),
+        };
+        var (delivery, dispatcher) = Create(sender);
+        await dispatcher.StartAsync(TestContext.Current.CancellationToken);
+
+        delivery.Schedule(Email(EmailKinds.Confirmation));
+        delivery.Schedule(Email(EmailKinds.Confirmation));
+        await dispatcher.StopAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, sender.Attempts.Count);
+        Assert.Equal([EmailKinds.Confirmation], Measured(ApplicationMetrics.EmailsFailedInstrumentName));
+        Assert.Equal([EmailKinds.Confirmation], Measured(ApplicationMetrics.EmailsSentInstrumentName));
+        Assert.Empty(Measured(ApplicationMetrics.EmailsCoalescedInstrumentName));
+    }
+
+    [Fact]
+    public async Task Schedule_WhenTheCoalescingMapIsFull_ForgetsTheOldestRecipientFirst()
+    {
+        var sender = new ControlledEmailSender();
+        var (delivery, dispatcher) = Create(sender, coalescingCapacity: 2);
+        await dispatcher.StartAsync(TestContext.Current.CancellationToken);
+
+        foreach (var recipient in new[] { "a@example.com", "b@example.com", "c@example.com", "a@example.com", "c@example.com" })
+        {
+            delivery.Schedule(Email(EmailKinds.Confirmation, recipient));
+        }
+
+        await dispatcher.StopAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(["a@example.com", "b@example.com", "c@example.com", "a@example.com"], sender.Attempts.Select(message => message.ToAddress));
+        Assert.Equal([EmailKinds.Confirmation], Measured(ApplicationMetrics.EmailsCoalescedInstrumentName));
+    }
+
+    [Fact]
+    public void RecentAccountEmails_WithManyRecipients_NeverHoldsMoreThanItsCapacity()
+    {
+        var recent = new RecentAccountEmails(capacity: 100, window: TimeSpan.FromMinutes(15));
+        var now = _time.GetUtcNow();
+
+        for (var index = 0; index < 1_000; index++)
+        {
+            recent.Remember(RecentAccountEmails.KeyFor(Email(EmailKinds.Confirmation, $"user{index}@example.com")), now);
+            Assert.True(recent.Count <= 100);
+        }
+
+        Assert.Equal(100, recent.Count);
+        Assert.False(recent.Contains(RecentAccountEmails.KeyFor(Email(EmailKinds.Confirmation, "user0@example.com")), now));
+        Assert.True(recent.Contains(RecentAccountEmails.KeyFor(Email(EmailKinds.Confirmation, "user999@example.com")), now));
+        Assert.False(recent.Contains(RecentAccountEmails.KeyFor(Email(EmailKinds.Confirmation, "user999@example.com")), now.AddMinutes(15)));
+        Assert.Equal(0, recent.Count);
+    }
+
+    [Fact]
+    public void RecentAccountEmails_KeysHoldNoRecipientAddress()
+    {
+        var key = RecentAccountEmails.KeyFor(Email(EmailKinds.Confirmation));
+
+        Assert.StartsWith(EmailKinds.Confirmation + ":", key, StringComparison.Ordinal);
+        Assert.DoesNotContain("private", key, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("example", key, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task StopAsync_RightAfterStarting_StillSendsWhatWasQueued()
+    {
+        for (var round = 0; round < 20; round++)
+        {
+            var sender = new ControlledEmailSender();
+            var (delivery, dispatcher) = Create(sender);
+
+            await dispatcher.StartAsync(TestContext.Current.CancellationToken);
+            delivery.Schedule(Email(EmailKinds.Confirmation, $"round{round}@example.com"));
+            await dispatcher.StopAsync(TestContext.Current.CancellationToken);
+
+            Assert.Equal($"round{round}@example.com", Assert.Single(sender.Attempts).ToAddress);
+        }
+    }
+
+    [Fact]
     public async Task StopAsync_CalledAgainAfterTheHostDisposedTheDispatcher_ReturnsWithoutThrowing()
     {
         var (_, dispatcher) = Create(new ControlledEmailSender());
@@ -228,21 +379,40 @@ public sealed class AccountEmailDispatcherTests : IDisposable
     private (InMemoryAccountEmailDelivery Delivery, AccountEmailDispatcher Dispatcher) Create(
         ControlledEmailSender sender,
         TimeSpan? drainTimeout = null,
-        int capacity = 500)
+        int capacity = 500,
+        int coalescingCapacity = 10_000)
     {
         var options = Options.Create(new AccountEmailDeliveryOptions
         {
             Capacity = capacity,
             ShutdownDrainTimeout = drainTimeout ?? TimeSpan.FromMinutes(5),
+            CoalescingCapacity = coalescingCapacity,
         });
         var services = new ServiceCollection()
             .AddScoped<IEmailSender>(_ => sender)
             .BuildServiceProvider();
         var delivery = new InMemoryAccountEmailDelivery(options, _metrics, _deliveryLogger);
-        var dispatcher = new AccountEmailDispatcher(delivery, services.GetRequiredService<IServiceScopeFactory>(), _metrics, options, _dispatcherLogger);
+        var dispatcher = new AccountEmailDispatcher(delivery, services.GetRequiredService<IServiceScopeFactory>(), _metrics, _time, options, _dispatcherLogger);
 
         return (delivery, dispatcher);
     }
+
+    private async Task WaitForMeasurementsAsync(int count)
+    {
+        while (true)
+        {
+            var measured = Volatile.Read(ref _measured).Task;
+            if (_measurements.Count >= count)
+            {
+                return;
+            }
+
+            await measured.WaitAsync(WaitTimeout, TestContext.Current.CancellationToken);
+        }
+    }
+
+    private List<string> Measured(string instrument) =>
+        [.. _measurements.Where(measurement => measurement.Instrument == instrument).Select(measurement => measurement.Kind)];
 
     private static EmailMessage Email(string kind, string toAddress = Recipient) =>
         new(toAddress, "Subject", "<p>Body</p>", "Body", kind);

@@ -41,6 +41,29 @@ public sealed partial class AccountEmailDeliveryTests(OpenRegistrationWebApplica
         Assert.Equal(newEmail, confirmation.ToAddress);
     }
 
+    [Fact]
+    public async Task Post_Register_RepeatedForTheSameExistingEmail_AnswersTheSameAndSendsOneNotice()
+    {
+        var sender = new TestEmailSender();
+        using var app = WithEmailSender(sender);
+        var existingEmail = await CreateUserAsync(emailConfirmed: true);
+        var sentinelEmail = $"sentinel-{Guid.NewGuid():N}@trail.local";
+
+        AccountResponse[] repeated =
+        [
+            await AnsweredAsync(RegisterAsync(app, existingEmail)),
+            await AnsweredAsync(RegisterAsync(app, existingEmail)),
+            await AnsweredAsync(RegisterAsync(app, existingEmail)),
+        ];
+        var sentinel = await AnsweredAsync(RegisterAsync(app, sentinelEmail));
+
+        Assert.All(repeated, response => Assert.Equal(sentinel, response));
+        var sent = await sender.WaitForMessagesAsync(2);
+        Assert.Equal(
+            [(EmailKinds.RegistrationAttempt, existingEmail), (EmailKinds.Confirmation, sentinelEmail)],
+            sent.Select(message => (message.Kind, message.ToAddress)));
+    }
+
     [Theory]
     [InlineData("/Account/ForgotPassword", true, EmailKinds.PasswordReset)]
     [InlineData("/Account/ResendConfirmation", false, EmailKinds.Confirmation)]
@@ -109,13 +132,18 @@ public sealed partial class AccountEmailDeliveryTests(OpenRegistrationWebApplica
             services.AddScoped<IEmailSender>(_ => sender);
         }));
 
-    private async Task<string> CreateUserAsync(bool emailConfirmed)
+    private async Task<string> CreateUserAsync(bool emailConfirmed, bool isActive = true)
     {
         using var scope = factory.Services.CreateScope();
         var gateway = scope.ServiceProvider.GetRequiredService<IAccountIdentityGateway>();
         var email = $"existing-{Guid.NewGuid():N}@trail.local";
 
-        Assert.True((await gateway.CreateUserAsync(email, ValidPassword, isAdmin: false, emailConfirmed, TestContext.Current.CancellationToken)).IsOk);
+        var created = await gateway.CreateUserAsync(email, ValidPassword, isAdmin: false, emailConfirmed, TestContext.Current.CancellationToken);
+        Assert.True(created.IsOk);
+        if (!isActive)
+        {
+            Assert.True((await gateway.SetUserActiveStatusAsync(created.Data, isActive: false, TestContext.Current.CancellationToken)).IsOk);
+        }
 
         return email;
     }

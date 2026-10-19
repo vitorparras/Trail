@@ -17,7 +17,9 @@ public sealed partial class AccountEmailDispatcher : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ApplicationMetrics _metrics;
     private readonly ILogger<AccountEmailDispatcher> _logger;
+    private readonly TimeProvider _timeProvider;
     private readonly TimeSpan _drainTimeout;
+    private readonly RecentAccountEmails _recentlySent;
     private readonly CancellationTokenSource _drainLimit = new();
     private int _stopRequested;
 
@@ -25,19 +27,23 @@ public sealed partial class AccountEmailDispatcher : BackgroundService
         InMemoryAccountEmailDelivery delivery,
         IServiceScopeFactory scopeFactory,
         ApplicationMetrics metrics,
+        TimeProvider timeProvider,
         IOptions<AccountEmailDeliveryOptions> options,
         ILogger<AccountEmailDispatcher> logger)
     {
         ArgumentNullException.ThrowIfNull(delivery);
         ArgumentNullException.ThrowIfNull(scopeFactory);
         ArgumentNullException.ThrowIfNull(metrics);
+        ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(logger);
 
         _delivery = delivery;
         _scopeFactory = scopeFactory;
         _metrics = metrics;
+        _timeProvider = timeProvider;
         _drainTimeout = options.Value.ShutdownDrainTimeout;
+        _recentlySent = new RecentAccountEmails(options.Value.CoalescingCapacity, options.Value.CoalescingWindow);
         _logger = logger;
     }
 
@@ -52,6 +58,11 @@ public sealed partial class AccountEmailDispatcher : BackgroundService
         using var hostTimeout = cancellationToken.Register(static state => ((CancellationTokenSource)state!).Cancel(), _drainLimit);
 
         await base.StopAsync(cancellationToken);
+
+        if (ExecuteTask is { IsCanceled: true })
+        {
+            await ProcessQueueAsync();
+        }
     }
 
     public override void Dispose()
@@ -60,7 +71,9 @@ public sealed partial class AccountEmailDispatcher : BackgroundService
         base.Dispose();
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override Task ExecuteAsync(CancellationToken stoppingToken) => ProcessQueueAsync();
+
+    private async Task ProcessQueueAsync()
     {
         var reader = _delivery.Reader;
         var drainLimit = _drainLimit.Token;
@@ -88,6 +101,15 @@ public sealed partial class AccountEmailDispatcher : BackgroundService
         using var activity = ApplicationTelemetry.ActivitySource.StartActivity("trail.email.dispatch", ActivityKind.Consumer, email.Origin);
         activity?.SetTag("trail.email.kind", kind);
 
+        var recipientAndKind = RecentAccountEmails.KeyFor(email.Message);
+        if (_recentlySent.Contains(recipientAndKind, _timeProvider.GetUtcNow()))
+        {
+            _metrics.RecordEmailCoalesced(kind);
+            activity?.SetTag("trail.email.coalesced", true);
+            LogEmailCoalesced(_logger, kind);
+            return;
+        }
+
         try
         {
             await using var scope = _scopeFactory.CreateAsyncScope();
@@ -96,6 +118,7 @@ public sealed partial class AccountEmailDispatcher : BackgroundService
 
             if (result.IsOk)
             {
+                _recentlySent.Remember(recipientAndKind, _timeProvider.GetUtcNow());
                 _metrics.RecordEmailSent(kind);
                 activity?.SetStatus(ActivityStatusCode.Ok);
                 return;
@@ -146,4 +169,10 @@ public sealed partial class AccountEmailDispatcher : BackgroundService
         Level = LogLevel.Warning,
         Message = "{Count} queued account emails were dropped when the application stopped")]
     private static partial void LogEmailsDropped(ILogger logger, int count);
+
+    [LoggerMessage(
+        EventId = 5,
+        Level = LogLevel.Information,
+        Message = "Account email of kind {Kind} was not sent: the same recipient received one of this kind recently")]
+    private static partial void LogEmailCoalesced(ILogger logger, string kind);
 }

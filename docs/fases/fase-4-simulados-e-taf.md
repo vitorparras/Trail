@@ -189,10 +189,10 @@ Em cada tarefa, simulados e TAF são independentes e podem ser feitos em paralel
   `DeletionImpactItem.Create("practice.deletion.mock_exams", count)` e
   `DeletionImpactItem.Create("fitness.deletion.attempts", count)`, traduzidos pelas chaves
   `<Code>.one` e `<Code>.other` no `.resx` do prefixo, que o teste de tradução exige. As
-  chaves seguem as opções recomendadas da
-  [P10](onda-0-base-compartilhada.md#p10--regra-do-plural-nos-textos-com-quantidade) e da
+  chaves seguem a regra confirmada na
+  [P10](onda-0-base-compartilhada.md#p10--regra-do-plural-nos-textos-com-quantidade) e na
   [P11](onda-0-base-compartilhada.md#p11--formato-dos-itens-da-prévia-de-exclusão) da
-  Onda 0, ainda sem resposta, e se ajustam na integração se o autor escolher outra.
+  Onda 0.
 - Datas futuras recusadas com o `IUserCalendar` (D9).
 - Consumidores e contadores de métricas (D13).
 - Testes em `Trail.Application.Tests/Practice/MockExams/` e `Trail.Application.Tests/Fitness/`,

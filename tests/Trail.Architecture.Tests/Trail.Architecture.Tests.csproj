@@ -3,6 +3,7 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Mono.Cecil" />
     <PackageReference Include="TngTech.ArchUnitNET.xUnitV3" />
   </ItemGroup>
   <ItemGroup>

@@ -1,4 +1,3 @@
-using Trail.Application.Telemetry;
 using Trail.Domain.Common;
 
 namespace Trail.Application.Accounts;
@@ -11,20 +10,24 @@ public sealed class RequestPasswordResetHandler
 {
     private readonly IAccountIdentityGateway _identityGateway;
     private readonly IEmailSender _emailSender;
-    private readonly ApplicationMetrics _metrics;
+    private readonly IAccountEmailContent _emailContent;
+    private readonly IAccountEmailDelivery _emailDelivery;
 
     public RequestPasswordResetHandler(
         IAccountIdentityGateway identityGateway,
         IEmailSender emailSender,
-        ApplicationMetrics metrics)
+        IAccountEmailContent emailContent,
+        IAccountEmailDelivery emailDelivery)
     {
         ArgumentNullException.ThrowIfNull(identityGateway);
         ArgumentNullException.ThrowIfNull(emailSender);
-        ArgumentNullException.ThrowIfNull(metrics);
+        ArgumentNullException.ThrowIfNull(emailContent);
+        ArgumentNullException.ThrowIfNull(emailDelivery);
 
         _identityGateway = identityGateway;
         _emailSender = emailSender;
-        _metrics = metrics;
+        _emailContent = emailContent;
+        _emailDelivery = emailDelivery;
     }
 
     public async Task<Result> HandleAsync(
@@ -58,22 +61,7 @@ public sealed class RequestPasswordResetHandler
         var resetUrl = command.ResetLinkBuilder?.Invoke(user.Id, tokenResult.Data)
             ?? $"/Account/ResetPassword?userId={user.Id}&token={Uri.EscapeDataString(tokenResult.Data)}";
 
-        var message = new EmailMessage(
-            command.Email,
-            "Reset your password",
-            $"<p>Please reset your password by clicking <a href=\"{resetUrl}\">here</a>.</p>",
-            $"Please reset your password by visiting: {resetUrl}",
-            EmailKinds.PasswordReset);
-
-        var sendResult = await _emailSender.SendAsync(message, cancellationToken);
-        if (sendResult.IsOk)
-        {
-            _metrics.RecordEmailSent(EmailKinds.PasswordReset);
-        }
-        else
-        {
-            _metrics.RecordEmailFailed(EmailKinds.PasswordReset);
-        }
+        _emailDelivery.Schedule(_emailContent.PasswordReset(command.Email, resetUrl));
 
         return Result.Ok();
     }

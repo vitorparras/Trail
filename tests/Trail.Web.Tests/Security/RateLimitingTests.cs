@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Net;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Trail.Web.Security;
+using Trail.Web.Tests.Accounts;
 
 namespace Trail.Web.Tests.Security;
 
@@ -41,6 +43,34 @@ public sealed class RateLimitingTests(TrailWebApplicationFactory baseFactory) : 
 
         var body = await rejectedResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.Contains("Muitas tentativas", body, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("/Account/Register", "Input.Email")]
+    [InlineData("/Account/ResendConfirmation", "Email")]
+    public async Task AccountEmailPage_WhenTheAuthLimitIsExceeded_Returns429TooManyRequests(string path, string emailField)
+    {
+        using var factory = baseFactory.WithWebHostBuilder(builder =>
+            builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Registration:Mode"] = "Open",
+                ["Security:AuthRateLimitPermitLimit"] = "2",
+            })));
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
+        var form = new Dictionary<string, string> { [emailField] = "victim@example.com" };
+
+        var (page, _, csrfHeader, csrfToken) = await AccountTestHelper.GetDocWithAntiforgeryAsync(client, path);
+        using (page)
+        {
+            Assert.Equal(HttpStatusCode.OK, page.StatusCode);
+        }
+
+        using var allowed = await AccountTestHelper.PostFormWithAntiforgeryAsync(client, path, form, csrfHeader, csrfToken);
+        using var rejected = await AccountTestHelper.PostFormWithAntiforgeryAsync(client, path, form, csrfHeader, csrfToken);
+
+        Assert.NotEqual(HttpStatusCode.TooManyRequests, allowed.StatusCode);
+        Assert.Equal(HttpStatusCode.TooManyRequests, rejected.StatusCode);
+        Assert.NotNull(rejected.Headers.RetryAfter);
     }
 
     [Fact]

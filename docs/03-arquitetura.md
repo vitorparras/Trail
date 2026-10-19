@@ -336,11 +336,13 @@ Decidido na [Onda 0](fases/onda-0-base-compartilhada.md) (D2).
   `{0:N0}` ("1.000 tópicos"). O `CountedMessage` (`KeyFor` e `LocalizeCount`) escolhe a
   chave, e o teste de tradução confere as duas formas de cada código do
   `DeletionImpactItem.Create`. A regra difere de propósito da regra do CLDR para o
-  português, em que o 0 também usa o singular; ela e o formato "2 blocos" aguardam a
-  confirmação do autor
+  português, em que o 0 também usa o singular. O autor confirmou a regra e o formato
+  "2 blocos"
   ([P10](fases/onda-0-base-compartilhada.md#p10--regra-do-plural-nos-textos-com-quantidade)
   e [P11](fases/onda-0-base-compartilhada.md#p11--formato-dos-itens-da-prévia-de-exclusão)
-  da Onda 0).
+  da Onda 0, opção A).
+- **E-mails de conta:** o assunto e o corpo vêm do `SharedResource.resx`, nunca do código,
+  com os valores interpolados codificados no HTML.
 - **E2E:** o `UiText` lê os cinco `.resx`: os códigos de mensagem pelo prefixo
   (`UiText.Get(code)`), e as demais chaves pelo módulo informado
   (`UiText.Get(UiResource.Practice, key)`).
@@ -715,6 +717,27 @@ Decidido na [Onda 0](fases/onda-0-base-compartilhada.md) (P3, W0-T8).
   para entregar manualmente, e um comando no container redefine a senha do admin.
 - O cadastro, a recuperação de senha e o reenvio da confirmação não revelam se o e-mail
   existe ([3.14](#314-segurança)).
+- **Textos:** os cinco e-mails de conta (confirmação, recuperação de senha, aviso de
+  tentativa de cadastro, convite e e-mail de teste) têm o assunto e o corpo em pt-BR no
+  `SharedResource.resx`, pela porta `IAccountEmailContent`. O `AccountEmailContentTests`
+  falha se uma chave faltar, e uma regra de arquitetura, lida no IL, impede montar um
+  e-mail fora das duas classes de conteúdo.
+- **Fora da requisição:** a confirmação, a recuperação de senha, o reenvio da confirmação
+  e o aviso de tentativa de cadastro entram numa fila em memória (`IAccountEmailDelivery`,
+  com capacidade de 500), enviada pelo `AccountEmailDispatcher`, um `BackgroundService`. A
+  resposta não espera o SMTP. Ao parar, o envio esvazia a fila em até 5 segundos, dentro
+  do tempo de parada padrão do Docker; o que sobrar conta como falha. O convite e o e-mail
+  de teste do admin continuam na requisição, porque o admin precisa ver o resultado. Sem
+  SMTP, nada entra na fila.
+- **Um e-mail por janela:** o envio manda no máximo um e-mail por destinatário e tipo a
+  cada 15 minutos; as repetições são descartadas e contadas em `trail.emails.coalesced`.
+  A memória guarda até 10.000 chaves com o hash do endereço, nunca o endereço, e um envio
+  que falhou não conta. Um segundo pedido de redefinição ou de confirmação dentro da
+  janela não envia nada, e o primeiro link continua válido. Com o limite de tentativas,
+  isso impede usar a instância para lotar a caixa de alguém ou encher a fila.
+- **Cadastro com um e-mail que já tem conta:** conta confirmada recebe um aviso com o link
+  da recuperação de senha, sem token; conta sem confirmação recebe uma confirmação nova;
+  conta desativada não recebe nada. A tela responde sempre como num cadastro novo.
 - Os tokens do Identity têm validade curta.
 - **Falha no envio:** é registrada no log e na métrica de e-mails (`trail.emails.failed`).
   No convite e no e-mail de teste do admin, também aparece na tela, com o link manual ou a
@@ -827,8 +850,8 @@ O backup por arquivo da aplicação ([2.5](02-dominio-e-regras.md#25-backup-e-re
 | Página aberta por esquecimento | `FallbackPolicy` que exige login em todo endpoint, `[AllowAnonymous]` explícito só nas páginas públicas, e todas as páginas classificadas no `AnonymousAccessTests` ([3.11](#login-no-app-inteiro)) |
 | CSRF | Antifalsificação nativa do Razor Pages, com o token enviado pelo HTMX no cabeçalho |
 | XSS | O Razor codifica a saída. Markdown com HTML desabilitado. CSP sem `unsafe-inline` e sem `unsafe-eval` |
-| Força bruta no login | Bloqueio de conta do Identity (5 senhas erradas, por 15 minutos) + rate limiting nativo do ASP.NET Core (10 tentativas por minuto e por IP) |
-| Descoberta de contas pelo e-mail | Respostas iguais, em status, texto e custo, para e-mail cadastrado e desconhecido: no cadastro (a senha é validada antes de procurar o e-mail, e um e-mail existente gasta o hash da senha), na recuperação de senha e no reenvio da confirmação, inclusive quando o token não pode ser gerado ou o envio pelo SMTP falha. A redefinição de senha e a confirmação respondem a um usuário desconhecido como a um token inválido. O login confere a senha antes do estado da conta (desativada ou sem confirmação), e um e-mail desconhecido também gasta um hash. Riscos residuais abaixo |
+| Força bruta no login | Bloqueio de conta do Identity (5 senhas erradas, por 15 minutos) + rate limiting nativo do ASP.NET Core (10 requisições por minuto e por IP, divididas entre o login, a recuperação de senha, o cadastro e o reenvio da confirmação) |
+| Descoberta de contas pelo e-mail | Respostas iguais, em status, texto e hash da senha, para e-mail cadastrado e desconhecido: no cadastro (a senha é validada antes de procurar o e-mail, e um e-mail existente gasta o hash da senha), na recuperação de senha e no reenvio da confirmação, inclusive quando o token não pode ser gerado ou o envio pelo SMTP falha. A redefinição de senha e a confirmação respondem a um usuário desconhecido como a um token inválido. Os e-mails de conta (confirmação, redefinição, reenvio e o aviso de tentativa de cadastro, enviado ao dono de um e-mail existente) entram numa fila enviada em segundo plano, e a resposta não espera o SMTP. O login responde com uma mensagem só para senha errada, e-mail desconhecido e conta bloqueada, com o mesmo status e o hash calculado nos três casos, e confere a senha antes do estado da conta (desativada ou sem confirmação). Riscos residuais abaixo |
 | Links de e-mail interceptados ou reaproveitados | Tokens de uso único e com validade curta |
 | Tokens dos links na telemetria | Os links de confirmação, redefinição e convite levam o token na URL. A instrumentação do ASP.NET Core omite os valores da query string nos spans, e a categoria de log `Microsoft.AspNetCore.Hosting.Diagnostics`, que registra a URL completa em `Information`, fica fixada em `Warning` no `appsettings.json`. O `LinkTokenTelemetryTests` confere spans e logs |
 | Upload malicioso (`.xlsx` e backup `.zip`) | Limite de tamanho, verificação do tamanho descompactado, validação do manifest e do formato |
@@ -842,8 +865,10 @@ O backup por arquivo da aplicação ([2.5](02-dominio-e-regras.md#25-backup-e-re
 
 | Risco | Situação |
 |---|---|
-| **Bloqueio revela a conta:** a partir da 5ª senha errada para um e-mail cadastrado, o login responde "conta temporariamente bloqueada" (403), e as tentativas seguintes respondem sem calcular o hash, enquanto um e-mail desconhecido nunca muda de resposta. Com o limite de 10 tentativas por minuto e por IP, 5 requisições confirmam que o e-mail tem conta, e a vítima fica bloqueada por 15 minutos | Registrado. A mensagem única é a [P9 da Onda 0](fases/onda-0-base-compartilhada.md#p9--mensagem-do-bloqueio-no-login) |
-| **Tempo de resposta com SMTP:** com SMTP configurado (modo hospedado), a recuperação de senha e o reenvio da confirmação para um e-mail cadastrado enviam o e-mail durante a requisição, e para um e-mail desconhecido não enviam nada, em qualquer modo de cadastro. No modo `Open`, o cadastro de um e-mail novo também envia, e o de um e-mail existente não. No `InviteOnly`, o convite precisa existir e ser do e-mail digitado antes de qualquer busca pelo e-mail, então o cadastro não revela contas. O tempo de resposta pode revelar se a conta existe (não medido). Sem SMTP, não há diferença | Registrado. O envio fora da requisição é a [P8 da Onda 0](fases/onda-0-base-compartilhada.md#p8--envio-de-e-mail-fora-da-requisição) |
+| **Bloqueio por quem conhece o e-mail:** 5 senhas erradas bloqueiam a conta por 15 minutos, mesmo quando quem erra não é o dono. A resposta não revela o bloqueio ([P9 da Onda 0](fases/onda-0-base-compartilhada.md#p9--mensagem-do-bloqueio-no-login)) | Aceito: é o custo do bloqueio contra a força bruta |
+| **Escrita no banco:** o cadastro de um e-mail novo grava a conta e as preferências, e a senha errada numa conta existente grava o contador de falhas; os outros caminhos não gravam. Medianas no caso de uso, com 40 amostras: cadastro de e-mail existente 74 ms e de e-mail novo 84 ms (SQLite) ou 78 ms (PostgreSQL); login com senha errada 78 ms, e-mail desconhecido 72 a 74 ms e conta bloqueada 74 a 77 ms. A espera do SMTP, de centenas de milissegundos, não existe mais | Aceito: no cadastro, cada e-mail novo dá uma única amostra útil e cria a conta; no login, a conta bloqueia depois de 5 senhas erradas em 15 minutos, dentro do limite por IP. Igualar exigiria gravar no banco para e-mails desconhecidos |
+| **Link montado pelo `Host` da requisição:** os links dos e-mails (confirmação, redefinição e convite) usam o esquema e o `Host` da requisição, com `AllowedHosts` aberto. No modo hospedado, o Caddy só repassa o domínio configurado. No modo individual com SMTP, quem alcança a instância pode pedir uma redefinição com outro `Host` e fazer o link do e-mail apontar para fora | Registrado, anterior à Onda 0. A correção (URL pública configurável ou `AllowedHosts` restrito ao domínio) depende de uma decisão do autor; sugestão: Fase 7b, com o guia do modo hospedado |
+| **E-mail perdido na fila:** a fila dos e-mails de conta fica em memória, e uma mensagem ainda não enviada se perde se o container parar antes do envio ([P8 da Onda 0](fases/onda-0-base-compartilhada.md#p8--envio-de-e-mail-fora-da-requisição)). Com a fila cheia (500), um e-mail novo é descartado. A falha fica no log e na métrica `trail.emails.failed` | Aceito: o usuário pede o e-mail de novo. O limite de tentativas e a janela por destinatário dificultam encher a fila |
 
 ## 3.15 Verificações automáticas da arquitetura
 
@@ -861,6 +886,7 @@ ninguém perceba.
 | Erros de conversão | Todo handler `POST` responde 422 a um valor inválido em cada campo, sem chamar o caso de uso e sem perder a página ([3.9](#formulários-e-erros)) | Todo PR |
 | Telemetria | O caso de uso marca o span com o resultado, e os eventos geram as métricas (coletor em memória). Os tokens dos links não aparecem em spans nem em logs | Todo PR |
 | Login exigido | Toda página é classificada como pública ou privada, e as privadas levam ao login ([3.11](#login-no-app-inteiro)) | Todo PR |
+| E-mails de conta | Só as classes de conteúdo constroem um `EmailMessage`, verificado no IL, inclusive em lambdas e métodos assíncronos ([3.11](#e-mail)) | Todo PR |
 | Isolamento entre usuários | Varredura de todas as rotas com IDs de outro usuário, e uma varredura por namespace de páginas | Todo PR, nos dois bancos |
 | Portabilidade | Suítes da `Application` e da `Web` em SQLite e PostgreSQL | Todo PR |
 | Migrações em dia | `dotnet ef migrations has-pending-model-changes` nos dois contextos | Todo PR |
@@ -879,7 +905,7 @@ Decidido na [ADR 0016](adr/0016-observabilidade.md).
 | Sinal | Origem | Exemplos |
 |---|---|---|
 | Traces | Automáticos (ASP.NET Core, EF Core, HttpClient) e spans próprios nas operações longas | Requisição → caso de uso → consultas SQL. Importação, backup, restauração, envio de e-mail |
-| Métricas | Runtime do .NET, ponto único de saída e consumidores de eventos | Resultados por caso de uso e `Status`, questões registradas, minutos estudados, importações, e-mails enviados e com falha |
+| Métricas | Runtime do .NET, ponto único de saída e consumidores de eventos | Resultados por caso de uso e `Status`, questões registradas, minutos estudados, importações, e-mails enviados, com falha e descartados pela janela |
 | Logs | `ILogger` em JSON, com o `traceId` em toda linha | Eventos de domínio despachados, falhas com o código da mensagem |
 
 ### Regras
@@ -900,7 +926,8 @@ Decidido na [ADR 0016](adr/0016-observabilidade.md).
 - **Configuração validada na inicialização** (`ValidateOnStart`): um erro de
   configuração impede o app de subir e mostra uma mensagem clara, em vez de falhar no
   meio do uso.
-- **Tarefas agendadas** com `BackgroundService` (ex.: o backup diário do SQLite).
+- **Tarefas em segundo plano** com `BackgroundService` (ex.: o backup diário do SQLite e o
+  envio dos e-mails de conta, [3.11](#e-mail)).
 
 ## 3.17 Gatilhos de evolução
 

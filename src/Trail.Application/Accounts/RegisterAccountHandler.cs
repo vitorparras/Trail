@@ -1,4 +1,3 @@
-using Trail.Application.Telemetry;
 using Trail.Domain.Accounts;
 using Trail.Domain.Common;
 
@@ -9,30 +8,37 @@ public sealed record RegisterAccountCommand(
     string Password,
     string ConfirmPassword,
     string? InviteToken = null,
-    Func<UserId, string, string>? ConfirmationLinkBuilder = null);
+    Func<UserId, string, string>? ConfirmationLinkBuilder = null,
+    string? PasswordRecoveryLink = null);
 
 public sealed class RegisterAccountHandler
 {
+    private const string DefaultPasswordRecoveryLink = "/Account/ForgotPassword";
+
     private readonly IAccountIdentityGateway _identityGateway;
     private readonly IUserSettingsStore _userSettingsStore;
     private readonly IEmailSender _emailSender;
-    private readonly ApplicationMetrics _metrics;
+    private readonly IAccountEmailContent _emailContent;
+    private readonly IAccountEmailDelivery _emailDelivery;
 
     public RegisterAccountHandler(
         IAccountIdentityGateway identityGateway,
         IUserSettingsStore userSettingsStore,
         IEmailSender emailSender,
-        ApplicationMetrics metrics)
+        IAccountEmailContent emailContent,
+        IAccountEmailDelivery emailDelivery)
     {
         ArgumentNullException.ThrowIfNull(identityGateway);
         ArgumentNullException.ThrowIfNull(userSettingsStore);
         ArgumentNullException.ThrowIfNull(emailSender);
-        ArgumentNullException.ThrowIfNull(metrics);
+        ArgumentNullException.ThrowIfNull(emailContent);
+        ArgumentNullException.ThrowIfNull(emailDelivery);
 
         _identityGateway = identityGateway;
         _userSettingsStore = userSettingsStore;
         _emailSender = emailSender;
-        _metrics = metrics;
+        _emailContent = emailContent;
+        _emailDelivery = emailDelivery;
     }
 
     public async Task<Result<RegisterAccountOutcome>> HandleAsync(
@@ -102,7 +108,7 @@ public sealed class RegisterAccountHandler
             return Result.Ok(new RegisterAccountOutcome(RequiresEmailConfirmation: false, UserId: userId));
         }
 
-        await SendConfirmationEmailAsync(userId, command.Email, command.ConfirmationLinkBuilder, cancellationToken);
+        await QueueConfirmationEmailAsync(userId, command.Email, command.ConfirmationLinkBuilder, cancellationToken);
         return Result.Ok(new RegisterAccountOutcome(RequiresEmailConfirmation: true, UserId: userId));
     }
 
@@ -146,6 +152,7 @@ public sealed class RegisterAccountHandler
         if (existingUser is not null)
         {
             await _identityGateway.SimulateAccountCreationAsync(command.Email, command.Password, cancellationToken);
+            await QueueExistingAccountEmailAsync(existingUser, command, cancellationToken);
             return IndistinguishableFromNewAccount();
         }
 
@@ -158,6 +165,12 @@ public sealed class RegisterAccountHandler
 
         if (createResult.Status is ResultStatus.Conflict)
         {
+            var concurrentUser = await _identityGateway.GetUserByEmailAsync(command.Email, cancellationToken);
+            if (concurrentUser is not null)
+            {
+                await QueueExistingAccountEmailAsync(concurrentUser, command, cancellationToken);
+            }
+
             return IndistinguishableFromNewAccount();
         }
 
@@ -179,7 +192,7 @@ public sealed class RegisterAccountHandler
 
         if (_emailSender.IsSmtpConfigured)
         {
-            await SendConfirmationEmailAsync(userId, command.Email, command.ConfirmationLinkBuilder, cancellationToken);
+            await QueueConfirmationEmailAsync(userId, command.Email, command.ConfirmationLinkBuilder, cancellationToken);
         }
 
         return Result.Ok(new RegisterAccountOutcome(RequiresEmailConfirmation: true, UserId: userId));
@@ -188,7 +201,26 @@ public sealed class RegisterAccountHandler
     private static Result<RegisterAccountOutcome> IndistinguishableFromNewAccount() =>
         Result.Ok(new RegisterAccountOutcome(RequiresEmailConfirmation: true));
 
-    private async Task SendConfirmationEmailAsync(
+    private async Task QueueExistingAccountEmailAsync(
+        AccountUserDto existingUser,
+        RegisterAccountCommand command,
+        CancellationToken cancellationToken)
+    {
+        if (!_emailSender.IsSmtpConfigured || !existingUser.IsActive)
+        {
+            return;
+        }
+
+        if (!existingUser.EmailConfirmed)
+        {
+            await QueueConfirmationEmailAsync(existingUser.Id, existingUser.Email, command.ConfirmationLinkBuilder, cancellationToken);
+            return;
+        }
+
+        _emailDelivery.Schedule(_emailContent.RegistrationAttempt(existingUser.Email, command.PasswordRecoveryLink ?? DefaultPasswordRecoveryLink));
+    }
+
+    private async Task QueueConfirmationEmailAsync(
         UserId userId,
         string email,
         Func<UserId, string, string>? linkBuilder,
@@ -203,22 +235,7 @@ public sealed class RegisterAccountHandler
         var confirmationUrl = linkBuilder?.Invoke(userId, tokenResult.Data)
             ?? $"/Account/ConfirmEmail?userId={userId}&token={Uri.EscapeDataString(tokenResult.Data)}";
 
-        var message = new EmailMessage(
-            email,
-            "Confirm your account",
-            $"<p>Please confirm your account by clicking <a href=\"{confirmationUrl}\">here</a>.</p>",
-            $"Please confirm your account by visiting: {confirmationUrl}",
-            EmailKinds.Confirmation);
-
-        var sendResult = await _emailSender.SendAsync(message, cancellationToken);
-        if (sendResult.IsOk)
-        {
-            _metrics.RecordEmailSent(EmailKinds.Confirmation);
-        }
-        else
-        {
-            _metrics.RecordEmailFailed(EmailKinds.Confirmation);
-        }
+        _emailDelivery.Schedule(_emailContent.EmailConfirmation(email, confirmationUrl));
     }
 
     private static bool IsValidEmail(string email)

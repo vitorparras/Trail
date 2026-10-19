@@ -1,13 +1,16 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 using Trail.Application.Accounts;
 using Trail.Domain.Common;
 using Trail.Web.Results;
+using Trail.Web.Security;
 
 namespace Trail.Web.Pages.Account;
 
 [AllowAnonymous]
+[EnableRateLimiting(RateLimitingExtensions.AuthPolicyName)]
 public sealed class RegisterModel : PageModel
 {
     private static readonly FieldTargetMap Fields = FieldTargetMap.Empty.Prefixed(
@@ -53,7 +56,8 @@ public sealed class RegisterModel : PageModel
             Input.Password,
             Input.ConfirmPassword,
             Input.InviteToken,
-            LinkBuilder);
+            LinkBuilder,
+            Url.Page("/Account/ForgotPassword", pageHandler: null, values: null, protocol: Request.Scheme));
 
         var result = await _registerHandler.HandleAsync(command, cancellationToken);
 

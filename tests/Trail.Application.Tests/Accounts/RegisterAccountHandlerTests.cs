@@ -1,6 +1,4 @@
-using System.Diagnostics.Metrics;
 using Trail.Application.Accounts;
-using Trail.Application.Telemetry;
 using Trail.Domain.Common;
 
 namespace Trail.Application.Tests.Accounts;
@@ -10,10 +8,10 @@ public sealed class RegisterAccountHandlerTests
     private readonly FakeAccountIdentityGateway _identityGateway = new();
     private readonly FakeUserSettingsStore _userSettingsStore = new();
     private readonly FakeEmailSender _emailSender = new();
-    private readonly ApplicationMetrics _metrics = new(new RecordingMeterFactory());
+    private readonly FakeAccountEmailDelivery _emailDelivery = new();
 
     private RegisterAccountHandler CreateHandler() =>
-        new(_identityGateway, _userSettingsStore, _emailSender, _metrics);
+        new(_identityGateway, _userSettingsStore, _emailSender, new FallbackAccountEmailContent(), _emailDelivery);
 
     [Fact]
     public async Task HandleAsync_FirstUserWithoutSmtp_CreatesAdminAutoConfirmedAndDefaultSettings()
@@ -37,7 +35,7 @@ public sealed class RegisterAccountHandlerTests
         Assert.NotNull(_userSettingsStore.Settings);
         Assert.Equal(createdUser.Id, _userSettingsStore.Settings.Id);
         Assert.True(_userSettingsStore.Saved);
-        Assert.Empty(_emailSender.SentMessages);
+        Assert.Empty(_emailDelivery.Scheduled);
     }
 
     [Fact]
@@ -62,14 +60,14 @@ public sealed class RegisterAccountHandlerTests
         Assert.True(createdUser.IsAdmin);
         Assert.False(createdUser.EmailConfirmed);
 
-        var sentMessage = Assert.Single(_emailSender.SentMessages);
+        var sentMessage = Assert.Single(_emailDelivery.Scheduled);
         Assert.Equal("admin@example.com", sentMessage.ToAddress);
         Assert.Equal(EmailKinds.Confirmation, sentMessage.Kind);
         Assert.Contains("https://trail.app/confirm", sentMessage.HtmlBody);
     }
 
     [Fact]
-    public async Task HandleAsync_FirstUserWithSmtpWhenEmailFails_StillReturnsRequiresConfirmation()
+    public async Task HandleAsync_FirstUserWithSmtp_QueuesTheConfirmationWithoutCallingTheSender()
     {
         _identityGateway.AnyUsersExistResult = false;
         _emailSender.IsSmtpConfigured = true;
@@ -81,6 +79,8 @@ public sealed class RegisterAccountHandlerTests
 
         Assert.True(result.IsOk);
         Assert.True(result.Data.RequiresEmailConfirmation);
+        Assert.Equal(EmailKinds.Confirmation, Assert.Single(_emailDelivery.Scheduled).Kind);
+        Assert.Empty(_emailSender.SentMessages);
     }
 
     [Fact]
@@ -183,7 +183,7 @@ public sealed class RegisterAccountHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NonFirstUserOpenModeExistingEmail_ReturnsSuccessWithoutDuplicateUser()
+    public async Task HandleAsync_NonFirstUserOpenModeExistingEmail_ReturnsSuccessWithoutDuplicateUserAndQueuesANoticeToTheOwner()
     {
         _identityGateway.AnyUsersExistResult = true;
         _identityGateway.RegistrationMode = RegistrationMode.Open;
@@ -191,13 +191,38 @@ public sealed class RegisterAccountHandlerTests
         _identityGateway.Users.Add(new AccountUserDto(existingUserId, "existing@example.com", false, true, true, DateTime.UtcNow));
 
         var handler = CreateHandler();
-        var command = new RegisterAccountCommand("existing@example.com", "Password123!", "Password123!");
+        var command = new RegisterAccountCommand(
+            "Existing@Example.com",
+            "Password123!",
+            "Password123!",
+            PasswordRecoveryLink: "https://trail.app/Account/ForgotPassword");
         var result = await handler.HandleAsync(command, TestContext.Current.CancellationToken);
 
         Assert.True(result.IsOk);
         Assert.True(result.Data.RequiresEmailConfirmation);
+        Assert.Null(result.Data.UserId);
         Assert.Single(_identityGateway.Users);
+        Assert.Equal(["Existing@Example.com"], _identityGateway.SimulatedAccountCreations);
+        var notice = Assert.Single(_emailDelivery.Scheduled);
+        Assert.Equal(EmailKinds.RegistrationAttempt, notice.Kind);
+        Assert.Equal("existing@example.com", notice.ToAddress);
+        Assert.Contains("https://trail.app/Account/ForgotPassword", notice.TextBody, StringComparison.Ordinal);
+        Assert.Empty(_emailSender.SentMessages);
+    }
+
+    [Fact]
+    public async Task HandleAsync_NonFirstUserOpenModeExistingEmailWithoutSmtp_QueuesNothing()
+    {
+        _identityGateway.AnyUsersExistResult = true;
+        _identityGateway.RegistrationMode = RegistrationMode.Open;
+        _identityGateway.Users.Add(new AccountUserDto(UserId.New(), "existing@example.com", false, true, true, DateTime.UtcNow));
+        _emailSender.IsSmtpConfigured = false;
+
+        var result = await CreateHandler().HandleAsync(new RegisterAccountCommand("existing@example.com", "Password123!", "Password123!"), TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsOk);
         Assert.Equal(["existing@example.com"], _identityGateway.SimulatedAccountCreations);
+        Assert.Empty(_emailDelivery.Scheduled);
     }
 
     [Theory]
@@ -226,6 +251,7 @@ public sealed class RegisterAccountHandlerTests
         _identityGateway.AnyUsersExistResult = true;
         _identityGateway.RegistrationMode = RegistrationMode.Open;
         _identityGateway.CreateUserResult = Result.Conflict(Message.Error("accounts.registration.email_already_exists"));
+        _identityGateway.ConcurrentlyCreatedUser = new AccountUserDto(UserId.New(), "racing@example.com", false, true, true, DateTime.UtcNow);
 
         var result = await CreateHandler().HandleAsync(new RegisterAccountCommand("racing@example.com", "Password123!", "Password123!"), TestContext.Current.CancellationToken);
 
@@ -234,7 +260,74 @@ public sealed class RegisterAccountHandlerTests
         Assert.True(result.Data.RequiresEmailConfirmation);
         Assert.Null(result.Data.UserId);
         Assert.Null(_userSettingsStore.Settings);
-        Assert.Empty(_emailSender.SentMessages);
+        var notice = Assert.Single(_emailDelivery.Scheduled);
+        Assert.Equal(EmailKinds.RegistrationAttempt, notice.Kind);
+        Assert.Equal("racing@example.com", notice.ToAddress);
+        Assert.Contains("/Account/ForgotPassword", notice.TextBody, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task HandleAsync_ExistingUnconfirmedEmail_QueuesAFreshConfirmationInsteadOfTheNoticeAndAnswersAsForANewEmail()
+    {
+        _identityGateway.AnyUsersExistResult = true;
+        _identityGateway.RegistrationMode = RegistrationMode.Open;
+        var pendingId = UserId.New();
+        _identityGateway.Users.Add(new AccountUserDto(pendingId, "pending@example.com", false, true, false, DateTime.UtcNow));
+        var command = new RegisterAccountCommand(
+            "Pending@Example.com",
+            "Password123!",
+            "Password123!",
+            ConfirmationLinkBuilder: (userId, token) => $"https://trail.app/confirm?u={userId}&t={token}");
+
+        var result = await CreateHandler().HandleAsync(command, TestContext.Current.CancellationToken);
+        var created = await CreateHandler().HandleAsync(new RegisterAccountCommand("new@example.com", "Password123!", "Password123!"), TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsOk);
+        Assert.Equal(created.Status, result.Status);
+        Assert.Equal(created.Data.RequiresEmailConfirmation, result.Data.RequiresEmailConfirmation);
+        Assert.Null(result.Data.UserId);
+        Assert.Equal(["Pending@Example.com"], _identityGateway.SimulatedAccountCreations);
+        var confirmation = _emailDelivery.Scheduled[0];
+        Assert.Equal(EmailKinds.Confirmation, confirmation.Kind);
+        Assert.Equal("pending@example.com", confirmation.ToAddress);
+        Assert.Contains($"https://trail.app/confirm?u={pendingId}&t=sample-confirm-token", confirmation.TextBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(_emailDelivery.Scheduled, message => message.Kind == EmailKinds.RegistrationAttempt);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task HandleAsync_ExistingDeactivatedEmail_QueuesNothingAndAnswersAsForANewEmail(bool emailConfirmed)
+    {
+        _identityGateway.AnyUsersExistResult = true;
+        _identityGateway.RegistrationMode = RegistrationMode.Open;
+        _identityGateway.Users.Add(new AccountUserDto(UserId.New(), "deactivated@example.com", false, false, emailConfirmed, DateTime.UtcNow));
+
+        var result = await CreateHandler().HandleAsync(new RegisterAccountCommand("deactivated@example.com", "Password123!", "Password123!"), TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsOk);
+        Assert.Empty(result.Messages);
+        Assert.True(result.Data.RequiresEmailConfirmation);
+        Assert.Null(result.Data.UserId);
+        Assert.Equal(["deactivated@example.com"], _identityGateway.SimulatedAccountCreations);
+        Assert.Empty(_emailDelivery.Scheduled);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenCreationConflictsWithAConcurrentUnconfirmedRegistration_QueuesAFreshConfirmation()
+    {
+        _identityGateway.AnyUsersExistResult = true;
+        _identityGateway.RegistrationMode = RegistrationMode.Open;
+        _identityGateway.CreateUserResult = Result.Conflict(Message.Error("accounts.registration.email_already_exists"));
+        _identityGateway.ConcurrentlyCreatedUser = new AccountUserDto(UserId.New(), "racing@example.com", false, true, false, DateTime.UtcNow);
+
+        var result = await CreateHandler().HandleAsync(new RegisterAccountCommand("racing@example.com", "Password123!", "Password123!"), TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsOk);
+        Assert.Null(result.Data.UserId);
+        var confirmation = Assert.Single(_emailDelivery.Scheduled);
+        Assert.Equal(EmailKinds.Confirmation, confirmation.Kind);
+        Assert.Equal("racing@example.com", confirmation.ToAddress);
     }
 
     [Fact]
@@ -256,7 +349,7 @@ public sealed class RegisterAccountHandlerTests
         Assert.False(newUser.IsAdmin);
         Assert.False(newUser.EmailConfirmed);
 
-        var sentMessage = Assert.Single(_emailSender.SentMessages);
+        var sentMessage = Assert.Single(_emailDelivery.Scheduled);
         Assert.Equal("new@example.com", sentMessage.ToAddress);
     }
 
@@ -295,25 +388,5 @@ public sealed class RegisterAccountHandlerTests
         Assert.False(result.IsOk);
         Assert.Equal(ResultStatus.Invalid, result.Status);
         Assert.Contains(result.Messages, m => m.Code == expectedCode);
-    }
-
-    private sealed class RecordingMeterFactory : IMeterFactory
-    {
-        private readonly List<Meter> _meters = [];
-
-        public Meter Create(MeterOptions options)
-        {
-            var meter = new Meter(options);
-            _meters.Add(meter);
-            return meter;
-        }
-
-        public void Dispose()
-        {
-            foreach (var meter in _meters)
-            {
-                meter.Dispose();
-            }
-        }
     }
 }

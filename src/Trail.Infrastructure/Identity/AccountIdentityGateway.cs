@@ -171,6 +171,12 @@ public sealed class AccountIdentityGateway : IAccountIdentityGateway
             return PasswordSignInResult.InvalidCredentials;
         }
 
+        if (await _userManager.IsLockedOutAsync(user))
+        {
+            SpendPasswordHashingTime(email, password);
+            return PasswordSignInResult.LockedOut;
+        }
+
         var checkResult = await _signInManager.CheckPasswordSignInAsync(user, password, lockoutOnFailure: true);
         if (checkResult.IsLockedOut)
         {

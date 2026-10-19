@@ -75,3 +75,17 @@ Detalhes em [3.5](../03-arquitetura.md#35-camadas-módulos-e-padrões-internos).
 | Repositório por agregado | Mais código, e as leituras do painel exigiriam serviços de consulta à parte |
 | Repositório só na escrita | Dois estilos de acesso a dados convivendo |
 | MediatR, ou interface genérica com decorators | Indireção sem ganho proporcional: cada página já é o ponto de entrada do seu caso de uso |
+
+## Atualizações
+
+- **[Fase 2](../fases/fase-2-planos-e-conteudo.md) e [Onda 0](../fases/onda-0-base-compartilhada.md):**
+  o item 4 virou uma porta de store por módulo (`IPlanningStore`, `IUserSettingsStore` e
+  as das fases seguintes), implementada com o EF Core na `Infrastructure`. Não é um
+  repositório genérico nem um por agregado: cada porta reúne as operações dos casos de uso
+  do módulo, inclusive as leituras. Com isso, a `Application` não depende de nenhum pacote
+  do EF Core, e o desvio citado nas consequências deixou de existir. Detalhes em
+  [3.6](../03-arquitetura.md#uma-porta-de-store-por-módulo).
+- **[Onda 0](../fases/onda-0-base-compartilhada.md):** cada módulo registra os seus
+  serviços num método próprio, e as peças que acrescenta a outros módulos (blocos do
+  painel, links do plano, contagens da prévia de exclusão, atividade do plano e métricas)
+  são descobertas por convenção ([3.5](../03-arquitetura.md#composição-por-módulo)).

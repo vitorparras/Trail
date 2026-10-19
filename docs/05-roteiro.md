@@ -51,9 +51,11 @@ Aprovado pelo autor em 17/10/2026. Depois da Fase 2, o trabalho segue em ondas:
 
 Dentro de uma onda, cada fase segue o ciclo acima, com a sua branch e o seu PR. Nenhuma
 fase da Onda A edita os pontos de composição nem os arquivos de outra fase, e as migrações
-são sempre geradas pelo `dotnet ef`, nunca editadas à mão. A ordem dos PRs e a geração das
-migrações na integração seguem a resposta do autor à
-[P5 da Onda 0](fases/onda-0-base-compartilhada.md#p5--fluxo-de-integração-da-onda-a).
+são sempre geradas pelo `dotnet ef`, nunca editadas à mão. Os PRs da Onda A entram na
+`main` na ordem 3 → 4 → 5 → 7a, cada um rebaseado na `main` e com a migração da fase gerada
+de novo antes do merge
+([P5 da Onda 0](fases/onda-0-base-compartilhada.md#p5--fluxo-de-integração-da-onda-a) e
+[4.3](04-qualidade-e-entrega.md#43-fluxo-de-trabalho-no-git)).
 
 ---
 
@@ -161,6 +163,9 @@ paralelo sem editar os mesmos arquivos.
 - Erros de formulário com `role="alert"`, usuário novo por teste no E2E, orçamento de
   desempenho agendado e os ícones da Onda A.
 - As decisões pendentes da Fase 2: convites no modo `Closed` e login no app inteiro.
+- As respostas do autor às perguntas transversais da Onda A, registradas na documentação:
+  fluxo de integração (P5), correções e exclusões sem eventos novos (P6) e os ajustes ao
+  modelo (P7), entre eles o E4 na Fase 4.
 
 **Pronto quando:**
 

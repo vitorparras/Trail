@@ -34,7 +34,48 @@ O esforço de teste segue o risco: mais pesado nos cálculos e nos dados
 e sem dados pessoais. A planilha original não entra no repositório.
 
 **Relógio:** todo código que depende de data ou hora recebe um `TimeProvider`, e os
-testes controlam o tempo.
+testes controlam o tempo (`FakeTimeProvider`).
+
+**Independência dos E2E** (Onda 0, W0-T11): cada teste cria o seu usuário com o
+`CreateUserAsync()` (convite do admin, cadastro pelo convite, confirmação pelo link manual
+e login, tudo por requisições HTTP com o token antifalsificação), que devolve um `E2EUser`
+com `Email` e `Password`. O `DockerAppFixture` abre:
+
+- `CreatePageAsync(user, width, height)` ou `CreatePageAsync(user, options)`: uma página
+  já autenticada como o usuário;
+- `CreatePageAsync(options)`: uma página anônima, para as telas de entrada;
+- `CreateOtherDevicePageAsync(user, options)`: o mesmo usuário em outro contexto, com o
+  seu próprio cookie ("outro aparelho");
+- `CreateAdminPageAsync(width, height)`: só para os testes de Contas.
+
+Os contextos do navegador nascem pelo auxiliar interno `E2EBrowserContexts`
+(`NewPageAsync(IBrowser, BrowserNewContextOptions?, string? storageState)`), com
+`ServiceWorkers = Block` por padrão; só o `PwaE2ETests` pede `ServiceWorkerPolicy.Allow`.
+Cada página nova fecha os contextos que testes anteriores abriram no mesmo navegador
+(pelo `TestContext.Current.Test?.UniqueID`), e o `DisposeAsync` da fixture fecha o resto.
+O mesmo auxiliar (`CloseContextsOfBrowserAsync`, `AuthenticationCookieName` e
+`AuthenticationCookieAsync`) e o `AppHttpSession`, que cadastra e faz login por HTTP em
+qualquer URL base, servem a outros hosts do E2E, como o host em processo do pomodoro da
+Fase 5. Uma falha mostra o texto do `<main>` da página.
+
+O container do E2E roda com o override `tests/Trail.E2E.Tests/compose.e2e.yml` (cadastro
+`InviteOnly` e limite de tentativas do login alto, só no E2E), e o container do
+Testcontainers recebe as mesmas variáveis. O `ComposeOverrideTests` aceita no override só
+`services:`, `app:` e `environment:` com entradas `CHAVE: valor`, e exige que ele declare
+exatamente as variáveis do Testcontainers (`DockerAppFixture.E2EEnvironment`). Cada classe de
+teste passa sozinha, sem depender da ordem da suíte. Uma execução precisa de uma instância
+nova, porque o admin é a primeira conta.
+
+**Desempenho** (Onda 0, W0-T12): o harness fica em `Trail.Web.Tests/Performance/`. Uma
+classe de fixture derivada de `PerformanceFixture` define o volume (`Shape`, por padrão
+4 blocos, 12 disciplinas, 1.000 tópicos em até 3 níveis e 100 anotações), os serviços
+(`ConfigureServices`) e a carga extra (`SeedAsync(PerformanceSeedContext)`). Cada cenário
+(`PerformanceScenario(Name, Path, ExpectedTexts, HtmxPartial)`) mede o tempo do servidor,
+pela duração do span do ASP.NET Core, e falha acima do `PerformanceBudget.Default`: 300 ms
+no p95 de 20 requisições, depois de 10 de aquecimento. As classes de teste levam
+`[PerformanceTest]` (o traço `Category=Performance`) e
+`[Collection(PerformanceCollections.Sequential)]`. Uma fase acrescenta uma classe nova,
+com a sua fixture e o seu volume, sem editar os arquivos do harness.
 
 **Cobertura:**
 
@@ -67,25 +108,52 @@ testes controlam o tempo.
 - **Branch `main` protegida:** só recebe código por PR, com o CI verde.
 - **Uma branch e um PR por fase** (decisão do autor), com commits atômicos, um por
   tarefa. O autor aprova o PR na apresentação do fim da fase.
-- **Fases em paralelo** (Onda A, decisão do autor): cada fase continua com o seu PR para a
-  `main`, integrado em ordem (3, 4, 5, 7a). Antes de cada merge, a branch é rebaseada na
-  `main` e a migração da fase é gerada de novo. Migrações são sempre geradas, nunca
-  editadas à mão.
+- **Fases em paralelo** (Onda A, decisão do autor na
+  [P5 da Onda 0](fases/onda-0-base-compartilhada.md#p5--fluxo-de-integração-da-onda-a)):
+  cada fase continua com a sua branch e o seu PR para a `main`, integrados na ordem
+  3 → 4 → 5 → 7a, salvo outra ordem do autor. Antes do merge de cada uma:
+  1. a branch é rebaseada na `main` atual;
+  2. a migração local da fase é apagada nos dois contextos, e os snapshots do modelo ficam
+     como na `main` (um conflito no snapshot se resolve assim, nunca à mão);
+  3. a migração é gerada de novo pelo `dotnet ef`, com o mesmo nome (`AddQuestionEntries`,
+     `AddMockExamsAndFitnessTest` ou `AddStudyTime`; a 7a não tem migração), em
+     `SqliteAppDbContext` e `PostgreSqlAppDbContext`;
+  4. `has-pending-model-changes` não acusa mudança nos dois contextos;
+  5. o CI fica verde, e o autor aprova o PR.
+
+  As fases que ainda não entraram refazem o rebase depois de cada merge.
+- **Migrações 100% geradas** pelo `dotnet ef`, nunca editadas à mão, nem na integração.
+  Na Fase 3, por exemplo:
+
+  ```powershell
+  dotnet ef migrations add AddQuestionEntries --project src/Trail.Infrastructure --context SqliteAppDbContext --output-dir Persistence/Sqlite/Migrations
+  dotnet ef migrations add AddQuestionEntries --project src/Trail.Infrastructure --context PostgreSqlAppDbContext --output-dir Persistence/PostgreSql/Migrations
+  dotnet ef migrations has-pending-model-changes --project src/Trail.Infrastructure --context SqliteAppDbContext
+  dotnet ef migrations has-pending-model-changes --project src/Trail.Infrastructure --context PostgreSqlAppDbContext
+  ```
 - **Repositório público desde o início** (decisão do autor): o histórico de commits, PRs
   e CI também conta no portfólio.
 
 ## 4.4 Integração contínua (GitHub Actions)
 
-Em todo PR:
+Em todo PR para a `main` ou para `phase/**` (as ondas não mudam os gatilhos, porque cada
+fase da Onda A abre o seu PR para a `main`, conforme a [4.3](#43-fluxo-de-trabalho-no-git)):
 
 1. Verificação de formatação.
 2. Build, incluindo a geração do CSS (avisos viram erros).
 3. Testes de unidade, de propriedades e de arquitetura.
 4. Verificação de migrações pendentes nos dois contextos.
-5. Testes de casos de uso e de integração, em matriz: `sqlite` e `postgresql`.
-6. Testes ponta a ponta (Playwright) contra a imagem Docker gerada. A exceção aprovada são
-   os fluxos que precisam controlar o relógio do servidor (pomodoro e sessão esquecida, Fase
-   5): eles rodam contra o app no processo do teste, com `FakeTimeProvider`.
+5. Testes de casos de uso e de integração, em matriz: `sqlite` e `postgresql`. O passo
+   exclui os testes de desempenho (`--filter-not-trait "Category=Performance"`) e avisa no
+   log que eles rodam no `performance.yml`.
+6. Testes ponta a ponta (Playwright) contra a imagem Docker gerada, no
+   `deploy/compose.sqlite.yml` com o override `tests/Trail.E2E.Tests/compose.e2e.yml`
+   (`--file` nos dois arquivos, ao subir, ao ler os logs e ao derrubar), que liga o cadastro
+   `InviteOnly` para a fixture criar um usuário por teste. A exceção aprovada são os fluxos
+   que precisam controlar o relógio do servidor (pomodoro e sessão esquecida, Fase 5): eles
+   rodam contra o app no processo do teste, com `FakeTimeProvider`, pelos pacotes que a
+   Onda 0 acrescentou ao projeto de E2E (`Microsoft.Extensions.TimeProvider.Testing`,
+   `Microsoft.AspNetCore.Mvc.Testing` e a referência ao `Trail.Web`).
 7. Verificação de pacotes vulneráveis: o restore do CI trata os avisos de auditoria do
    NuGet (diretos e transitivos) como erro. Uma exceção justificada usa
    `NuGetAuditSuppress`, registrada no repositório.
@@ -93,7 +161,15 @@ Em todo PR:
    análise.
 9. Build da imagem Docker, sem publicar.
 
-Diariamente: o teste de orçamento de desempenho ([3.15](03-arquitetura.md#315-verificações-automáticas-da-arquitetura)).
+Orçamento de desempenho ([3.15](03-arquitetura.md#315-verificações-automáticas-da-arquitetura)):
+o `.github/workflows/performance.yml` roda só os testes com o traço
+`Category=Performance`, em matriz `sqlite` e `postgresql`:
+
+- todo dia (05:17 UTC) e sob demanda (`workflow_dispatch`);
+- num PR para a `main` ou para `phase/**` que altere `tests/Trail.Web.Tests/Performance/`
+  ou o próprio workflow, para que quem mexe no harness veja o resultado no PR.
+
+Fora disso, os testes de desempenho não entram no CI dos PRs, para não gerar falso alarme.
 
 Dependabot para NuGet, GitHub Actions (fixadas por SHA) e imagens Docker (fixadas por
 digest), com alertas e correções automáticas de segurança ativos. Tailwind, daisyUI, HTMX

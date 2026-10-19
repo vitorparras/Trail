@@ -1,7 +1,7 @@
 # Trail — plano do projeto
 
 > Esta pasta reúne o planejamento completo: visão, regras de negócio, arquitetura,
-> qualidade e roteiro. Nada foi implementado ainda.
+> qualidade e roteiro. As Fases 0, 1 e 2 e a Onda 0 já estão implementadas.
 
 ## O que é
 
@@ -21,8 +21,8 @@ histórico de questões e controle do tempo de estudo.
 |---|---|---|
 | 1 | [Visão e escopo](01-visao-e-escopo.md) | Problema, análise da planilha, escopo da 1.0, o que fica para depois, requisitos |
 | 2 | [Domínio e regras](02-dominio-e-regras.md) | Glossário, modelo de dados, modelo tático, regras de negócio, fórmulas, período de desempenho, tempo de estudo, importação e backup |
-| 3 | [Arquitetura](03-arquitetura.md) | Padrões adotados, características, camadas e módulos, casos de uso, resultado padrão, eventos, pontos de variação, o que não fazemos, stack, segurança, observabilidade, verificações automáticas e gatilhos de evolução |
-| 4 | [Qualidade e entrega](04-qualidade-e-entrega.md) | Testes, padrões de código, Git, CI/CD, releases, open source |
+| 3 | [Arquitetura](03-arquitetura.md) | Padrões adotados, características, camadas e módulos, composição por módulo e pontos de extensão, casos de uso, resultado padrão, textos e mensagens, eventos, pontos de variação, o que não fazemos, stack, formulários e gráficos, dados, contas e login, segurança, observabilidade, verificações automáticas e gatilhos de evolução |
+| 4 | [Qualidade e entrega](04-qualidade-e-entrega.md) | Testes (inclusive a fixture do E2E e o harness de desempenho), padrões de código, Git e integração das fases paralelas, CI/CD, releases, open source |
 | 5 | [Roteiro](05-roteiro.md) | Fases 0 a 7 em ondas, com entregas e critérios de pronto. Detalhamentos: [Fase 0](fases/fase-0-fundacao.md), [Fase 1](fases/fase-1-contas-email-isolamento.md), [Fase 2](fases/fase-2-planos-e-conteudo.md), [Onda 0](fases/onda-0-base-compartilhada.md), [Fase 3](fases/fase-3-questoes-desempenho-historico.md), [Fase 4](fases/fase-4-simulados-e-taf.md), [Fase 5](fases/fase-5-tempo-de-estudo.md), [Fase 7a](fases/fase-7a-pwa.md) |
 | — | [ADRs](adr/) | Registros de decisão, um por decisão |
 
@@ -41,7 +41,7 @@ histórico de questões e controle do tempo de estudo.
 | Questões | Lançamentos com data, não totais | [0009](adr/0009-questoes-como-lancamentos.md) |
 | Desempenho | Calculado por período de datas (ex.: últimos 15 dias, último mês ou tudo), com cada lançamento inteiro e o volume sempre visível | [0010](adr/0010-periodo-de-desempenho.md) |
 | Regras do domínio | Excluir algo com histórico apaga em cascata, após confirmação. Um tópico só muda de pai dentro da disciplina. O desempenho do tópico soma os subtópicos | [2.2](02-dominio-e-regras.md#regras-de-negócio-e-onde-são-garantidas) |
-| Arquitetura | Clean Architecture com fatias verticais (`Domain`, `Application`, `Infrastructure`, `Web`), módulos por pasta, `IAppDbContext` e uma classe por caso de uso, sem MediatR | [0011](adr/0011-estilo-arquitetural.md) |
+| Arquitetura | Clean Architecture com fatias verticais (`Domain`, `Application`, `Infrastructure`, `Web`), módulos por pasta, uma porta de store por módulo e uma classe por caso de uso, sem MediatR | [0011](adr/0011-estilo-arquitetural.md) |
 | Autenticação | Identity completo com e-mail: confirmação, recuperação de senha e convites. Sem SMTP, o admin gera os links | [0012](adr/0012-autenticacao-identity.md) |
 | Interface | Tailwind CSS 4 + daisyUI 5, com build pelo executável standalone (sem Node), HTMX e Chart.js | [0013](adr/0013-frontend-tailwind-daisyui.md) |
 | DDD tático | Agregados, value objects, IDs tipados e eventos de domínio | [0014](adr/0014-ddd-tatico.md) |
@@ -53,14 +53,20 @@ histórico de questões e controle do tempo de estudo.
 
 ## Aguardando aprovação
 
-Nenhuma decisão de arquitetura ou de domínio pendente. As ferramentas ainda marcadas como
-proposta (na [stack](03-arquitetura.md#38-stack) e em [Qualidade e entrega](04-qualidade-e-entrega.md))
-são confirmadas no detalhamento da fase que as usa.
+Quatro perguntas levantadas na implementação da Onda 0 aguardam o autor, sem bloquear a
+Onda A ([P8 a P11](fases/onda-0-base-compartilhada.md#perguntas-levantadas-na-implementação)):
+o envio de e-mail fora da requisição, a mensagem do bloqueio no login, a regra do plural
+nos textos com quantidade e o formato da prévia de exclusão. As ferramentas ainda marcadas
+como proposta (na [stack](03-arquitetura.md#38-stack) e em
+[Qualidade e entrega](04-qualidade-e-entrega.md)) são confirmadas no detalhamento da fase
+que as usa.
 
 ## Próximo passo
 
-Fases 0, 1 e 2 concluídas. Os detalhamentos da Onda 0 e da Onda A foram aprovados em
-18/10/2026, com todas as opções recomendadas.
+Fases 0, 1 e 2 concluídas. A [Onda 0 — Base compartilhada](fases/onda-0-base-compartilhada.md)
+foi implementada, com as convenções registradas na arquitetura e as correções às Fases 1 e
+2 listadas no detalhamento.
 
-1. Implementar a [Onda 0 — Base compartilhada](fases/onda-0-base-compartilhada.md).
-2. Em seguida, a Onda A: Fases 3, 4, 5 e 7a em paralelo.
+1. Apresentar a Onda 0 ao autor, com as perguntas P8 a P11, e integrá-la à `main`.
+2. Em seguida, a Onda A: Fases 3, 4, 5 e 7a em paralelo, com os PRs integrados na ordem
+   3 → 4 → 5 → 7a ([4.3](04-qualidade-e-entrega.md#43-fluxo-de-trabalho-no-git)).

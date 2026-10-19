@@ -2,7 +2,9 @@
 
 > **Situação:** aprovada pelo autor em 18/10/2026, com todas as opções recomendadas. Prepara a Onda A, em que as Fases 3,
 > 4 e 5 e a Fase 7a (PWA) são desenvolvidas em paralelo, conforme o plano em ondas aprovado
-> pelo autor em 17/10/2026 ([roteiro](../05-roteiro.md#ondas)).
+> pelo autor em 17/10/2026 ([roteiro](../05-roteiro.md#ondas)). Implementada na branch
+> `wave/0-shared-foundation` ([situação das tarefas](#situação-das-tarefas)), com quatro
+> [perguntas novas](#perguntas-levantadas-na-implementação) para a apresentação.
 
 ## Objetivo
 
@@ -88,6 +90,43 @@ flowchart LR
   P7. A T13 espera os detalhamentos da Onda A aprovados, com a seção "Ícones".
 - Como uma fase: uma branch e um PR, com um commit por tarefa
   ([4.3](../04-qualidade-e-entrega.md#43-fluxo-de-trabalho-no-git)).
+
+### Situação das tarefas
+
+| Tarefa | Situação | Observação |
+|---|---|---|
+| W0-T1 | Concluída | — |
+| W0-T2 | Concluída | Uma regra de arquitetura mantém as classes `*Metrics` em `Trail.Application.Telemetry` |
+| W0-T3 | Concluída | Também traduziu os erros do Identity, uniformizou as respostas de contas e tirou os dados pessoais dos logs de e-mail ([correções](#correções-no-comportamento-das-fases-1-e-2)) |
+| W0-T4 | Concluída | — |
+| W0-T5 | Concluída | — |
+| W0-T6 | Concluída | A soma acima do total (`practice.question_count.answers_exceed_total`) aponta para o campo `Correct` |
+| W0-T7 | Concluída | Os gatilhos do `ci.yml` não mudaram (P5, opção A) |
+| W0-T8 | Concluída | O login passou a conferir a senha antes do estado da conta. O teste de acesso anônimo registra o status esperado de cada página pública ([3.11](../03-arquitetura.md#login-no-app-inteiro)) |
+| W0-T9 | Concluída | — |
+| W0-T10 | Concluída | Também os erros de Contas e Administração sob os campos, e a regra global dos erros de conversão ([3.9](../03-arquitetura.md#formulários-e-erros)) |
+| W0-T11 | Concluída | O override do E2E também eleva o limite de tentativas do login, só no E2E |
+| W0-T12 | Concluída | O `performance.yml` também roda num PR que altera o harness ou o workflow |
+| W0-T13 | Concluída | — |
+
+As convenções que as tarefas criaram estão na arquitetura, e os detalhamentos da Onda A as
+citam:
+
+| Convenção | Onde |
+|---|---|
+| Métodos de registro por módulo e pontos de extensão | [3.5](../03-arquitetura.md#composição-por-módulo) |
+| `.resx` por módulo, registro de prefixos, teste de tradução e textos com quantidade | [3.5](../03-arquitetura.md#textos-e-mensagens) |
+| Uma porta de store por módulo | [3.6](../03-arquitetura.md#uma-porta-de-store-por-módulo) |
+| Erros de formulário e erros de conversão | [3.9](../03-arquitetura.md#formulários-e-erros) |
+| Componente `<chart>` | [3.9](../03-arquitetura.md#gráficos) |
+| Configuração por entidade e migrações geradas | [3.10](../03-arquitetura.md#dois-bancos) |
+| `QuestionCount` e `HasQuestionCount` | [3.10](../03-arquitetura.md#contagem-de-questões) |
+| `IUserCalendar` e `CalendarWeek` | [3.10](../03-arquitetura.md#calendário-do-usuário) |
+| Login no app inteiro e lista pública | [3.11](../03-arquitetura.md#login-no-app-inteiro) |
+| Varredura de isolamento por namespace | [3.11](../03-arquitetura.md#isolamento) |
+| Respostas uniformes e riscos residuais | [3.14](../03-arquitetura.md#314-segurança) |
+| Fluxo de integração da Onda A | [4.3](../04-qualidade-e-entrega.md#43-fluxo-de-trabalho-no-git) |
+| Fixture do E2E, harness e workflow de desempenho | [4.1](../04-qualidade-e-entrega.md#41-estratégia-de-testes) e [4.4](../04-qualidade-e-entrega.md#44-integração-contínua-github-actions) |
 
 ### W0-T1 — Configuração do EF Core por entidade (`Infrastructure`)
 
@@ -196,7 +235,7 @@ editar o `Program.cs`, o `AddApplication` ou o `AddInfrastructure`.
   hoje, e quem está vê o painel.
 - `GetDashboardContextHandler` em `Application/Dashboard/` devolve o `DashboardContext`:
   os planos do usuário para o seletor e o plano escolhido. `?plano=` de outro usuário ou
-  inexistente dá `NotFound` (404). Sem `?plano=`, vale a regra da P4: na opção A, o plano
+  inexistente dá `NotFound` (404). Sem `?plano=`, vale a regra da P4 (opção A): o plano
   com a atividade mais recente, informada pelos módulos por `IPlanActivityContributor`
   (`Application/Abstractions`, a última atividade de cada plano do usuário, em UTC). Sem
   nenhuma contribuição, vale o primeiro plano na ordem da lista de planos.
@@ -245,14 +284,14 @@ produto.
 
 ### W0-T7 — Processo, migrações e documentação (`docs`, `.github`)
 
-- Fluxo de integração, conforme a P5. Na opção A: um PR por fase para a `main`, na ordem
+- Fluxo de integração, conforme a P5 (opção A): um PR por fase para a `main`, na ordem
   3 → 4 → 5 → 7a (salvo outra ordem do autor); antes do merge, a integração faz o rebase
   sobre a `main`, apaga a migração local da fase e gera de novo a migração com o mesmo nome
   (`AddQuestionEntries`, `AddMockExamsAndFitnessTest`, `AddStudyTime`) nos dois contextos,
   confere `has-pending-model-changes` e espera o CI verde. O autor aprova cada PR.
 - Regra: migrações 100% geradas, nunca editadas à mão.
-- CI: na opção A da P5, os gatilhos atuais bastam (todo PR para a `main` roda o CI). Na
-  opção B, o `ci.yml` passa a aceitar PRs para `wave/**`.
+- CI: com a P5 na opção A, os gatilhos atuais bastam (todo PR para a `main` roda o CI), e
+  os gatilhos do `ci.yml` não mudam.
 - Documentos atualizados com as respostas do autor:
   - [4.3](../04-qualidade-e-entrega.md#43-fluxo-de-trabalho-no-git) (fluxo das ondas) e
     [4.4](../04-qualidade-e-entrega.md#44-integração-contínua-github-actions) (gatilhos e
@@ -269,26 +308,28 @@ Onda A citam estas convenções.
 
 ### W0-T8 — Decisões pendentes da Fase 2 (`Web`, `Application`)
 
-1. **Convites no modo `Closed`**, conforme a P2. Na opção A, a tela de administração esconde
+1. **Convites no modo `Closed`**, conforme a P2 (opção A): a tela de administração esconde
    os convites nesse modo e explica o modo atual, e o caso de uso recusa o convite com
-   mensagem própria.
-2. **Login no app inteiro**, conforme a P3:
-   - Opção A: `AuthorizeFolder` para `/Practice`, `/Fitness` e `/StudyTime`, mais
-     `/Account/Settings` e `/Admin`, registrados agora para nenhuma fase editar o
-     `Program.cs`.
-   - Opção B: `FallbackPolicy` que exige usuário autenticado. `AllowAnonymous` explícito na
-     página inicial, nas páginas de `Account` (exceto `Settings`), na `Error`, em
-     `MapHealthChecks` (health check do Docker, `compose --wait` e espera do Testcontainers)
-     e em `MapStaticAssets` (o CSS da tela de login). O `AuthorizeFolder("/Plans")` sai,
-     porque fica redundante.
+   mensagem própria (`accounts.invitation.registration_closed`).
+2. **Login no app inteiro**, conforme a P3 (opção B): `FallbackPolicy` que exige usuário
+   autenticado. `AllowAnonymous` explícito na página inicial, nas páginas de `Account`
+   (exceto `Settings`), na `Error`, em `MapHealthChecks` (health check do Docker,
+   `compose --wait` e espera do Testcontainers) e em `MapStaticAssets` (o CSS da tela de
+   login). O `AuthorizeFolder("/Plans")` sai, porque fica redundante.
 
 **Testes:** requisição anônima a cada página: as da lista pública respondem 200, e as demais
 levam ao login (com HTMX, a navegação da página inteira, como na Fase 2). A lista pública
 fica fixa no teste. Health checks e arquivos estáticos respondem sem login. Os convites
-seguem a opção escolhida, nos testes de casos de uso e HTTP.
+seguem a P2, nos testes de casos de uso e HTTP.
 
 **Pronto quando:** Preferências e Administração levam ao login quem não está autenticado,
 como as páginas de planos, e os testes passam nos dois bancos.
+
+**Na implementação:** as páginas públicas não respondem todas 200 a uma requisição
+anônima sem parâmetros. A lista pública do `AnonymousAccessTests` guarda o status esperado
+de cada uma (a `Error` responde 500, a `ConfirmEmail` 422, e a `AcceptInvite` e a `Logout`
+redirecionam), e uma URL sem endpoint responde 404, com e sem login
+([3.11](../03-arquitetura.md#login-no-app-inteiro)).
 
 ### W0-T9 — Calendário, prévia de exclusão e links do plano (`Domain`, `Application`, `Infrastructure`, `Web`)
 
@@ -337,6 +378,14 @@ Conforme a P1 (opção A):
 **Pronto quando:** os testes passam nos dois bancos, e as Fases 3, 4 e 5 acrescentam
 contagens e links sem editar arquivos do `Planning`.
 
+**Na implementação:** cada item da prévia é um `DeletionImpactItem.Create(code, count)`, e
+o texto sai do `CountedMessage`, com a chave `.one` só para exatamente 1 e o formato
+"2 blocos" no lugar de "Blocos: 2" ([P10](#p10--regra-do-plural-nos-textos-com-quantidade)
+e [P11](#p11--formato-dos-itens-da-prévia-de-exclusão)). Os três diálogos de exclusão são
+descritos pelo alvo, pelo aviso e pelas contagens (`aria-describedby`) e abrem com o foco
+em "Cancelar". O `IPlanLinkContributor` devolve um `PlanLink` (texto, página, valores de
+rota e um `PlanLinkIcon`: `RotateCcwClock`, `ClipboardCheck` ou `Dumbbell`).
+
 ### W0-T10 — Erros de formulário compartilhados (`Web`)
 
 - `_FormErrors.cshtml` e `FormErrorList` passam para `Pages/Shared`, com os auxiliares
@@ -356,15 +405,15 @@ parcial comum.
 ### W0-T11 — Infraestrutura comum do E2E (`E2E.Tests`, `.github`)
 
 - A fixture cria um usuário novo por teste: convite do admin, cadastro pelo convite e
-  confirmação pelo link manual, por requisições HTTP, sem passar pelas telas. Com a P2 em
-  A, o modo `InviteOnly` vem de um override do compose só do E2E
+  confirmação pelo link manual, por requisições HTTP, sem passar pelas telas. Com a P2 na
+  opção A, o modo `InviteOnly` vem de um override do compose só do E2E
   (`tests/Trail.E2E.Tests/compose.e2e.yml`), usado pelo job de E2E do `ci.yml`, e da mesma
   variável no container do Testcontainers.
 - A fixture também abre um segundo contexto autenticado do mesmo usuário, para os testes
   de "outro aparelho" da Fase 5.
 - O contexto do navegador nasce com `ServiceWorkers = Block`. Só o `PwaE2ETests` pede
   `Allow`.
-- Se a Fase 5 escolher o host em processo para o pomodoro (pergunta 8, opção C), a Onda 0
+- Para o host em processo do pomodoro (Fase 5, pergunta 8, opção C), a Onda 0
   acrescenta ao projeto de E2E `Microsoft.Extensions.TimeProvider.Testing`,
   `Microsoft.AspNetCore.Mvc.Testing` e a referência ao `Trail.Web`, com o arquivo de lock. A
   Fase 5 só cria a fixture desse host, num arquivo novo.
@@ -379,6 +428,18 @@ dados do mesmo usuário; com o padrão da fixture, nenhum service worker é regi
 
 **Pronto quando:** os E2E passam contra o container SQLite, e cada classe de teste passa
 também sozinha (`--filter-class`), sem depender da ordem da suíte.
+
+**Na implementação:** a API da fixture (`CreateUserAsync`, `CreatePageAsync`,
+`CreateOtherDevicePageAsync` e `CreateAdminPageAsync`) e os auxiliares internos
+`E2EBrowserContexts` e `AppHttpSession`, que o host em processo da Fase 5 reusa, estão
+descritos na [4.1](../04-qualidade-e-entrega.md#41-estratégia-de-testes). Cada página nova
+fecha os contextos dos testes anteriores no mesmo navegador. O `compose.e2e.yml` define
+`Registration__Mode: InviteOnly` e `Security__AuthRateLimitPermitLimit: "1000"`, porque
+cada teste faz login, e o container do Testcontainers recebe as mesmas variáveis
+(`ComposeOverrideTests`), numa imagem com uma tag própria, removida no fim. O job de E2E do
+`ci.yml` passa o override ao subir, ao ler os logs e ao derrubar o compose. Uma execução
+precisa de uma instância nova, porque o admin é a primeira conta. A suíte tem 38 testes
+E2E.
 
 ### W0-T12 — Orçamento de desempenho (`Web.Tests`, `.github`)
 
@@ -396,6 +457,15 @@ também sozinha (`--filter-class`), sem depender da ordem da suíte.
 
 **Pronto quando:** o `performance.yml` passa numa execução manual, e o log do CI de um PR
 mostra que os testes de desempenho não rodaram.
+
+**Na implementação:** o harness (`PerformanceFixture`, `PerformanceScenario` e
+`PerformanceBudget.Default`) está descrito na
+[4.1](../04-qualidade-e-entrega.md#41-estratégia-de-testes). Os cenários da Onda 0 são a
+página do plano, a página da maior disciplina, as prévias de exclusão da disciplina e do
+tópico, e o painel com o plano escolhido e com a regra padrão. Além do agendamento e da
+execução manual, o `performance.yml` roda num PR que altera o harness ou o próprio
+workflow, para o PR provar a mudança
+([4.4](../04-qualidade-e-entrega.md#44-integração-contínua-github-actions)).
 
 ### W0-T13 — Ícones (`eng`, `Web`)
 
@@ -423,6 +493,43 @@ mostra que os testes de desempenho não rodaram.
 Contas, Administração e conflito aparecem, e a Onda A não precisa de ícone novo. Uma
 necessidade descoberta depois fica para a integração.
 
+## Correções no comportamento das Fases 1 e 2
+
+Além das decisões pendentes da Fase 2 (P2 e P3) e da confirmação na exclusão de disciplina
+e de tópico, a Onda 0 corrigiu:
+
+- **Erros do Identity traduzidos:** cada erro vira um código `accounts.identity.*`, no
+  campo a que se refere (nova senha, senha atual ou e-mail), e um erro não previsto cai em
+  `accounts.identity.default_error`. As mensagens não levam mais a descrição em inglês do
+  Identity nem o e-mail digitado.
+- **Redefinição de senha:** uma regra de senha não atendida aparece no campo da nova
+  senha, em vez da mensagem de link inválido, que fica para o link inválido ou vencido e o
+  usuário desconhecido.
+- **Respostas uniformes nas contas:** o cadastro, a recuperação de senha, o reenvio da
+  confirmação e o login respondem igual para e-mail cadastrado e desconhecido, inclusive
+  quando o envio do e-mail falha, fora o bloqueio após 5 senhas erradas
+  ([P9](#p9--mensagem-do-bloqueio-no-login)), e o login confere a senha antes de informar
+  que a conta está desativada ou sem confirmação
+  ([3.14](../03-arquitetura.md#314-segurança)).
+- **Logs sem dados pessoais:** a falha de envio de e-mail não registra mais o destinatário
+  nem a mensagem da exceção, que pode repetir o endereço. A categoria de log que imprime a
+  URL completa, com o token dos links, fica fixada em `Warning`.
+- **Erros sob os campos:** nos formulários de Contas, Administração e Planejamento, o erro
+  aparece sob o campo, com `aria-invalid` e `aria-describedby`, e o erro do formulário
+  aparece uma vez, no formulário, sem repetir num toast. Os formulários de cadastro, login
+  e administração mostram todos os erros, inclusive os de campo.
+- **Valor inválido nos planos:** texto num campo numérico do formulário do plano fazia o
+  caso de uso gravar o valor padrão. Agora a resposta é 422, sem chamar o caso de uso, com
+  a mensagem traduzida, em todo formulário.
+- **Exclusão de disciplina e de tópico:** passou a pedir confirmação num `<dialog>`, com a
+  prévia do que será apagado, também sem JavaScript (pendência 4 da Fase 2). O painel de
+  anotações da disciplina continua na tela depois de um envio inválido.
+- **URLs desconhecidas:** com o login exigido no app inteiro, continuam respondendo 404,
+  com e sem login, sem levar ao login nem gastar o limite de tentativas dele (ex.:
+  `/favicon.ico`).
+- **Ícones vazios:** os ícones das telas de Contas, Administração e conflito passaram a
+  aparecer, com os nomes canônicos do Lucide.
+
 ## Pronto quando (onda)
 
 - O CI fica 100% verde no PR da onda, com os E2E contra o container SQLite.
@@ -433,7 +540,8 @@ necessidade descoberta depois fica para a integração.
 - Nenhuma mudança pendente no modelo e nenhuma migração nova.
 - Os detalhamentos das Fases 3, 4, 5 e 7a usam estas peças com estes nomes, sem desenho
   condicional, e listam os seus ícones.
-- As perguntas abaixo têm resposta, registrada pela W0-T7.
+- As perguntas P1 a P7 têm resposta, registrada pela W0-T7. As P8 a P11, levantadas na
+  implementação, vão para a apresentação da onda.
 
 ## Perguntas para o autor
 
@@ -526,3 +634,77 @@ Os detalhamentos da Onda A adotaram cinco ajustes ao modelo aprovado sem pergunt
 | A (recomendada) | Aprovar os cinco e registrá-los na 2.2, na 3.5, na 3.10 e no roteiro (W0-T7) | O modelo documentado volta a bater com o planejado | Cinco mudanças num modelo já aprovado |
 | B | Aprovar item a item | Controle fino | As fases ajustam o desenho dos itens recusados antes de começar |
 | C | Nenhum: as fases seguem o modelo aprovado | O modelo não muda | Coluna `Blank` redundante, números de simulado repetidos, E4 longe do dono dos simulados, acerto do pomodoro gravado junto com o comando seguinte e tentativas sem resultado |
+
+## Perguntas levantadas na implementação
+
+> **Aguardando resposta do autor.** Nenhuma bloqueia a Onda A. As P8 e P9 tratam do
+> módulo `Accounts`, que nenhuma fase da Onda A altera. Nas P10 e P11, as opções
+> recomendadas mantêm o que já existe; as demais mudam o `CountedMessage`, o parcial
+> `_DeletionImpact`, o teste de tradução e as chaves dos `.resx` de todos os módulos. As
+> Fases 3, 4 e 5 seguem as opções recomendadas e ajustam as suas chaves na integração, se
+> o autor escolher outra.
+
+### P8 — Envio de e-mail fora da requisição
+
+Com SMTP configurado (modo hospedado), a recuperação de senha e o reenvio da confirmação
+para um e-mail cadastrado enviam o e-mail durante a requisição, e para um e-mail
+desconhecido não enviam nada, em qualquer modo de cadastro. No modo `Open`, o cadastro de
+um e-mail novo também envia, e o de um e-mail existente não. No `InviteOnly`, o convite
+precisa existir e ser do e-mail digitado antes de qualquer busca pelo e-mail, então o
+cadastro não revela contas. A resposta é a mesma, mas o tempo dela pode revelar se a conta
+existe (risco residual da [3.14](../03-arquitetura.md#riscos-residuais), não medido). Sem
+SMTP, não há diferença.
+
+A correção é a mesma nas opções A a C, que diferem só no prazo: os e-mails de contas entram numa fila em
+memória, enviada por um `BackgroundService`, e a resposta não espera o SMTP. Para os dois
+caminhos do cadastro custarem o mesmo, o cadastro com um e-mail existente envia ao dono da
+conta um aviso de que alguém tentou cadastrá-lo. O convite e o e-mail de teste do admin
+continuam síncronos, porque o admin precisa ver o resultado. Uma mensagem na fila se perde
+se o container parar antes do envio, e o usuário pede de novo; a falha continua no log e na
+métrica.
+
+| Opção | Descrição | Prós | Contras |
+|---|---|---|---|
+| A | Uma tarefa nova da Onda 0, antes do PR da onda | O risco fecha antes de qualquer instalação hospedada | Atrasa a apresentação e o PR da Onda 0 |
+| B (recomendada) | Um PR próprio do módulo `Accounts`, em paralelo com a Onda A e antes da Fase 7b, que escreve o guia do modo hospedado | Não atrasa nenhuma onda e não conflita com as fases (nenhuma toca em Contas); fecha antes de o modo hospedado ser documentado | Um PR a mais para integrar durante a Onda A; o risco existe até o merge |
+| C | Na Fase 7b, junto da auditoria e do guia do modo hospedado | Agrupa as correções de segurança | O risco atravessa as Ondas A e B, e a 7b cresce |
+| D | Aceitar como risco residual documentado | Nenhum código | O modo hospedado mantém um jeito de descobrir contas, contra a ameaça da 3.14 |
+
+### P9 — Mensagem do bloqueio no login
+
+Na 5ª senha errada, o Identity bloqueia a conta por 15 minutos, e o login já responde
+"Conta temporariamente bloqueada por excesso de tentativas" (403); da tentativa seguinte
+em diante, responde o mesmo sem calcular o hash. Um e-mail desconhecido nunca é bloqueado.
+Com o limite de 10 tentativas por minuto e por IP, 5 requisições confirmam que um e-mail
+tem conta (risco residual da
+[3.14](../03-arquitetura.md#riscos-residuais)). Em qualquer opção, quem conhece o e-mail
+consegue bloquear a conta por 15 minutos: é o custo do bloqueio contra a força bruta.
+
+| Opção | Descrição | Prós | Contras |
+|---|---|---|---|
+| A | Manter a mensagem e o risco documentado | A pessoa bloqueada sabe exatamente o que aconteceu; nada muda | O login continua revelando contas, a única exceção às respostas uniformes da Onda 0 |
+| B (recomendada) | Uma mensagem só para senha errada, e-mail desconhecido e conta bloqueada: "E-mail ou senha incorretos, ou conta bloqueada temporariamente.", com o mesmo status (422) e o hash calculado também na conta bloqueada | Fecha o último caminho de descoberta de contas no login, no status, no texto e no tempo; mudança pequena no `Accounts` | Muda o texto da tela; a pessoa bloqueada não sabe ao certo se errou a senha ou se foi bloqueada; um hash a mais por tentativa bloqueada |
+
+### P10 — Regra do plural nos textos com quantidade
+
+Os textos com quantidade, como os da prévia de exclusão, usam a chave `.one` só para
+exatamente 1, e a `.other` para os demais, inclusive o 0: "0 anotações", "1 anotação",
+"2 anotações". A regra do CLDR para o português põe o 0 no singular ("0 anotação"). Hoje só
+existe o pt-BR ([ADR 0007](../adr/0007-idiomas.md)).
+
+| Opção | Descrição | Prós | Contras |
+|---|---|---|---|
+| A (recomendada) | Manter: singular só para 1 | É a forma mais comum no Brasil ("0 anotações"); já implementada e testada | Difere do CLDR; um idioma novo precisaria das regras dele |
+| B | Seguir o CLDR: 0 e 1 no singular | Segue o padrão das bibliotecas de internacionalização | "0 anotação" soa estranho para a maioria; muda os testes da prévia |
+| C | Uma terceira chave para o zero (`.zero`: "nenhuma anotação") | O texto mais natural | Uma chave a mais por código em todos os módulos; mudam o `CountedMessage` e o teste de tradução, que passa a exigi-la |
+
+### P11 — Formato dos itens da prévia de exclusão
+
+A Fase 2 mostrava a prévia como rótulo e número ("Blocos: 2"). Com as contagens dos
+módulos, a W0-T9 passou a usar o número seguido do nome, no singular ou no plural
+("2 blocos").
+
+| Opção | Descrição | Prós | Contras |
+|---|---|---|---|
+| A (recomendada) | "2 blocos", como hoje | Cada item lê como texto corrido ("2 blocos", "1 anotação"), e cada módulo escreve o seu com naturalidade | Duas chaves por código (`.one` e `.other`) |
+| B | Voltar para "Blocos: 2" | Uma chave por código, sem plural | Menos natural; muda o `_DeletionImpact`, o uso do `CountedMessage`, o teste de tradução e as chaves de todos os módulos |

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Trail.Application.Abstractions;
 using Trail.Application.Accounts;
 using Trail.Domain.Accounts;
@@ -16,16 +17,55 @@ public sealed class TestCurrentUser : ICurrentUser
 
 public sealed class TestEmailSender : IEmailSender
 {
+    private static readonly TimeSpan DeliveryTimeout = TimeSpan.FromSeconds(30);
+
+    private readonly ConcurrentQueue<EmailMessage> _sent = new();
+    private readonly TaskCompletionSource _firstSendStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private TaskCompletionSource _sentChanged = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     public bool IsSmtpConfigured { get; set; } = true;
 
-    public List<EmailMessage> SentMessages { get; } = [];
+    public IReadOnlyList<EmailMessage> SentMessages => [.. _sent];
 
     public Result SendResult { get; set; } = Result.Ok();
 
-    public Task<Result> SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
+    public Task? Gate { get; set; }
+
+    public TimeSpan Delay { get; set; }
+
+    public Task FirstSendStarted => _firstSendStarted.Task;
+
+    public async Task<Result> SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
     {
-        SentMessages.Add(message);
-        return Task.FromResult(SendResult);
+        _firstSendStarted.TrySetResult();
+
+        if (Gate is not null)
+        {
+            await Gate.WaitAsync(cancellationToken);
+        }
+
+        if (Delay > TimeSpan.Zero)
+        {
+            await Task.Delay(Delay, cancellationToken);
+        }
+
+        _sent.Enqueue(message);
+        Interlocked.Exchange(ref _sentChanged, new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)).TrySetResult();
+        return SendResult;
+    }
+
+    public async Task<IReadOnlyList<EmailMessage>> WaitForMessagesAsync(int count)
+    {
+        while (true)
+        {
+            var changed = Volatile.Read(ref _sentChanged).Task;
+            if (_sent.Count >= count)
+            {
+                return SentMessages;
+            }
+
+            await changed.WaitAsync(DeliveryTimeout, TestContext.Current.CancellationToken);
+        }
     }
 }
 

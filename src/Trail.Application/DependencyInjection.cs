@@ -27,6 +27,8 @@ public static class DependencyInjection
         services.TryAddScoped<IUserCalendar, FallbackUserCalendar>();
         services.TryAddScoped<IAccountIdentityGateway, FallbackAccountIdentityGateway>();
         services.TryAddScoped<IEmailSender, FallbackEmailSender>();
+        services.TryAddSingleton<IAccountEmailContent, FallbackAccountEmailContent>();
+        services.TryAddSingleton<IAccountEmailDelivery, FallbackAccountEmailDelivery>();
         services.TryAddScoped<IUserSettingsStore, FallbackUserSettingsStore>();
         services.TryAddScoped<IPlanningStore, FallbackPlanningStore>();
 

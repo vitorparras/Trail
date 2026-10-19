@@ -251,6 +251,7 @@ public sealed class RegisterAccountHandlerTests
         _identityGateway.AnyUsersExistResult = true;
         _identityGateway.RegistrationMode = RegistrationMode.Open;
         _identityGateway.CreateUserResult = Result.Conflict(Message.Error("accounts.registration.email_already_exists"));
+        _identityGateway.ConcurrentlyCreatedUser = new AccountUserDto(UserId.New(), "racing@example.com", false, true, true, DateTime.UtcNow);
 
         var result = await CreateHandler().HandleAsync(new RegisterAccountCommand("racing@example.com", "Password123!", "Password123!"), TestContext.Current.CancellationToken);
 
@@ -263,6 +264,70 @@ public sealed class RegisterAccountHandlerTests
         Assert.Equal(EmailKinds.RegistrationAttempt, notice.Kind);
         Assert.Equal("racing@example.com", notice.ToAddress);
         Assert.Contains("/Account/ForgotPassword", notice.TextBody, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task HandleAsync_ExistingUnconfirmedEmail_QueuesAFreshConfirmationInsteadOfTheNoticeAndAnswersAsForANewEmail()
+    {
+        _identityGateway.AnyUsersExistResult = true;
+        _identityGateway.RegistrationMode = RegistrationMode.Open;
+        var pendingId = UserId.New();
+        _identityGateway.Users.Add(new AccountUserDto(pendingId, "pending@example.com", false, true, false, DateTime.UtcNow));
+        var command = new RegisterAccountCommand(
+            "Pending@Example.com",
+            "Password123!",
+            "Password123!",
+            ConfirmationLinkBuilder: (userId, token) => $"https://trail.app/confirm?u={userId}&t={token}");
+
+        var result = await CreateHandler().HandleAsync(command, TestContext.Current.CancellationToken);
+        var created = await CreateHandler().HandleAsync(new RegisterAccountCommand("new@example.com", "Password123!", "Password123!"), TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsOk);
+        Assert.Equal(created.Status, result.Status);
+        Assert.Equal(created.Data.RequiresEmailConfirmation, result.Data.RequiresEmailConfirmation);
+        Assert.Null(result.Data.UserId);
+        Assert.Equal(["Pending@Example.com"], _identityGateway.SimulatedAccountCreations);
+        var confirmation = _emailDelivery.Scheduled[0];
+        Assert.Equal(EmailKinds.Confirmation, confirmation.Kind);
+        Assert.Equal("pending@example.com", confirmation.ToAddress);
+        Assert.Contains($"https://trail.app/confirm?u={pendingId}&t=sample-confirm-token", confirmation.TextBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(_emailDelivery.Scheduled, message => message.Kind == EmailKinds.RegistrationAttempt);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task HandleAsync_ExistingDeactivatedEmail_QueuesNothingAndAnswersAsForANewEmail(bool emailConfirmed)
+    {
+        _identityGateway.AnyUsersExistResult = true;
+        _identityGateway.RegistrationMode = RegistrationMode.Open;
+        _identityGateway.Users.Add(new AccountUserDto(UserId.New(), "deactivated@example.com", false, false, emailConfirmed, DateTime.UtcNow));
+
+        var result = await CreateHandler().HandleAsync(new RegisterAccountCommand("deactivated@example.com", "Password123!", "Password123!"), TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsOk);
+        Assert.Empty(result.Messages);
+        Assert.True(result.Data.RequiresEmailConfirmation);
+        Assert.Null(result.Data.UserId);
+        Assert.Equal(["deactivated@example.com"], _identityGateway.SimulatedAccountCreations);
+        Assert.Empty(_emailDelivery.Scheduled);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenCreationConflictsWithAConcurrentUnconfirmedRegistration_QueuesAFreshConfirmation()
+    {
+        _identityGateway.AnyUsersExistResult = true;
+        _identityGateway.RegistrationMode = RegistrationMode.Open;
+        _identityGateway.CreateUserResult = Result.Conflict(Message.Error("accounts.registration.email_already_exists"));
+        _identityGateway.ConcurrentlyCreatedUser = new AccountUserDto(UserId.New(), "racing@example.com", false, true, false, DateTime.UtcNow);
+
+        var result = await CreateHandler().HandleAsync(new RegisterAccountCommand("racing@example.com", "Password123!", "Password123!"), TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsOk);
+        Assert.Null(result.Data.UserId);
+        var confirmation = Assert.Single(_emailDelivery.Scheduled);
+        Assert.Equal(EmailKinds.Confirmation, confirmation.Kind);
+        Assert.Equal("racing@example.com", confirmation.ToAddress);
     }
 
     [Fact]

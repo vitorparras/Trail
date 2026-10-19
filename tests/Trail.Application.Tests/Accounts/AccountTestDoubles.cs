@@ -110,6 +110,11 @@ internal sealed class FakeAccountIdentityGateway : IAccountIdentityGateway
     {
         if (CreateUserResult is not null)
         {
+            if (ConcurrentlyCreatedUser is not null)
+            {
+                Users.Add(ConcurrentlyCreatedUser);
+            }
+
             return Task.FromResult(CreateUserResult);
         }
 
@@ -118,6 +123,8 @@ internal sealed class FakeAccountIdentityGateway : IAccountIdentityGateway
         Users.Add(user);
         return Task.FromResult(Result.Ok(newUserId));
     }
+
+    public AccountUserDto? ConcurrentlyCreatedUser { get; set; }
 
     public Result ValidatePasswordResult { get; set; } = Result.Ok();
 

@@ -152,7 +152,7 @@ public sealed class RegisterAccountHandler
         if (existingUser is not null)
         {
             await _identityGateway.SimulateAccountCreationAsync(command.Email, command.Password, cancellationToken);
-            QueueRegistrationAttemptNotice(existingUser.Email, command.PasswordRecoveryLink);
+            await QueueExistingAccountEmailAsync(existingUser, command, cancellationToken);
             return IndistinguishableFromNewAccount();
         }
 
@@ -165,7 +165,12 @@ public sealed class RegisterAccountHandler
 
         if (createResult.Status is ResultStatus.Conflict)
         {
-            QueueRegistrationAttemptNotice(command.Email, command.PasswordRecoveryLink);
+            var concurrentUser = await _identityGateway.GetUserByEmailAsync(command.Email, cancellationToken);
+            if (concurrentUser is not null)
+            {
+                await QueueExistingAccountEmailAsync(concurrentUser, command, cancellationToken);
+            }
+
             return IndistinguishableFromNewAccount();
         }
 
@@ -196,14 +201,23 @@ public sealed class RegisterAccountHandler
     private static Result<RegisterAccountOutcome> IndistinguishableFromNewAccount() =>
         Result.Ok(new RegisterAccountOutcome(RequiresEmailConfirmation: true));
 
-    private void QueueRegistrationAttemptNotice(string ownerEmail, string? passwordRecoveryLink)
+    private async Task QueueExistingAccountEmailAsync(
+        AccountUserDto existingUser,
+        RegisterAccountCommand command,
+        CancellationToken cancellationToken)
     {
-        if (!_emailSender.IsSmtpConfigured)
+        if (!_emailSender.IsSmtpConfigured || !existingUser.IsActive)
         {
             return;
         }
 
-        _emailDelivery.Schedule(_emailContent.RegistrationAttempt(ownerEmail, passwordRecoveryLink ?? DefaultPasswordRecoveryLink));
+        if (!existingUser.EmailConfirmed)
+        {
+            await QueueConfirmationEmailAsync(existingUser.Id, existingUser.Email, command.ConfirmationLinkBuilder, cancellationToken);
+            return;
+        }
+
+        _emailDelivery.Schedule(_emailContent.RegistrationAttempt(existingUser.Email, command.PasswordRecoveryLink ?? DefaultPasswordRecoveryLink));
     }
 
     private async Task QueueConfirmationEmailAsync(

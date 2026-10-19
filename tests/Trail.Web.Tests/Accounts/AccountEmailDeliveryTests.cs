@@ -41,6 +41,33 @@ public sealed partial class AccountEmailDeliveryTests(OpenRegistrationWebApplica
         Assert.Equal(newEmail, confirmation.ToAddress);
     }
 
+    [Theory]
+    [InlineData(true, true, EmailKinds.RegistrationAttempt)]
+    [InlineData(false, true, EmailKinds.Confirmation)]
+    [InlineData(true, false, null)]
+    [InlineData(false, false, null)]
+    public async Task Post_Register_ForAnExistingEmail_AnswersAsForANewOneAndQueuesWhatTheAccountStateCallsFor(
+        bool emailConfirmed,
+        bool isActive,
+        string? expectedKind)
+    {
+        var sender = new TestEmailSender();
+        using var app = WithEmailSender(sender);
+        var existingEmail = await CreateUserAsync(emailConfirmed, isActive);
+        var sentinelEmail = $"sentinel-{Guid.NewGuid():N}@trail.local";
+
+        var existing = await AnsweredAsync(RegisterAsync(app, existingEmail));
+        var sentinel = await AnsweredAsync(RegisterAsync(app, sentinelEmail));
+
+        Assert.Equal(HttpStatusCode.OK, existing.StatusCode);
+        Assert.Equal(sentinel, existing);
+        (string Kind, string ToAddress)[] expected = expectedKind is null
+            ? [(EmailKinds.Confirmation, sentinelEmail)]
+            : [(expectedKind, existingEmail), (EmailKinds.Confirmation, sentinelEmail)];
+        var sent = await sender.WaitForMessagesAsync(expected.Length);
+        Assert.Equal(expected, sent.Select(message => (message.Kind, message.ToAddress)));
+    }
+
     [Fact]
     public async Task Post_Register_RepeatedForTheSameExistingEmail_AnswersTheSameAndSendsOneNotice()
     {

@@ -15,7 +15,8 @@ public sealed partial class DashboardE2ETests(DockerAppFixture fixture)
         var suffix = Guid.NewGuid().ToString("N")[..8];
         var firstPlanName = $"Painel A {suffix}";
         var secondPlanName = $"Painel B {suffix}";
-        var page = await fixture.CreateAdminPageAsync(width, height);
+        var user = await fixture.CreateUserAsync();
+        var page = await fixture.CreatePageAsync(user, width, height);
         var main = page.GetByRole(AriaRole.Main);
 
         var firstPlanId = await CreatePlanAsync(page, firstPlanName);

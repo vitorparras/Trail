@@ -4,9 +4,15 @@
     <PlaywrightPlatform>win-x64;linux-x64;linux-arm64</PlaywrightPlatform>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="AngleSharp" />
     <PackageReference Include="Deque.AxeCore.Playwright" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Microsoft.Playwright" />
     <PackageReference Include="Testcontainers" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Trail.Web\Trail.Web.csproj" />
   </ItemGroup>
 </Project>

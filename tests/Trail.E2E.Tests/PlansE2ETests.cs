@@ -20,7 +20,8 @@ public sealed partial class PlansE2ETests(DockerAppFixture fixture)
     public async Task StudyPlan_BuildTreeChangeStatusWriteNoteAndSearch_WorksWithoutAccessibilityViolations(int width, int height)
     {
         var planName = $"Auditor Fiscal {width}x{height}";
-        var page = await fixture.CreateAdminPageAsync(width, height);
+        var user = await fixture.CreateUserAsync();
+        var page = await fixture.CreatePageAsync(user, width, height);
         var main = page.GetByRole(AriaRole.Main);
 
         await page.GotoAsync(fixture.BaseUrl + "/planos");

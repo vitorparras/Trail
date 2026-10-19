@@ -129,7 +129,7 @@ jobs:
         run: docker build --file Dockerfile --tag ghcr.io/vitorparras/trail:latest .
 
       - name: Start application container
-        run: docker compose --file deploy/compose.sqlite.yml up --detach --wait
+        run: docker compose --file deploy/compose.sqlite.yml --file tests/Trail.E2E.Tests/compose.e2e.yml up --detach --wait
 
       - name: Restore
         run: dotnet restore tests/Trail.E2E.Tests/Trail.E2E.Tests.csproj --locked-mode "-warnaserror:NU1901;NU1902;NU1903;NU1904"
@@ -147,11 +147,11 @@ jobs:
 
       - name: Show application logs
         if: failure()
-        run: docker compose --file deploy/compose.sqlite.yml logs --no-color
+        run: docker compose --file deploy/compose.sqlite.yml --file tests/Trail.E2E.Tests/compose.e2e.yml logs --no-color
 
       - name: Tear down compose
         if: always()
-        run: docker compose --file deploy/compose.sqlite.yml down --volumes
+        run: docker compose --file deploy/compose.sqlite.yml --file tests/Trail.E2E.Tests/compose.e2e.yml down --volumes
 
   build:
     name: Build and test

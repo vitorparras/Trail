@@ -31,7 +31,8 @@ public sealed partial class FormErrorsE2ETests(DockerAppFixture fixture)
     {
         var suffix = Guid.NewGuid().ToString("N")[..8];
         var subjectName = $"Matemática {suffix}";
-        var page = await fixture.CreateAdminPageAsync(1280, 800);
+        var user = await fixture.CreateUserAsync();
+        var page = await fixture.CreatePageAsync(user, 1280, 800);
         var main = page.GetByRole(AriaRole.Main);
 
         await page.GotoAsync(fixture.BaseUrl + "/planos/novo");
@@ -71,7 +72,8 @@ public sealed partial class FormErrorsE2ETests(DockerAppFixture fixture)
     [Fact]
     public async Task HtmxForm_RespondedWith422_FocusesTheInvalidFieldAndLeavesSuccessfulResponsesAlone()
     {
-        var page = await fixture.CreateAdminPageAsync(1280, 800);
+        var user = await fixture.CreateUserAsync();
+        var page = await fixture.CreatePageAsync(user, 1280, 800);
         var main = page.GetByRole(AriaRole.Main);
 
         await page.GotoAsync(fixture.BaseUrl + "/Account/Settings");
@@ -104,7 +106,8 @@ public sealed partial class FormErrorsE2ETests(DockerAppFixture fixture)
     [Fact]
     public async Task OverlappingSwaps_WhenAnotherSwapSettlesBetweenThem_KeepTheFocusOfTheRejectedOne()
     {
-        var page = await fixture.CreateAdminPageAsync(1280, 800);
+        var user = await fixture.CreateUserAsync();
+        var page = await fixture.CreatePageAsync(user, 1280, 800);
         await page.GotoAsync(fixture.BaseUrl + "/Account/Settings");
 
         await page.EvaluateAsync(OverlappingSwapsScript);

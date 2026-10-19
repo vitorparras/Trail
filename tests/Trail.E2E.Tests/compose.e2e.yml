@@ -1,0 +1,5 @@
+services:
+  app:
+    environment:
+      Registration__Mode: InviteOnly
+      Security__AuthRateLimitPermitLimit: "1000"

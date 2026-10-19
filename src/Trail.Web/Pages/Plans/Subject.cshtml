@@ -39,6 +39,14 @@
         </div>
     </div>
 
+    @if (Model.TopicDeletion is not null)
+    {
+        <section class="card border border-error bg-base-100 p-4 sm:p-6" aria-labelledby="topic-deletion-heading" aria-describedby="@Model.TopicDeletion.DescriptionId">
+            <h2 id="topic-deletion-heading" class="font-bold text-lg text-error">@SharedLocalizer["DeleteTopic"]</h2>
+            <partial name="_DeletionConfirmation" model="Model.TopicDeletion" />
+        </section>
+    }
+
     <div class="card bg-base-200 p-4 space-y-3">
         <h2 id="add-topic-heading" class="font-bold text-base-content text-sm">@SharedLocalizer["AddTopic"]</h2>
         <partial name="_AddTopicForm" model="Model.AddTopicForm" />
@@ -71,3 +79,10 @@
         @await Html.PartialAsync("_TopicNote", Model)
     </div>
 </div>
+
+<dialog id="delete-topic-dialog" class="modal" aria-labelledby="delete-topic-title" aria-describedby="@DeletionConfirmationModel.TopicDialogDescriptionId">
+    <div class="modal-box">
+        <h2 id="delete-topic-title" class="font-bold text-lg text-error">@SharedLocalizer["DeleteTopic"]</h2>
+        <div id="delete-topic-confirmation"></div>
+    </div>
+</dialog>

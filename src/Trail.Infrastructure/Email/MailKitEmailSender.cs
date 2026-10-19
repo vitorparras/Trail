@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Logging;
@@ -38,7 +39,7 @@ public sealed partial class MailKitEmailSender : IEmailSender
         if (!IsSmtpConfigured)
         {
             activity?.SetStatus(ActivityStatusCode.Error, "SMTP is not configured");
-            return Result.Invalid(Message.Error("accounts.email.smtp_not_configured", "SMTP host is not configured."));
+            return Result.Invalid(Message.Error("accounts.email.smtp_not_configured"));
         }
 
         try
@@ -76,19 +77,24 @@ public sealed partial class MailKitEmailSender : IEmailSender
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            LogEmailSendFailed(_logger, ex, message.ToAddress, message.Kind);
-            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-            return Result.Invalid(Message.Error("accounts.email.send_failed", "Failed to send email."));
+            var failure = DescribeFailure(ex);
+            LogEmailSendFailed(_logger, message.Kind, failure);
+            activity?.SetStatus(ActivityStatusCode.Error, failure);
+            return Result.Invalid(Message.Error("accounts.email.send_failed"));
         }
     }
+
+    private static string DescribeFailure(Exception exception) =>
+        exception is SmtpCommandException smtp
+            ? string.Create(CultureInfo.InvariantCulture, $"{nameof(SmtpCommandException)} {smtp.ErrorCode} {(int)smtp.StatusCode}")
+            : exception.GetType().Name;
 
     [LoggerMessage(
         EventId = 1,
         Level = LogLevel.Error,
-        Message = "Failed to send email of kind {Kind} to {Recipient}")]
+        Message = "Failed to send email of kind {Kind}: {Failure}")]
     private static partial void LogEmailSendFailed(
         ILogger logger,
-        Exception exception,
-        string recipient,
-        string kind);
+        string kind,
+        string failure);
 }

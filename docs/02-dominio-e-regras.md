@@ -77,7 +77,8 @@ As datas seguem duas convenções:
 
 - O pai de um tópico pertence à mesma disciplina, e a árvore não tem ciclos.
 - `QuestionEntry`: `Total > 0`, `Correct ≥ 0`, `Wrong ≥ 0` e `Correct + Wrong ≤ Total`.
-- `MockExam`: `Blank + Correct + Wrong = Total`.
+- `MockExam`: as mesmas contagens do `QuestionEntry`, com os brancos derivados
+  (`Total − Correct − Wrong`), e `Number > 0`, único no plano.
 - `StudySession`:
   - `EndedAt > StartedAt`, com duração máxima de 24 h.
   - No máximo uma sessão aberta por usuário.
@@ -127,7 +128,7 @@ operação altera. O modelo e todas as regras foram aprovados pelo autor.
 | Sessão com fim depois do início e no máximo 24 h | `SessionInterval` |
 | O pomodoro termina sozinho no fim do bloco planejado | `StudySession` (duração planejada) |
 | O tópico da sessão pertence à disciplina da sessão. Continua válido porque tópicos não mudam de disciplina | Caso de uso |
-| Simulado: `Blank + Correct + Wrong = Total` | `QuestionCount` + `CHECK` no banco |
+| Simulado: `Total > 0` e `Correct + Wrong ≤ Total`, com os brancos derivados | `QuestionCount` + `CHECK` no banco |
 | Simulados sem data são ordenados pelo número | Consulta de simulados |
 | O número do simulado é único no plano | Índice único `(StudyPlanId, Number)` |
 | TAF: no máximo um resultado por prova, na unidade da prova. A tentativa pode ter só parte das provas | `FitnessTestAttempt` (recebe as provas do plano) |
@@ -175,6 +176,11 @@ Os IDs também são tipados (`StudyPlanId`, `SubjectId`, `TopicId`…).
 | `FitnessTestAttemptRecorded` | Uma tentativa do TAF é registrada | Métrica de tentativas |
 
 Além dos consumidores, o despachante registra cada evento no log estruturado.
+
+Corrigir e excluir sessões de estudo, simulados e tentativas do TAF não levantam eventos.
+Essas operações aparecem na métrica `trail.usecase.results`, que o ponto único de saída
+registra por caso de uso e `Status` (decisão do autor, Onda 0, P6). Só os lançamentos de
+questões têm eventos de correção e exclusão.
 
 ## 2.3 Regras de cálculo
 
@@ -276,7 +282,8 @@ Cada erro da seção [1.2](01-visao-e-escopo.md#12-o-que-a-análise-da-planilha-
 | | F (ANOTAÇÕES) | `TopicNote` |
 | | G, H, I (questões) | Um `QuestionEntry` por tópico, com a data informada na prévia (padrão: o dia da importação) |
 | | J, K e linhas 331–354 | Ignoradas: são recalculadas |
-| Simulados | A (nº), B (total), C (branco), D (certas), E (erradas) | `MockExam`, só as linhas com valores preenchidos |
+| Simulados | A (nº), B (total), D (certas), E (erradas) | `MockExam`, só as linhas com valores preenchidos |
+| | C (branco) | Não é gravada: os brancos são derivados. A importação confere C com B − D − E e avisa quando divergem (Onda 0, P7) |
 | Simulado TAF | Cabeçalhos da linha 3 (Barra, Salto, Natação, Corrida) | `FitnessTestEvent` |
 | | B (data), resultados em C/E/G/I, pontos em D/F/H/J, L (comentário) | `FitnessTestAttempt` + `FitnessTestResult` |
 | Imagens e gráficos | — | Ignorados |

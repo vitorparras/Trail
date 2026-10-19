@@ -19,6 +19,12 @@ internal sealed class FallbackAccountIdentityGateway : IAccountIdentityGateway
         CancellationToken cancellationToken = default) =>
         throw new NotImplementedException();
 
+    public Task<Result> ValidatePasswordAsync(string email, string password, CancellationToken cancellationToken = default) =>
+        throw new NotImplementedException();
+
+    public Task SimulateAccountCreationAsync(string email, string password, CancellationToken cancellationToken = default) =>
+        throw new NotImplementedException();
+
     public Task<Result> ConfirmEmailAsync(UserId userId, string token, CancellationToken cancellationToken = default) =>
         throw new NotImplementedException();
 

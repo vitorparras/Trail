@@ -16,7 +16,7 @@
                     <label asp-for="Input.Email" class="label">
                         <span class="label-text font-medium">@SharedLocalizer["Email"]</span>
                     </label>
-                    <input asp-for="Input.Email"
+                    <input asp-for="Input.Email" asp-error-span
                            type="email"
                            class="input input-bordered w-full"
                            placeholder="@SharedLocalizer["EmailPlaceholder"]"
@@ -29,7 +29,7 @@
                     <label asp-for="Input.Password" class="label">
                         <span class="label-text font-medium">@SharedLocalizer["Password"]</span>
                     </label>
-                    <input asp-for="Input.Password"
+                    <input asp-for="Input.Password" asp-error-span
                            type="password"
                            class="input input-bordered w-full"
                            placeholder="@SharedLocalizer["PasswordPlaceholder"]"

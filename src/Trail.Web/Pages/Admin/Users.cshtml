@@ -3,6 +3,12 @@
 @model Trail.Web.Pages.Admin.UsersModel
 @{
     ViewData["Title"] = SharedLocalizer["AdministrationTitle"];
+    const string inviteErrorsId = "invite-email-errors";
+    const string testEmailErrorsId = "test-email-errors";
+    var inviteErrors = FormErrors.ForFieldsOnly(ViewData.ModelState, true, "email");
+    var inviteInvalid = FormErrors.HasErrors(ViewData.ModelState, true, "email");
+    var testEmailErrors = FormErrors.ForFieldsOnly(ViewData.ModelState, true, "recipientEmail");
+    var testEmailInvalid = FormErrors.HasErrors(ViewData.ModelState, true, "recipientEmail");
 }
 
 <div class="mx-auto max-w-6xl flex flex-col gap-8">
@@ -52,7 +58,7 @@
     @if (Model.TestEmailSuccess)
     {
         <div class="alert alert-success" role="status">
-            <icon name="check-circle" class="size-6 shrink-0" />
+            <icon name="circle-check-big" class="size-6 shrink-0" />
             <span>@SharedLocalizer["TestEmailSent"]</span>
         </div>
     }
@@ -60,27 +66,43 @@
     <div asp-validation-summary="ModelOnly" class="alert alert-error text-sm" role="alert"></div>
 
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <section class="card border border-base-300 bg-base-100 shadow-sm" aria-labelledby="invite-heading">
-            <div class="card-body">
-                <h2 id="invite-heading" class="card-title text-lg font-semibold">@SharedLocalizer["InviteUser"]</h2>
-                <form method="post" asp-page-handler="Invite" class="mt-2 flex flex-col gap-3">
-                    <div class="form-control">
-                        <label for="invite-email" class="label">
-                            <span class="label-text font-medium">@SharedLocalizer["Email"]</span>
-                        </label>
-                        <input id="invite-email"
-                               name="email"
-                               type="email"
-                               required
-                               placeholder="@SharedLocalizer["InviteEmailPlaceholder"]"
-                               class="input input-bordered w-full input-sm" />
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-sm self-start">
-                        @SharedLocalizer["SendInvitation"]
-                    </button>
-                </form>
-            </div>
-        </section>
+        @if (Model.AcceptsInvitations)
+        {
+            <section class="card border border-base-300 bg-base-100 shadow-sm" aria-labelledby="invite-heading">
+                <div class="card-body">
+                    <h2 id="invite-heading" class="card-title text-lg font-semibold">@SharedLocalizer["InviteUser"]</h2>
+                    <form method="post" asp-page-handler="Invite" class="mt-2 flex flex-col gap-3">
+                        <div class="form-control">
+                            <label for="invite-email" class="label">
+                                <span class="label-text font-medium">@SharedLocalizer["Email"]</span>
+                            </label>
+                            <input id="invite-email"
+                                   name="email"
+                                   type="email"
+                                   required
+                                   placeholder="@SharedLocalizer["InviteEmailPlaceholder"]"
+                                   aria-invalid="@(inviteInvalid ? "true" : null)"
+                                   aria-describedby="@(inviteInvalid ? inviteErrorsId : null)"
+                                   class="input input-bordered w-full input-sm @(inviteInvalid ? "input-error" : null)" />
+                            <partial name="_FormErrors" model="new FormErrorList(inviteErrorsId, inviteErrors)" />
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm self-start">
+                            @SharedLocalizer["SendInvitation"]
+                        </button>
+                    </form>
+                </div>
+            </section>
+        }
+        else
+        {
+            <section class="card border border-base-300 bg-base-100 shadow-sm" aria-labelledby="registration-mode-heading">
+                <div class="card-body">
+                    <h2 id="registration-mode-heading" class="card-title text-lg font-semibold">@SharedLocalizer["RegistrationClosedHeading"]</h2>
+                    <p class="text-sm">@SharedLocalizer["RegistrationClosedDescription"]</p>
+                    <p class="text-sm">@SharedLocalizer["RegistrationClosedHowToInvite"]</p>
+                </div>
+            </section>
+        }
 
         <section class="card border border-base-300 bg-base-100 shadow-sm" aria-labelledby="test-email-heading">
             <div class="card-body">
@@ -95,7 +117,10 @@
                                type="email"
                                required
                                placeholder="@SharedLocalizer["InviteEmailPlaceholder"]"
-                               class="input input-bordered w-full input-sm" />
+                               aria-invalid="@(testEmailInvalid ? "true" : null)"
+                               aria-describedby="@(testEmailInvalid ? testEmailErrorsId : null)"
+                               class="input input-bordered w-full input-sm @(testEmailInvalid ? "input-error" : null)" />
+                        <partial name="_FormErrors" model="new FormErrorList(testEmailErrorsId, testEmailErrors)" />
                     </div>
                     <button type="submit" class="btn btn-outline btn-sm self-start">
                         @SharedLocalizer["SendTestEmail"]
@@ -194,7 +219,7 @@
         </div>
     </section>
 
-    @if (Model.Invitations.Count > 0)
+    @if (Model.AcceptsInvitations && Model.Invitations.Count > 0)
     {
         <section class="card border border-base-300 bg-base-100 shadow-sm" aria-labelledby="invitations-table-heading">
             <div class="card-body">

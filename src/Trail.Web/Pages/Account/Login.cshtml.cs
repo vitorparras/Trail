@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.RateLimiting;
@@ -8,9 +9,15 @@ using Trail.Web.Security;
 
 namespace Trail.Web.Pages.Account;
 
+[AllowAnonymous]
 [EnableRateLimiting(RateLimitingExtensions.AuthPolicyName)]
 public sealed class LoginModel : PageModel
 {
+    private static readonly FieldTargetMap Fields = FieldTargetMap.Empty.Prefixed(
+        nameof(Input),
+        nameof(InputModel.Email),
+        nameof(InputModel.Password));
+
     private readonly LoginHandler _loginHandler;
     private readonly ICurrentUser _currentUser;
 
@@ -49,7 +56,7 @@ public sealed class LoginModel : PageModel
 
         if (!result.IsOk)
         {
-            return this.Respond(result, "account.login");
+            return this.Respond(result, "account.login", options => options.Fields = Fields);
         }
 
         var destination = !string.IsNullOrWhiteSpace(ReturnUrl) && Url.IsLocalUrl(ReturnUrl)

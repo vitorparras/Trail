@@ -26,13 +26,14 @@ public sealed class EditModel : PageModel
     [BindProperty]
     public EditPlanInput Input { get; set; } = new();
 
-    public Guid PlanId { get; private set; }
+    [FromRoute(Name = "planId")]
+    [BindProperty(SupportsGet = true)]
+    public Guid PlanId { get; set; }
 
     public bool HasConcurrencyConflict { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(Guid planId, CancellationToken cancellationToken = default)
     {
-        PlanId = planId;
         var result = await _getStudyPlanHandler.HandleAsync(new GetStudyPlanQuery(StudyPlanId.From(planId)), cancellationToken);
         if (!result.IsOk)
         {
@@ -62,7 +63,6 @@ public sealed class EditModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(Guid planId, CancellationToken cancellationToken = default)
     {
-        PlanId = planId;
         var command = new UpdateStudyPlanCommand(
             StudyPlanId.From(planId),
             Input.ExpectedVersion,
@@ -95,7 +95,7 @@ public sealed class EditModel : PageModel
 
         if (!result.IsOk)
         {
-            return this.Respond(result, "planning.update_plan");
+            return this.Respond(result, "planning.update_plan", options => options.Fields = PlanFormFields.Plan);
         }
 
         return RedirectToPage("/Plans/Details", new { planId });

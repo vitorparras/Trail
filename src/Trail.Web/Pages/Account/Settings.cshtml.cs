@@ -1,12 +1,24 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Trail.Application.Accounts;
+using Trail.Web.Forms;
 using Trail.Web.Results;
 
 namespace Trail.Web.Pages.Account;
 
 public sealed class SettingsModel : PageModel
 {
+    private static readonly FieldTargetMap SettingsFields = FieldTargetMap.Empty.Prefixed(
+        nameof(SettingsInput),
+        nameof(SettingsInputModel.TimeZoneId),
+        nameof(SettingsInputModel.PomodoroFocusMinutes),
+        nameof(SettingsInputModel.PomodoroBreakMinutes)).FormLevel(nameof(SettingsInput));
+
+    private static readonly FieldTargetMap PasswordFields = FieldTargetMap.Empty
+        .Prefixed(nameof(PasswordInput), nameof(PasswordInputModel.CurrentPassword), nameof(PasswordInputModel.NewPassword), nameof(PasswordInputModel.ConfirmPassword))
+        .Field(nameof(ChangePasswordCommand.ConfirmNewPassword), $"{nameof(PasswordInput)}.{nameof(PasswordInputModel.ConfirmPassword)}")
+        .FormLevel(nameof(PasswordInput));
+
     private readonly GetUserSettingsHandler _getSettingsHandler;
     private readonly UpdateUserSettingsHandler _updateSettingsHandler;
     private readonly ChangePasswordHandler _changePasswordHandler;
@@ -69,6 +81,7 @@ public sealed class SettingsModel : PageModel
         return Page();
     }
 
+    [BindingErrorPartial("_SettingsForm", ModelProperty = nameof(SettingsInput))]
     public async Task<IActionResult> OnPostSettingsAsync(CancellationToken cancellationToken = default)
     {
         var command = new UpdateUserSettingsCommand(
@@ -88,6 +101,8 @@ public sealed class SettingsModel : PageModel
                 PomodoroBreakMinutes = dto.PomodoroBreakMinutes,
             };
             options.RedirectPage = "/Account/Settings";
+            options.FormPartialModel = SettingsInput;
+            options.Fields = SettingsFields;
         });
     }
 
@@ -105,6 +120,7 @@ public sealed class SettingsModel : PageModel
             options.PartialViewName = "_PasswordForm";
             options.PartialModel = new PasswordInputModel();
             options.RedirectPage = "/Account/Settings";
+            options.Fields = PasswordFields;
         });
     }
 

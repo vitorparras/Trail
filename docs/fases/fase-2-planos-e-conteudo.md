@@ -182,6 +182,11 @@ sem HTMX, respeitam a CSP com nonce e nunca renderizam HTML bruto do Markdown.
 
 ## Pendências para o autor
 
+> **Resolvidas na [Onda 0](onda-0-base-compartilhada.md):** a 1 pela P2 e a 2 pela P3 (W0-T8),
+> a 3 pelos erros de formulário compartilhados (W0-T10) e a 4 pela confirmação com prévia
+> na exclusão de disciplina e de tópico (W0-T9). As outras correções que a onda fez nesta
+> fase estão em [Correções no comportamento das Fases 1 e 2](onda-0-base-compartilhada.md#correções-no-comportamento-das-fases-1-e-2).
+
 1. **Convites no modo `Closed`:** a tela de administração oferece convites, mas o
    convidado é recusado, porque o modo `Closed` bloqueia novos cadastros (decisão D2 da
    Fase 1). As opções são esconder ou avisar sobre os convites nesse modo, ou deixar um

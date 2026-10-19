@@ -2,6 +2,9 @@
 
 > **Situação:** concluída e aguardando a revisão do autor no
 > [PR #2](https://github.com/vitorparras/trail/pull/2), empilhado sobre o PR #1 (Fase 0).
+> A Onda 0 ajustou parte do comportamento de contas (erros do Identity, respostas
+> uniformes, login no app inteiro e convites no modo `Closed`): ver
+> [Correções no comportamento das Fases 1 e 2](onda-0-base-compartilhada.md#correções-no-comportamento-das-fases-1-e-2).
 
 ## Objetivo
 

@@ -1,3 +1,4 @@
+using Trail.Application.Abstractions;
 using Trail.Application.Planning;
 using Trail.Domain.Common;
 using Trail.Domain.Planning;
@@ -13,7 +14,7 @@ public sealed class SearchAndImpactHandlersTests
     public async Task GetDeletionImpact_Unauthenticated_ReturnsForbidden()
     {
         _currentUser.IsAuthenticated = false;
-        var handler = new GetDeletionImpactHandler(_currentUser, _store);
+        var handler = new GetDeletionImpactHandler(_currentUser, _store, []);
         var query = new GetDeletionImpactQuery(DeletionTargetKind.StudyPlan, StudyPlanId.New());
 
         var result = await handler.HandleAsync(query, TestContext.Current.CancellationToken);
@@ -25,7 +26,7 @@ public sealed class SearchAndImpactHandlersTests
     [Fact]
     public async Task GetDeletionImpact_InvalidTargetKind_ReturnsInvalid()
     {
-        var handler = new GetDeletionImpactHandler(_currentUser, _store);
+        var handler = new GetDeletionImpactHandler(_currentUser, _store, []);
         var query = new GetDeletionImpactQuery((DeletionTargetKind)99, StudyPlanId.New());
 
         var result = await handler.HandleAsync(query, TestContext.Current.CancellationToken);
@@ -37,7 +38,7 @@ public sealed class SearchAndImpactHandlersTests
     [Fact]
     public async Task GetDeletionImpact_PlanNotFound_ReturnsNotFound()
     {
-        var handler = new GetDeletionImpactHandler(_currentUser, _store);
+        var handler = new GetDeletionImpactHandler(_currentUser, _store, []);
         var query = new GetDeletionImpactQuery(DeletionTargetKind.StudyPlan, StudyPlanId.New());
 
         var result = await handler.HandleAsync(query, TestContext.Current.CancellationToken);
@@ -69,7 +70,7 @@ public sealed class SearchAndImpactHandlersTests
         _store.TopicNotes[n1.Id] = n1;
         _store.TopicNotes[n2.Id] = n2;
 
-        var handler = new GetDeletionImpactHandler(_currentUser, _store);
+        var handler = new GetDeletionImpactHandler(_currentUser, _store, []);
         var query = new GetDeletionImpactQuery(DeletionTargetKind.StudyPlan, plan.Id);
 
         var result = await handler.HandleAsync(query, TestContext.Current.CancellationToken);
@@ -79,16 +80,15 @@ public sealed class SearchAndImpactHandlersTests
         Assert.Equal(DeletionTargetKind.StudyPlan, impact.TargetKind);
         Assert.Equal(plan.Id.Value, impact.TargetId);
         Assert.Equal("Plan", impact.TargetName);
-        Assert.Equal(2, impact.SectionCount);
-        Assert.Equal(2, impact.SubjectCount);
-        Assert.Equal(3, impact.TopicCount);
-        Assert.Equal(2, impact.NoteCount);
+        Assert.Equal(
+            [Item("planning.deletion.sections", 2), Item("planning.deletion.subjects", 2), Item("planning.deletion.topics", 3), Item("planning.deletion.notes", 2)],
+            impact.Items);
     }
 
     [Fact]
     public async Task GetDeletionImpact_Section_MissingSectionId_ReturnsInvalid()
     {
-        var handler = new GetDeletionImpactHandler(_currentUser, _store);
+        var handler = new GetDeletionImpactHandler(_currentUser, _store, []);
         var query = new GetDeletionImpactQuery(DeletionTargetKind.Section, StudyPlanId.New());
 
         var result = await handler.HandleAsync(query, TestContext.Current.CancellationToken);
@@ -100,7 +100,7 @@ public sealed class SearchAndImpactHandlersTests
     [Fact]
     public async Task GetDeletionImpact_Section_PlanNotFound_ReturnsNotFound()
     {
-        var handler = new GetDeletionImpactHandler(_currentUser, _store);
+        var handler = new GetDeletionImpactHandler(_currentUser, _store, []);
         var query = new GetDeletionImpactQuery(DeletionTargetKind.Section, StudyPlanId.New(), SectionId: SectionId.New());
 
         var result = await handler.HandleAsync(query, TestContext.Current.CancellationToken);
@@ -115,7 +115,7 @@ public sealed class SearchAndImpactHandlersTests
         var plan = StudyPlan.Create(_currentUser.Id, "Plan").Data;
         _store.Plans[plan.Id] = plan;
 
-        var handler = new GetDeletionImpactHandler(_currentUser, _store);
+        var handler = new GetDeletionImpactHandler(_currentUser, _store, []);
         var query = new GetDeletionImpactQuery(DeletionTargetKind.Section, plan.Id, SectionId: SectionId.New());
 
         var result = await handler.HandleAsync(query, TestContext.Current.CancellationToken);
@@ -131,7 +131,7 @@ public sealed class SearchAndImpactHandlersTests
         var sec = plan.AddSection("Module 1").Data;
         _store.Plans[plan.Id] = plan;
 
-        var handler = new GetDeletionImpactHandler(_currentUser, _store);
+        var handler = new GetDeletionImpactHandler(_currentUser, _store, []);
         var query = new GetDeletionImpactQuery(DeletionTargetKind.Section, plan.Id, SectionId: sec.Id);
 
         var result = await handler.HandleAsync(query, TestContext.Current.CancellationToken);
@@ -141,16 +141,13 @@ public sealed class SearchAndImpactHandlersTests
         Assert.Equal(DeletionTargetKind.Section, impact.TargetKind);
         Assert.Equal(sec.Id.Value, impact.TargetId);
         Assert.Equal("Module 1", impact.TargetName);
-        Assert.Equal(1, impact.SectionCount);
-        Assert.Equal(0, impact.SubjectCount);
-        Assert.Equal(0, impact.TopicCount);
-        Assert.Equal(0, impact.NoteCount);
+        Assert.Equal([Item("planning.deletion.sections", 1)], impact.Items);
     }
 
     [Fact]
     public async Task GetDeletionImpact_Subject_MissingSubjectId_ReturnsInvalid()
     {
-        var handler = new GetDeletionImpactHandler(_currentUser, _store);
+        var handler = new GetDeletionImpactHandler(_currentUser, _store, []);
         var query = new GetDeletionImpactQuery(DeletionTargetKind.Subject, StudyPlanId.New());
 
         var result = await handler.HandleAsync(query, TestContext.Current.CancellationToken);
@@ -162,7 +159,7 @@ public sealed class SearchAndImpactHandlersTests
     [Fact]
     public async Task GetDeletionImpact_Subject_NotFound_ReturnsNotFound()
     {
-        var handler = new GetDeletionImpactHandler(_currentUser, _store);
+        var handler = new GetDeletionImpactHandler(_currentUser, _store, []);
         var query = new GetDeletionImpactQuery(DeletionTargetKind.Subject, StudyPlanId.New(), SubjectId: SubjectId.New());
 
         var result = await handler.HandleAsync(query, TestContext.Current.CancellationToken);
@@ -183,7 +180,7 @@ public sealed class SearchAndImpactHandlersTests
         _store.Subjects[subject.Id] = subject;
         _store.TopicNotes[note.Id] = note;
 
-        var handler = new GetDeletionImpactHandler(_currentUser, _store);
+        var handler = new GetDeletionImpactHandler(_currentUser, _store, []);
         var query = new GetDeletionImpactQuery(DeletionTargetKind.Subject, planId, SubjectId: subject.Id);
 
         var result = await handler.HandleAsync(query, TestContext.Current.CancellationToken);
@@ -193,16 +190,15 @@ public sealed class SearchAndImpactHandlersTests
         Assert.Equal(DeletionTargetKind.Subject, impact.TargetKind);
         Assert.Equal(subject.Id.Value, impact.TargetId);
         Assert.Equal("Civil Law", impact.TargetName);
-        Assert.Equal(0, impact.SectionCount);
-        Assert.Equal(1, impact.SubjectCount);
-        Assert.Equal(2, impact.TopicCount);
-        Assert.Equal(1, impact.NoteCount);
+        Assert.Equal(
+            [Item("planning.deletion.subjects", 1), Item("planning.deletion.topics", 2), Item("planning.deletion.notes", 1)],
+            impact.Items);
     }
 
     [Fact]
     public async Task GetDeletionImpact_Topic_MissingIds_ReturnsInvalid()
     {
-        var handler = new GetDeletionImpactHandler(_currentUser, _store);
+        var handler = new GetDeletionImpactHandler(_currentUser, _store, []);
         var query = new GetDeletionImpactQuery(DeletionTargetKind.Topic, StudyPlanId.New());
 
         var result = await handler.HandleAsync(query, TestContext.Current.CancellationToken);
@@ -218,7 +214,7 @@ public sealed class SearchAndImpactHandlersTests
         var subject = Subject.Create(_currentUser.Id, planId, "Subject").Data;
         _store.Subjects[subject.Id] = subject;
 
-        var handler = new GetDeletionImpactHandler(_currentUser, _store);
+        var handler = new GetDeletionImpactHandler(_currentUser, _store, []);
         var query = new GetDeletionImpactQuery(DeletionTargetKind.Topic, planId, SubjectId: subject.Id, TopicId: TopicId.New());
 
         var result = await handler.HandleAsync(query, TestContext.Current.CancellationToken);
@@ -236,7 +232,7 @@ public sealed class SearchAndImpactHandlersTests
         var topic = subject.AddTopic("Topic").Data;
         _store.Subjects[subject.Id] = subject;
 
-        var handler = new GetDeletionImpactHandler(_currentUser, _store);
+        var handler = new GetDeletionImpactHandler(_currentUser, _store, []);
         var query = new GetDeletionImpactQuery(DeletionTargetKind.Topic, planId, SubjectId: subject.Id, TopicId: topic.Id);
 
         var result = await handler.HandleAsync(query, TestContext.Current.CancellationToken);
@@ -262,7 +258,7 @@ public sealed class SearchAndImpactHandlersTests
         _store.TopicNotes[n1.Id] = n1;
         _store.TopicNotes[n2.Id] = n2;
 
-        var handler = new GetDeletionImpactHandler(_currentUser, _store);
+        var handler = new GetDeletionImpactHandler(_currentUser, _store, []);
         var query = new GetDeletionImpactQuery(DeletionTargetKind.Topic, planId, SubjectId: subject.Id, TopicId: root.Id);
 
         var result = await handler.HandleAsync(query, TestContext.Current.CancellationToken);
@@ -272,10 +268,7 @@ public sealed class SearchAndImpactHandlersTests
         Assert.Equal(DeletionTargetKind.Topic, impact.TargetKind);
         Assert.Equal(root.Id.Value, impact.TargetId);
         Assert.Equal("Root", impact.TargetName);
-        Assert.Equal(0, impact.SectionCount);
-        Assert.Equal(0, impact.SubjectCount);
-        Assert.Equal(3, impact.TopicCount);
-        Assert.Equal(2, impact.NoteCount);
+        Assert.Equal([Item("planning.deletion.topics", 3), Item("planning.deletion.notes", 2)], impact.Items);
     }
 
     [Fact]
@@ -385,4 +378,6 @@ public sealed class SearchAndImpactHandlersTests
         var codeMatched = Assert.Single(codeSearch.Data);
         Assert.Equal(t1_1.Id, codeMatched.Id);
     }
+
+    private static DeletionImpactItem Item(string code, int count) => DeletionImpactItem.Create(code, count);
 }

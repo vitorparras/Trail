@@ -192,6 +192,196 @@ public sealed class IdentityAndEmailPersistenceTests
 
     [Theory]
     [MemberData(nameof(TestDatabaseProviders.EnabledProviders), MemberType = typeof(TestDatabaseProviders))]
+    public async Task ResetPasswordAsync_WithPasswordBelowMinimumLength_ReturnsThePasswordRuleOnNewPasswordAndKeepsTheToken(DatabaseProvider provider)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var harness = await CreateHarnessAsync(provider, cancellationToken: ct);
+        await using (harness.Cleanup)
+        {
+            var userId = (await harness.Gateway.CreateUserAsync("reset@trail.local", "InitialPass123!", isAdmin: false, emailConfirmed: true, ct)).Data;
+            var token = (await harness.Gateway.GeneratePasswordResetTokenAsync(userId, ct)).Data;
+
+            var shortPasswordResult = await harness.Gateway.ResetPasswordAsync(userId, token, "abc", ct);
+
+            Assert.Equal(ResultStatus.Invalid, shortPasswordResult.Status);
+            var message = Assert.Single(shortPasswordResult.Messages);
+            Assert.Equal("accounts.identity.password_too_short", message.Code);
+            Assert.Equal(nameof(ResetPasswordCommand.NewPassword), message.Target);
+
+            var validPasswordResult = await harness.Gateway.ResetPasswordAsync(userId, token, "ResetPass456!", ct);
+            Assert.True(validPasswordResult.IsOk);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TestDatabaseProviders.EnabledProviders), MemberType = typeof(TestDatabaseProviders))]
+    public async Task ResetPasswordAsync_WithInvalidTokenOrUnknownUser_ReturnsTheSameInvalidLink(DatabaseProvider provider)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var harness = await CreateHarnessAsync(provider, cancellationToken: ct);
+        await using (harness.Cleanup)
+        {
+            var userId = (await harness.Gateway.CreateUserAsync("reset@trail.local", "InitialPass123!", isAdmin: false, emailConfirmed: true, ct)).Data;
+
+            Result[] results =
+            [
+                await harness.Gateway.ResetPasswordAsync(userId, "invalid-token", "ResetPass456!", ct),
+                await harness.Gateway.ResetPasswordAsync(userId, "invalid-token", "abc", ct),
+                await harness.Gateway.ResetPasswordAsync(UserId.New(), "invalid-token", "ResetPass456!", ct),
+            ];
+
+            Assert.All(results, result =>
+            {
+                Assert.Equal(ResultStatus.Invalid, result.Status);
+                var message = Assert.Single(result.Messages);
+                Assert.Equal("accounts.reset_password.invalid_token", message.Code);
+                Assert.Null(message.Target);
+            });
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TestDatabaseProviders.EnabledProviders), MemberType = typeof(TestDatabaseProviders))]
+    public async Task ConfirmEmailAsync_WithInvalidTokenOrUnknownUser_ReturnsTheSameInvalidLink(DatabaseProvider provider)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var harness = await CreateHarnessAsync(provider, cancellationToken: ct);
+        await using (harness.Cleanup)
+        {
+            var userId = (await harness.Gateway.CreateUserAsync("confirm@trail.local", "InitialPass123!", isAdmin: false, emailConfirmed: false, ct)).Data;
+
+            Result[] results =
+            [
+                await harness.Gateway.ConfirmEmailAsync(userId, "invalid-token", ct),
+                await harness.Gateway.ConfirmEmailAsync(UserId.New(), "invalid-token", ct),
+            ];
+
+            Assert.All(results, result =>
+            {
+                Assert.Equal(ResultStatus.Invalid, result.Status);
+                Assert.Equal("accounts.confirmation.invalid_token", Assert.Single(result.Messages).Code);
+            });
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TestDatabaseProviders.EnabledProviders), MemberType = typeof(TestDatabaseProviders))]
+    public async Task SignInWithPasswordAsync_WrongPasswordsOnUnconfirmedOrDeactivatedAccounts_AnswerAsUnknownAndCountTowardTheLockout(DatabaseProvider provider)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var harness = await CreateHarnessAsync(provider, cancellationToken: ct);
+        await using (harness.Cleanup)
+        {
+            const string password = "RightPass123!";
+            const string wrongPassword = "WrongPass123!";
+            await harness.Gateway.CreateUserAsync("unconfirmed@trail.local", password, isAdmin: false, emailConfirmed: false, ct);
+            var deactivatedId = (await harness.Gateway.CreateUserAsync("deactivated@trail.local", password, isAdmin: false, emailConfirmed: true, ct)).Data;
+            await harness.Gateway.SetUserActiveStatusAsync(deactivatedId, isActive: false, ct);
+
+            foreach (var email in new[] { "unconfirmed@trail.local", "deactivated@trail.local" })
+            {
+                for (var attempt = 1; attempt < 5; attempt++)
+                {
+                    Assert.Equal(PasswordSignInResult.InvalidCredentials, await harness.Gateway.SignInWithPasswordAsync(email, wrongPassword, isPersistent: false, ct));
+                }
+
+                Assert.Equal(PasswordSignInResult.LockedOut, await harness.Gateway.SignInWithPasswordAsync(email, wrongPassword, isPersistent: false, ct));
+                Assert.Equal(PasswordSignInResult.LockedOut, await harness.Gateway.SignInWithPasswordAsync(email, password, isPersistent: false, ct));
+            }
+
+            Assert.Equal(PasswordSignInResult.InvalidCredentials, await harness.Gateway.SignInWithPasswordAsync("unknown@trail.local", wrongPassword, isPersistent: false, ct));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TestDatabaseProviders.EnabledProviders), MemberType = typeof(TestDatabaseProviders))]
+    public async Task SignInWithPasswordAsync_CorrectPasswordOnAnUnconfirmedAccount_ReportsTheStateAndResetsTheFailedAttempts(DatabaseProvider provider)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var harness = await CreateHarnessAsync(provider, cancellationToken: ct);
+        await using (harness.Cleanup)
+        {
+            const string email = "unconfirmed@trail.local";
+            const string password = "RightPass123!";
+            await harness.Gateway.CreateUserAsync(email, password, isAdmin: false, emailConfirmed: false, ct);
+
+            for (var attempt = 1; attempt < 5; attempt++)
+            {
+                await harness.Gateway.SignInWithPasswordAsync(email, "WrongPass123!", isPersistent: false, ct);
+            }
+
+            Assert.Equal(PasswordSignInResult.EmailNotConfirmed, await harness.Gateway.SignInWithPasswordAsync(email, password, isPersistent: false, ct));
+            Assert.Equal(PasswordSignInResult.InvalidCredentials, await harness.Gateway.SignInWithPasswordAsync(email, "WrongPass123!", isPersistent: false, ct));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TestDatabaseProviders.EnabledProviders), MemberType = typeof(TestDatabaseProviders))]
+    public async Task ValidatePasswordAsync_AppliesTheConfiguredPasswordRulesWithoutCreatingAUser(DatabaseProvider provider)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var harness = await CreateHarnessAsync(provider, cancellationToken: ct);
+        await using (harness.Cleanup)
+        {
+            var weak = await harness.Gateway.ValidatePasswordAsync("weak@trail.local", "abcde", ct);
+            var strong = await harness.Gateway.ValidatePasswordAsync("strong@trail.local", "StrongPass123!", ct);
+            await harness.Gateway.SimulateAccountCreationAsync("simulated@trail.local", "StrongPass123!", ct);
+
+            Assert.Equal(ResultStatus.Invalid, weak.Status);
+            var message = Assert.Single(weak.Messages);
+            Assert.Equal("accounts.identity.password_too_short", message.Code);
+            Assert.Equal(nameof(RegisterAccountCommand.Password), message.Target);
+            Assert.True(strong.IsOk);
+            Assert.False(await harness.Gateway.AnyUsersExistAsync(ct));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TestDatabaseProviders.EnabledProviders), MemberType = typeof(TestDatabaseProviders))]
+    public async Task ChangePasswordAsync_WithIdentityFailures_ReturnsTranslatableCodesOnTheirFields(DatabaseProvider provider)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var harness = await CreateHarnessAsync(provider, cancellationToken: ct);
+        await using (harness.Cleanup)
+        {
+            var userId = (await harness.Gateway.CreateUserAsync("change@trail.local", "InitialPass123!", isAdmin: false, emailConfirmed: true, ct)).Data;
+
+            var wrongCurrentResult = await harness.Gateway.ChangePasswordAsync(userId, "WrongPass123!", "ChangedPass456!", ct);
+            var shortNewResult = await harness.Gateway.ChangePasswordAsync(userId, "InitialPass123!", "abc", ct);
+
+            var mismatch = Assert.Single(wrongCurrentResult.Messages);
+            Assert.Equal("accounts.identity.password_mismatch", mismatch.Code);
+            Assert.Equal(nameof(ChangePasswordCommand.CurrentPassword), mismatch.Target);
+            var tooShort = Assert.Single(shortNewResult.Messages);
+            Assert.Equal("accounts.identity.password_too_short", tooShort.Code);
+            Assert.Equal(nameof(ChangePasswordCommand.NewPassword), tooShort.Target);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TestDatabaseProviders.EnabledProviders), MemberType = typeof(TestDatabaseProviders))]
+    public async Task CreateUserAsync_WithIdentityFailures_ReturnsTranslatableCodesOnTheirFields(DatabaseProvider provider)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var harness = await CreateHarnessAsync(provider, cancellationToken: ct);
+        await using (harness.Cleanup)
+        {
+            var shortPasswordResult = await harness.Gateway.CreateUserAsync("short@trail.local", "abc", isAdmin: false, emailConfirmed: true, ct);
+            var invalidUserNameResult = await harness.Gateway.CreateUserAsync("josé@trail.local", "ValidPass123!", isAdmin: false, emailConfirmed: true, ct);
+
+            Assert.Equal(ResultStatus.Invalid, shortPasswordResult.Status);
+            var tooShort = Assert.Single(shortPasswordResult.Messages);
+            Assert.Equal("accounts.identity.password_too_short", tooShort.Code);
+            Assert.Equal(nameof(RegisterAccountCommand.Password), tooShort.Target);
+            Assert.Equal(ResultStatus.Invalid, invalidUserNameResult.Status);
+            var invalidUserName = Assert.Single(invalidUserNameResult.Messages);
+            Assert.Equal("accounts.identity.invalid_user_name", invalidUserName.Code);
+            Assert.Equal(nameof(RegisterAccountCommand.Email), invalidUserName.Target);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TestDatabaseProviders.EnabledProviders), MemberType = typeof(TestDatabaseProviders))]
     public async Task ResetAdminPasswordCommand_ResetsPasswordAndUnlocksLockedAccount(DatabaseProvider provider)
     {
         var ct = TestContext.Current.CancellationToken;

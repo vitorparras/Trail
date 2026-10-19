@@ -1,6 +1,7 @@
 @import "tailwindcss" source(none);
 
 @source "../Pages/**/*.cshtml";
+@source "../TagHelpers/**/*.cs";
 
 @custom-variant dark {
   &:where([data-theme="trail-dark"], [data-theme="trail-dark"] *) {
@@ -141,4 +142,14 @@
 .badge-status-reviewing {
   background-color: var(--color-warning);
   color: var(--color-warning-content);
+}
+
+.chart-frame {
+  position: relative;
+  height: 18rem;
+  width: 100%;
+}
+
+.chart-frame canvas {
+  display: block;
 }

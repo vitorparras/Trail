@@ -10,7 +10,7 @@ using Trail.Web.Toasts;
 
 namespace Trail.Web.Results;
 
-public static class ResultResponder
+public static partial class ResultResponder
 {
     private const string PageHandlerQueryKey = "handler";
 
@@ -32,7 +32,9 @@ public static class ResultResponder
             page.ModelState,
             result.Status,
             result.Messages,
-            isHtmx);
+            isHtmx,
+            options?.Fields,
+            (options?.FormPartialViewName ?? options?.PartialViewName) is not null);
 
         return result.Status switch
         {
@@ -64,7 +66,9 @@ public static class ResultResponder
             page.ModelState,
             result.Status,
             result.Messages,
-            isHtmx);
+            isHtmx,
+            options?.Fields,
+            (options?.FormPartialViewName ?? options?.PartialViewName) is not null);
 
         return result.Status switch
         {
@@ -223,34 +227,28 @@ public static class ResultResponder
         ModelStateDictionary modelState,
         ResultStatus status,
         IReadOnlyList<Message> messages,
-        bool isHtmx)
+        bool isHtmx,
+        FieldTargetMap? fields,
+        bool formPartialRendered)
     {
-        var localizer = httpContext.RequestServices.GetService<IStringLocalizer<SharedResource>>();
+        var localizerFactory = httpContext.RequestServices.GetService<IStringLocalizerFactory>();
+        var logger = httpContext.RequestServices.GetService<ILoggerFactory>()?.CreateLogger(typeof(ResultResponder));
         var toasts = new List<Toast>();
         string? primaryMessage = null;
 
         foreach (var message in messages)
         {
-            var localized = localizer?[message.Code];
-            var text = localized is not null && !localized.ResourceNotFound
-                ? localized.Value
-                : message.Code;
+            var text = Translate(localizerFactory, logger, message.Code);
 
             primaryMessage ??= text;
 
             if (status is ResultStatus.Invalid)
             {
-                if (!string.IsNullOrWhiteSpace(message.Target))
+                var (key, hasField) = KeyFor(message.Target, fields);
+                modelState.AddModelError(key, text);
+                if (!hasField && isHtmx && !formPartialRendered)
                 {
-                    modelState.AddModelError(message.Target, text);
-                }
-                else
-                {
-                    modelState.AddModelError(string.Empty, text);
-                    if (isHtmx)
-                    {
-                        toasts.Add(new Toast(message.Severity, text));
-                    }
+                    toasts.Add(new Toast(message.Severity, text));
                 }
             }
             else
@@ -261,4 +259,47 @@ public static class ResultResponder
 
         return (toasts, primaryMessage);
     }
+
+    private static (string Key, bool HasField) KeyFor(string? target, FieldTargetMap? fields)
+    {
+        var formLevelKey = fields?.FormLevelKey ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(target))
+        {
+            return (formLevelKey, false);
+        }
+
+        if (fields is null)
+        {
+            return (target, true);
+        }
+
+        return fields.TryResolve(target, out var field) ? (field, true) : (formLevelKey, false);
+    }
+
+    private static string Translate(IStringLocalizerFactory? localizerFactory, ILogger? logger, string code)
+    {
+        if (localizerFactory is null)
+        {
+            return code;
+        }
+
+        var localized = localizerFactory.CreateForCode(code)[code];
+        if (!localized.ResourceNotFound)
+        {
+            return localized.Value;
+        }
+
+        if (logger is not null)
+        {
+            LogUntranslatedMessageCode(logger, code, MessageResourceRegistry.ResourceTypeFor(code).Name);
+        }
+
+        return code;
+    }
+
+    [LoggerMessage(
+        EventId = 1,
+        Level = LogLevel.Warning,
+        Message = "Message code {Code} has no translation in {Resource}; showing the code.")]
+    private static partial void LogUntranslatedMessageCode(ILogger logger, string code, string resource);
 }

@@ -105,14 +105,17 @@ else
                         <button type="submit" class="btn btn-ghost btn-xs" aria-label="@SharedLocalizer["MoveDown"]">↓</button>
                     </form>
 
-                    <form method="post"
-                          asp-page-handler="DeleteTopic"
-                          asp-route-planId="@Model.StudyPlanId.Value"
-                          asp-route-subjectId="@Model.Id.Value"
-                          class="inline">
-                        <input type="hidden" name="topicId" value="@topic.Id.Value" />
-                        <button type="submit" class="btn btn-ghost btn-xs text-error">@SharedLocalizer["Delete"]</button>
-                    </form>
+                    @{
+                        var deleteTopicUrl = Url.Page("/Plans/Subject", "DeleteTopicImpact", new { planId = Model.StudyPlanId.Value, subjectId = Model.Id.Value, topicId = topic.Id.Value });
+                    }
+                    <a href="@deleteTopicUrl"
+                       hx-get="@deleteTopicUrl"
+                       hx-target="#delete-topic-confirmation"
+                       hx-headers='{"HX-Request-Type": "partial"}'
+                       data-dialog-open-after-swap="delete-topic-dialog"
+                       aria-haspopup="dialog"
+                       aria-label="@SharedLocalizer["DeleteNamed", topic.Title]"
+                       class="btn btn-ghost btn-xs text-error">@SharedLocalizer["Delete"]</a>
                 </div>
             </li>
         }

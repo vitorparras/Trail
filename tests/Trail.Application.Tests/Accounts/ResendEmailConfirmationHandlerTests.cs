@@ -84,33 +84,46 @@ public sealed class ResendEmailConfirmationHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_TokenGenerationFails_ReturnsFailure()
+    public async Task HandleAsync_TokenGenerationFails_ReturnsTheSameOkAsAnUnknownEmail()
     {
         _identityGateway.EmailConfirmationTokenResult = Result.Invalid(Message.Error("token.error"));
         _identityGateway.Users.Add(new AccountUserDto(UserId.New(), "pending@example.com", false, true, false, DateTime.UtcNow));
         var handler = CreateHandler();
-        var command = new ResendEmailConfirmationCommand("pending@example.com");
 
-        var result = await handler.HandleAsync(command, TestContext.Current.CancellationToken);
+        var result = await handler.HandleAsync(new ResendEmailConfirmationCommand("pending@example.com"), TestContext.Current.CancellationToken);
+        var unknown = await handler.HandleAsync(new ResendEmailConfirmationCommand("unknown@example.com"), TestContext.Current.CancellationToken);
 
-        Assert.False(result.IsOk);
-        var message = Assert.Single(result.Messages);
-        Assert.Equal("token.error", message.Code);
+        Assert.True(result.IsOk);
+        Assert.Empty(result.Messages);
+        Assert.Equal(unknown.Status, result.Status);
+        Assert.Empty(_emailSender.SentMessages);
     }
 
     [Fact]
-    public async Task HandleAsync_SendEmailFails_ReturnsSendFailure()
+    public async Task HandleAsync_SendEmailFails_ReturnsTheSameOkAsAnUnknownEmailAndRecordsTheFailure()
     {
         _emailSender.SendResult = Result.Invalid(Message.Error("smtp.offline"));
         _identityGateway.Users.Add(new AccountUserDto(UserId.New(), "pending@example.com", false, true, false, DateTime.UtcNow));
         var handler = CreateHandler();
-        var command = new ResendEmailConfirmationCommand("pending@example.com");
+        long failures = 0;
+        using var listener = new MeterListener();
+        listener.InstrumentPublished = (instrument, meterListener) =>
+        {
+            if (instrument.Meter == _metrics.Meter && instrument.Name == ApplicationMetrics.EmailsFailedInstrumentName)
+            {
+                meterListener.EnableMeasurementEvents(instrument);
+            }
+        };
+        listener.SetMeasurementEventCallback<long>((_, measurement, _, _) => failures += measurement);
+        listener.Start();
 
-        var result = await handler.HandleAsync(command, TestContext.Current.CancellationToken);
+        var result = await handler.HandleAsync(new ResendEmailConfirmationCommand("pending@example.com"), TestContext.Current.CancellationToken);
+        var unknown = await handler.HandleAsync(new ResendEmailConfirmationCommand("unknown@example.com"), TestContext.Current.CancellationToken);
 
-        Assert.False(result.IsOk);
-        var message = Assert.Single(result.Messages);
-        Assert.Equal("smtp.offline", message.Code);
+        Assert.True(result.IsOk);
+        Assert.Empty(result.Messages);
+        Assert.Equal(unknown.Status, result.Status);
+        Assert.Equal(1, failures);
     }
 
     [Fact]

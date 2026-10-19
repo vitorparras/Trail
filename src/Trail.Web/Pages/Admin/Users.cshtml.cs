@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Trail.Application.Accounts;
 using Trail.Domain.Common;
@@ -8,6 +9,10 @@ namespace Trail.Web.Pages.Admin;
 
 public sealed class UsersModel : PageModel
 {
+    private static readonly FieldTargetMap Fields = FieldTargetMap.Empty
+        .Field(nameof(CreateInvitationCommand.Email), "email")
+        .Field(nameof(SendTestEmailCommand.TargetEmail), "recipientEmail");
+
     private readonly ListUsersHandler _listUsersHandler;
     private readonly SetUserActiveStatusHandler _setActiveStatusHandler;
     private readonly CreateInvitationHandler _createInvitationHandler;
@@ -38,6 +43,10 @@ public sealed class UsersModel : PageModel
 
     public IReadOnlyList<AccountInvitationDto> Invitations { get; private set; } = [];
 
+    public RegistrationMode RegistrationMode { get; private set; } = RegistrationMode.Closed;
+
+    public bool AcceptsInvitations => RegistrationMode != RegistrationMode.Closed;
+
     [TempData]
     public string? GeneratedInviteLink { get; set; }
 
@@ -50,6 +59,19 @@ public sealed class UsersModel : PageModel
     [TempData]
     public bool TestEmailSuccess { get; set; }
 
+    public override async Task OnPageHandlerExecutionAsync(PageHandlerExecutingContext context, PageHandlerExecutionDelegate next)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(next);
+
+        if (!context.ModelState.IsValid)
+        {
+            await LoadOverviewAsync(context.HttpContext.RequestAborted);
+        }
+
+        await next();
+    }
+
     public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken = default)
     {
         var result = await _listUsersHandler.HandleAsync(new ListUsersQuery(), cancellationToken);
@@ -61,6 +83,7 @@ public sealed class UsersModel : PageModel
 
         Users = result.Data.Users;
         Invitations = result.Data.Invitations;
+        RegistrationMode = result.Data.RegistrationMode;
 
         return Page();
     }
@@ -76,7 +99,7 @@ public sealed class UsersModel : PageModel
         if (!result.IsOk)
         {
             await LoadOverviewAsync(cancellationToken);
-            return this.Respond(result, "admin.toggle_active");
+            return this.Respond(result, "admin.toggle_active", options => options.Fields = Fields);
         }
 
         return RedirectToPage("/Admin/Users");
@@ -96,7 +119,7 @@ public sealed class UsersModel : PageModel
         if (!result.IsOk)
         {
             await LoadOverviewAsync(cancellationToken);
-            return this.Respond(result, "admin.create_invite");
+            return this.Respond(result, "admin.create_invite", options => options.Fields = Fields);
         }
 
         GeneratedInviteLink = result.Data.InvitationLink;
@@ -121,7 +144,7 @@ public sealed class UsersModel : PageModel
         if (!result.IsOk)
         {
             await LoadOverviewAsync(cancellationToken);
-            return this.Respond(result, "admin.manual_link");
+            return this.Respond(result, "admin.manual_link", options => options.Fields = Fields);
         }
 
         GeneratedManualLink = result.Data.Url;
@@ -139,7 +162,7 @@ public sealed class UsersModel : PageModel
         if (!result.IsOk)
         {
             await LoadOverviewAsync(cancellationToken);
-            return this.Respond(result, "admin.send_test_email");
+            return this.Respond(result, "admin.send_test_email", options => options.Fields = Fields);
         }
 
         TestEmailSuccess = true;
@@ -153,6 +176,7 @@ public sealed class UsersModel : PageModel
         {
             Users = listResult.Data.Users;
             Invitations = listResult.Data.Invitations;
+            RegistrationMode = listResult.Data.RegistrationMode;
         }
     }
 }

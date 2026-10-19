@@ -1,8 +1,8 @@
 @model Trail.Web.Pages.Plans.AddSectionFormModel
 @{
     const string errorsId = "add-section-errors";
-    var errors = PlanFormErrors.For(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.NameField);
-    var nameInvalid = PlanFormErrors.HasErrors(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.NameField);
+    var errors = FormErrors.For(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.NameField);
+    var nameInvalid = FormErrors.HasErrors(ViewData.ModelState, Model.ShowErrors, PlanFormErrors.NameField);
 }
 
 <form method="post" aria-labelledby="add-section-heading" asp-page-handler="AddSection" asp-route-planId="@Model.PlanId" class="flex flex-wrap items-center gap-2">

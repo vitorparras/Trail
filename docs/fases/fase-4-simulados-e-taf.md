@@ -28,18 +28,18 @@ Substituir as abas **Simulados** e **Simulado TAF** da planilha:
 
   | Peça | Uso na Fase 4 |
   |---|---|
-  | W0-T1 | Configurações por entidade em `Configurations/Practice/`, `Configurations/Planning/` e `Configurations/Fitness/`. A coleção de provas entra na `StudyPlanConfiguration` criada pela W0-T1 (D11) |
-  | W0-T2 | Preenche `AddPracticeApplication`, `AddPracticeInfrastructure`, `AddFitnessApplication` e `AddFitnessInfrastructure`, sem editar nenhum ponto de composição. Métricas, blocos do painel, links do plano e contribuintes da prévia são descobertos por convenção |
-  | W0-T3 | Códigos `practice.` e textos dos simulados no `PracticeResource`; códigos `fitness.` e textos do TAF no `FitnessResource`. Os `_ViewImports.cshtml` de `Pages/Practice` e `Pages/Fitness` já existem, e o `UiText` do E2E lê os dois `.resx` |
-  | W0-T4 | `<chart>` com série tracejada, dois gráficos com os mesmos rótulos, lacunas, eixo simétrico e formatos pt-BR, sempre com a tabela equivalente |
+  | W0-T1 | Configurações por entidade em `Configurations/Practice/`, `Configurations/Planning/` e `Configurations/Fitness/`. A coleção de provas entra na `StudyPlanConfiguration` criada pela W0-T1 (D11) ([3.10](../03-arquitetura.md#dois-bancos)) |
+  | W0-T2 | Preenche `AddPracticeApplication`, `AddPracticeInfrastructure`, `AddFitnessApplication` e `AddFitnessInfrastructure`, sem editar nenhum ponto de composição. Métricas, blocos do painel, links do plano e contribuintes da prévia são descobertos por convenção ([3.5](../03-arquitetura.md#pontos-de-extensão)) |
+  | W0-T3 | Códigos `practice.` e textos dos simulados no `PracticeResource`; códigos `fitness.` e textos do TAF no `FitnessResource`, escolhidos pelo `MessageResourceRegistry`. Os `_ViewImports.cshtml` de `Pages/Practice` e `Pages/Fitness` já injetam o `PracticeLocalizer` e o `FitnessLocalizer`, e o `UiText` do E2E lê os dois `.resx` (`UiResource.Practice` e `UiResource.Fitness`) ([3.5](../03-arquitetura.md#textos-e-mensagens)) |
+  | W0-T4 | `<chart>` com série tracejada (`Dashed = true` na mediana), dois gráficos com os mesmos rótulos, lacunas, eixo simétrico (`ChartAxis.Symmetric`) e formatos pt-BR, sempre com a tabela equivalente, nas regras de cor da [3.9](../03-arquitetura.md#gráficos): no TAF, o total e uma série por prova, sem limite de provas. Sem `Error` para série neutra, restam cinco `ChartColor`: acima de cinco séries, as cores se repetem, e a legenda e a tabela equivalente distinguem as séries (a cor nunca é a única informação) |
   | W0-T5 | Dois `IDashboardBlock` que recebem o `DashboardContext`, com o plano escolhido pela regra da Onda 0, P4. Nenhum `IPlanActivityContributor`: simulados e tentativas só têm `DateOnly`, sem instante no modelo aprovado |
-  | W0-T6 | `QuestionCount` e o auxiliar de mapeamento (colunas `Total`, `Correct` e `Wrong`, com o `CHECK` entre aspas) |
-  | W0-T7 | Migração local `AddMockExamsAndFitnessTest`, gerada de novo na integração |
-  | W0-T8 | Login nas páginas de `Pages/Practice` e `Pages/Fitness` pela regra da Onda 0, P3. A autorização das duas pastas é registrada pela Onda 0, e esta fase não edita o `Program.cs` |
-  | W0-T9 | `IUserCalendar` (o `Today` que recusa datas futuras), `FakeTimeProvider`, `IDeletionImpactContributor` com `DeletionScope` e `IPlanLinkContributor` |
-  | W0-T10 | `_FormErrors` e `FormErrorList` em `Pages/Shared`, com `role="alert"` e foco no primeiro campo inválido |
-  | W0-T11 | Fixture do E2E com um usuário novo por teste e o service worker bloqueado |
-  | W0-T12 | Harness de desempenho, ao qual esta fase acrescenta um cenário |
+  | W0-T6 | `QuestionCount` e `HasQuestionCount` (colunas `Total`, `Correct` e `Wrong`, com o `CHECK` entre aspas), chamado depois das outras propriedades ([3.10](../03-arquitetura.md#contagem-de-questões)) |
+  | W0-T7 | Migração local `AddMockExamsAndFitnessTest`, gerada de novo na integração ([4.3](../04-qualidade-e-entrega.md#43-fluxo-de-trabalho-no-git)) |
+  | W0-T8 | Login exigido pela `FallbackPolicy` (Onda 0, P3): as páginas de `Pages/Practice` e `Pages/Fitness` nascem protegidas, e o `AnonymousAccessTests` as classifica como privadas pelas pastas `/Practice/` e `/Fitness/`. Esta fase não edita o `Program.cs` nem o teste ([3.11](../03-arquitetura.md#login-no-app-inteiro)) |
+  | W0-T9 | `IUserCalendar` (o `Today` que recusa datas futuras), `FakeTimeProvider`, `IDeletionImpactContributor` com `DeletionScope` e `DeletionImpactItem`, e `IPlanLinkContributor` com `PlanLink` e os ícones `PlanLinkIcon.ClipboardCheck` e `PlanLinkIcon.Dumbbell` |
+  | W0-T10 | `FormErrors`, `FormErrorList` e `Pages/Shared/_FormErrors.cshtml`, com `role="alert"` e foco no primeiro campo inválido, o `FieldTargetMap`, o `asp-error-span` e o `[BindingErrorPartial]` nos handlers HTMX ([3.9](../03-arquitetura.md#formulários-e-erros)) |
+  | W0-T11 | Fixture do E2E com um usuário novo por teste e o service worker bloqueado ([4.1](../04-qualidade-e-entrega.md#41-estratégia-de-testes)) |
+  | W0-T12 | Harness de desempenho (`PerformanceFixture`), ao qual esta fase acrescenta uma classe de cenários ([4.1](../04-qualidade-e-entrega.md#41-estratégia-de-testes)) |
   | W0-T13 | Os ícones da seção [Ícones](#ícones), já no sprite |
 
 - Respostas do autor na Onda 0: P1 (peças comuns), P3 (login no app inteiro), P4 (qual plano
@@ -184,9 +184,15 @@ Em cada tarefa, simulados e TAF são independentes e podem ser feitos em paralel
   descobertos pela convenção da W0-T2 e contando pelas portas:
   `MockExamDeletionImpactContributor` em `Practice/DeletionImpact/`, ao lado do da Fase 3, e
   `FitnessDeletionImpactContributor` em `Fitness/DeletionImpact/`. Respondem só ao
-  `DeletionScope` de plano, porque disciplinas e tópicos não têm simulados nem tentativas, com
-  os itens `practice.deletion.mock_exams` e `fitness.deletion.attempts`, traduzidos pelas
-  chaves `<Code>.one` e `<Code>.other` no `.resx` do prefixo.
+  `DeletionScope` de plano (`Kind == DeletionTargetKind.StudyPlan`), porque disciplinas e
+  tópicos não têm simulados nem tentativas, com os itens
+  `DeletionImpactItem.Create("practice.deletion.mock_exams", count)` e
+  `DeletionImpactItem.Create("fitness.deletion.attempts", count)`, traduzidos pelas chaves
+  `<Code>.one` e `<Code>.other` no `.resx` do prefixo, que o teste de tradução exige. As
+  chaves seguem as opções recomendadas da
+  [P10](onda-0-base-compartilhada.md#p10--regra-do-plural-nos-textos-com-quantidade) e da
+  [P11](onda-0-base-compartilhada.md#p11--formato-dos-itens-da-prévia-de-exclusão) da
+  Onda 0, ainda sem resposta, e se ajustam na integração se o autor escolher outra.
 - Datas futuras recusadas com o `IUserCalendar` (D9).
 - Consumidores e contadores de métricas (D13).
 - Testes em `Trail.Application.Tests/Practice/MockExams/` e `Trail.Application.Tests/Fitness/`,
@@ -201,9 +207,13 @@ incluindo o isolamento entre `Practice`, `Fitness` e `Planning`.
 
 - Configurações por entidade (W0-T1), com os nomes de coluna entre aspas nos `CHECK`, como no
   auxiliar da W0-T6:
-  - `MockExamConfiguration`: tabela `MockExams`, `QuestionCount` pelo auxiliar da W0-T6
-    (colunas e `CHECK` da contagem), FK para `StudyPlans` em cascata, índice único
-    `(StudyPlanId, Number)`, índice `(StudyPlanId, Date)` e `CHECK ("Number" > 0)`.
+  - `MockExamConfiguration`: tabela `MockExams`,
+    `builder.HasQuestionCount(x => x.Count, "CK_MockExams_Count")` (W0-T6, colunas e
+    `CHECK` da contagem), chamado depois das outras propriedades, FK para `StudyPlans` em
+    cascata, índice único `(StudyPlanId, Number)`, índice `(StudyPlanId, Date)` e
+    `CHECK ("Number" > 0)`. As consultas calculam os brancos como `Total - Correct - Wrong`,
+    porque o `Blank` não é traduzido ([3.10](../03-arquitetura.md#contagem-de-questões)), e
+    a revisão confere na migração gerada as três colunas sem prefixo e o `CHECK`.
   - `StudyPlanConfiguration` (da W0-T1): a coleção de provas pelo campo `_fitnessTestEvents`,
     sem `AutoInclude` (D11).
   - `FitnessTestEventConfiguration`: tabela `FitnessTestEvents` e FK para `StudyPlans` em
@@ -254,7 +264,10 @@ PostgreSQL, sem mudança no `AppDbContext` nem no `EfPlanningStore`, e a única 
     (número, data e as duas notas) com os detalhes num `<details>`.
 - TAF:
   - O formulário da tentativa tem uma linha por prova, na ordem do plano, com o resultado na
-    unidade da prova e os pontos. Uma linha em branco significa prova não feita.
+    unidade da prova e os pontos. Uma linha em branco significa prova não feita. As linhas
+    são uma lista de registros (prova, resultado e pontos), com índices contíguos, para um
+    valor inválido não apagar as linhas seguintes no 422
+    ([3.9](../03-arquitetura.md#formulários-e-erros)).
   - Os campos usam o `inputmode` adequado: `numeric` para repetições, `decimal` para metros e
     pontos, e texto com `pattern` para tempo.
   - Plano com TAF desativado: aviso com link para editar o plano.
@@ -270,7 +283,10 @@ PostgreSQL, sem mudança no `AppDbContext` nem no `EfPlanningStore`, e a única 
   `MockExamsDashboardBlock`, com um convite para registrar o primeiro simulado quando não há
   dados, e `FitnessDashboardBlock`, só com o TAF ativo.
 - Textos no `PracticeResource.resx` e no `FitnessResource.resx` (W0-T3). Os formulários
-  enviados por HTMX usam o `_FormErrors` de `Pages/Shared` (W0-T10).
+  enviados por HTMX usam o `_FormErrors` de `Pages/Shared` (W0-T10), com o
+  `FieldTargetMap` dos campos, o `asp-error-span` e o `[BindingErrorPartial]` no handler,
+  e o estado de que o 422 precisa (plano, provas do plano) vem da rota ou de um método que
+  sempre roda ([3.9](../03-arquitetura.md#formulários-e-erros)).
 - Testes HTTP em `Trail.Web.Tests/Practice/MockExams/` e `Trail.Web.Tests/Fitness/`, com os
   auxiliares `MockExamTestData` e `FitnessTestData`, sem nomes em comum com os da Fase 3:
   cada `Status` pelo `ResultResponder`, com e sem HTMX; CSP com nonce; links e blocos
@@ -298,10 +314,14 @@ tentativas do TAF que serão apagados.
     `Trail.Web.Pages.Practice.MockExams` ou de `Trail.Web.Pages.Fitness` ficar fora da
     varredura. O namespace é comparado por igualdade, como no `Planning`, para que a
     varredura da Fase 3 (`Trail.Web.Pages.Practice`) e a desta fase não cubram as páginas
-    uma da outra. A verificação da Onda 0 de que todo namespace de páginas tem varredura
-    passa com os dois namespaces novos.
+    uma da outra. As varreduras declaram
+    `[IsolationSweep("Trail.Web.Pages.Practice.MockExams")]` e
+    `[IsolationSweep("Trail.Web.Pages.Fitness")]`, e a verificação da Onda 0 de que todo
+    namespace de páginas tem varredura (`PageNamespaceIsolationTests`) passa com os dois
+    namespaces novos ([3.11](../03-arquitetura.md#isolamento)).
 - E2E em `tests/Trail.E2E.Tests/MockExamsAndFitnessE2ETests.cs`, contra o container SQLite,
-  com a fixture da Onda 0 sem mudanças, em `390x844` e `1280x800`, nos temas claro e escuro,
+  com a fixture da Onda 0 sem mudanças (um usuário por teste, pelo `CreateUserAsync` e o
+  `CreatePageAsync(user, width, height)`), em `390x844` e `1280x800`, nos temas claro e escuro,
   com zero violações WCAG 2.1 AA no axe (fluxo 6 da
   [4.1](../04-qualidade-e-entrega.md#41-estratégia-de-testes)):
   - Simulados: cadastrar três (um sem data), conferir brancos, notas, medianas, gráficos e
@@ -311,9 +331,12 @@ tentativas do TAF que serão apagados.
     conferir totais e gráfico, e excluir uma prova vendo a prévia.
   - Painel: os blocos mostram o último simulado e o último total do TAF.
   - Navegação só por teclado no registro de simulado e de tentativa.
-- Cenário no harness de desempenho (W0-T12): `/planos/{planId}/simulados` e
-  `/planos/{planId}/taf` com 500 simulados e 500 tentativas de quatro provas, abaixo de
-  300 ms no servidor.
+- Cenários no harness de desempenho (W0-T12), numa classe nova em
+  `Trail.Web.Tests/Performance/` com `[PerformanceTest]` e
+  `[Collection(PerformanceCollections.Sequential)]`, e uma fixture derivada de
+  `PerformanceFixture` que semeia 500 simulados e 500 tentativas de quatro provas pelo
+  `SeedAsync`: `/planos/{planId}/simulados` e `/planos/{planId}/taf` dentro do
+  `PerformanceBudget.Default` (p95 abaixo de 300 ms no servidor).
 
 **Pronto quando:**
 - As abas "Simulados" e "Simulado TAF" da planilha podem ser abandonadas: tudo o que elas

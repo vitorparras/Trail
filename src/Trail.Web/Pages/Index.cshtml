@@ -1,10 +1,52 @@
 @page
+@using Trail.Web.Dashboard
 @model IndexModel
 @inject IStringLocalizer<IndexModel> Localizer
 @{
-    ViewData["Title"] = Localizer["Title"].Value;
+    var dashboard = Model.Dashboard;
+    ViewData["Title"] = dashboard is null ? Localizer["Title"].Value : SharedLocalizer["Dashboard"].Value;
 }
-<div class="mx-auto flex max-w-3xl flex-col gap-4">
-    <h1 class="text-2xl font-bold sm:text-3xl">@Localizer["Heading"]</h1>
-    <p class="text-base-content/80">@Localizer["Description"]</p>
-</div>
+@if (dashboard is null)
+{
+    <div class="mx-auto flex max-w-3xl flex-col gap-4">
+        <h1 class="text-2xl font-bold sm:text-3xl">@Localizer["Heading"]</h1>
+        <p class="text-base-content/80">@Localizer["Description"]</p>
+    </div>
+}
+else if (!dashboard.Context.HasPlan)
+{
+    <div class="mx-auto flex max-w-3xl flex-col gap-4">
+        <h1 class="text-2xl font-bold sm:text-3xl">@SharedLocalizer["DashboardWelcomeHeading"]</h1>
+        <partial name="@IndexModel.DashboardPartialName" model="dashboard" />
+    </div>
+}
+else
+{
+    var chosenPlanId = dashboard.Context.Plan.Id;
+    <div class="flex flex-col gap-6">
+        <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <h1 class="text-2xl font-bold sm:text-3xl">@SharedLocalizer["Dashboard"]</h1>
+            <form method="get"
+                  asp-page="@DashboardRoute.Page"
+                  hx-get="@Url.Page(DashboardRoute.Page)"
+                  hx-target="#dashboard-content"
+                  hx-push-url="true"
+                  class="flex flex-wrap items-end gap-2">
+                <div class="flex min-w-0 grow flex-col gap-1 sm:grow-0">
+                    <label for="dashboard-plan" class="text-sm font-medium">@SharedLocalizer["DashboardPlan"]</label>
+                    <select id="dashboard-plan" name="@DashboardRoute.PlanParameter" class="select select-bordered w-full sm:w-72">
+                        @foreach (var plan in dashboard.Context.Plans)
+                        {
+                            <!option value="@plan.Id.Value" @(plan.Id == chosenPlanId ? "selected" : null)>@plan.Name</!option>
+                        }
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">@SharedLocalizer["DashboardShowPlan"]</button>
+            </form>
+        </div>
+        <p id="dashboard-status" role="status" class="sr-only"></p>
+        <div id="dashboard-content">
+            <partial name="@IndexModel.DashboardPartialName" model="dashboard" />
+        </div>
+    </div>
+}

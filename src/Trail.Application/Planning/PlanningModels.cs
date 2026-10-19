@@ -1,3 +1,4 @@
+using Trail.Application.Abstractions;
 using Trail.Domain.Planning;
 
 namespace Trail.Application.Planning;
@@ -87,19 +88,8 @@ public sealed record TopicNoteView(
     string Markdown,
     int Version);
 
-public enum DeletionTargetKind
-{
-    StudyPlan = 0,
-    Section = 1,
-    Subject = 2,
-    Topic = 3,
-}
-
 public sealed record DeletionImpactView(
     DeletionTargetKind TargetKind,
     Guid TargetId,
     string TargetName,
-    int SectionCount,
-    int SubjectCount,
-    int TopicCount,
-    int NoteCount);
+    IReadOnlyList<DeletionImpactItem> Items);

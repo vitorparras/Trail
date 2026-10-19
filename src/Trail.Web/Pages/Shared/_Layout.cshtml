@@ -4,6 +4,8 @@
 @{
     var productName = SharedLocalizer["ProductName"];
     var pageTitle = ViewData["Title"] as string;
+    var bindingErrors = BindingErrorsPageFilter.UnrenderedMessages(Context);
+    var bindingErrorList = new FormErrorList("binding-errors", bindingErrors);
 }
 <!DOCTYPE html>
 <html lang="@CultureInfo.CurrentUICulture.Name" data-theme="trail-light">
@@ -17,6 +19,9 @@
     <partial name="_Htmx" />
     <script src="~/js/dialogs.js" defer></script>
     <script src="~/js/toasts.js" defer></script>
+    <script src="~/lib/chart.js/chart.umd.min.js" defer></script>
+    <script src="~/js/charts.js" defer></script>
+    <script src="~/js/form-errors.js" defer></script>
 </head>
 <body class="flex min-h-dvh flex-col bg-base-200 text-base-content" hx-ext="hx-csp">
     <a href="#main-content" class="btn btn-primary sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:px-4 focus:py-2">@SharedLocalizer["SkipToContent"]</a>
@@ -64,6 +69,10 @@
             <partial name="_Navigation" />
         </div>
         <main id="main-content" tabindex="-1" class="min-w-0 flex-1 p-4 outline-none sm:p-6 lg:p-8">
+            @if (bindingErrors.Count > 0)
+            {
+                <partial name="_FormErrors" model="bindingErrorList" />
+            }
             @RenderBody()
         </main>
     </div>

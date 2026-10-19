@@ -24,30 +24,30 @@ com o aviso de fim do bloco, dentro da CSP estrita.
 
   | Peça | Uso na Fase 5 |
   |---|---|
-  | W0-T1 | `StudySessionConfiguration` em `Persistence/Configurations/StudyTime/`, sem editar o `AppDbContext` |
-  | W0-T2 | Preenche `AddStudyTimeApplication`, `AddStudyTimeInfrastructure` e `AddStudyTimeWeb`, já criados e chamados. `StudyTimeMetrics`, o bloco do painel, o link do plano e os contribuintes da exclusão e da atividade do plano são descobertos pela convenção. Nenhum ponto de composição é editado |
-  | W0-T3 | `StudyTimeResource`, `StudyTimeResource.resx` e `Pages/StudyTime/_ViewImports.cshtml`, já criados. Os códigos `studytime.*` são traduzidos pelo registro de prefixos do `ResultResponder`, e o `UiText` do E2E lê o `.resx` do módulo. A fase só acrescenta chaves |
-  | W0-T4 | `<chart>`: barras verticais de horas por dia e por semana, valores em horas no formato pt-BR e a tabela equivalente gerada do mesmo modelo |
+  | W0-T1 | `StudySessionConfiguration` em `Persistence/Configurations/StudyTime/`, sem editar o `AppDbContext` ([3.10](../03-arquitetura.md#dois-bancos)) |
+  | W0-T2 | Preenche `AddStudyTimeApplication`, `AddStudyTimeInfrastructure` e `AddStudyTimeWeb`, já criados e chamados. `StudyTimeMetrics`, o bloco do painel, o link do plano e os contribuintes da exclusão e da atividade do plano são descobertos pela convenção ([3.5](../03-arquitetura.md#pontos-de-extensão)). Nenhum ponto de composição é editado |
+  | W0-T3 | `StudyTimeResource`, `StudyTimeResource.resx` e `Pages/StudyTime/_ViewImports.cshtml` (com o `StudyTimeLocalizer`), já criados. Os códigos `studytime.*` são traduzidos pelo `MessageResourceRegistry`, e o `UiText` do E2E lê o `.resx` do módulo (`UiResource.StudyTime`). A fase só acrescenta chaves ([3.5](../03-arquitetura.md#textos-e-mensagens)) |
+  | W0-T4 | `<chart>`: barras verticais de horas por dia e por semana, valores em horas no formato pt-BR (`ChartValueFormat.Hours()`) e a tabela equivalente gerada do mesmo modelo, nas regras de cor da [3.9](../03-arquitetura.md#gráficos) |
   | W0-T5 | `IDashboardBlock`, `DashboardContext` e `IPlanActivityContributor` (D16) |
-  | W0-T7 | Migração local `AddStudyTime` nos dois contextos, gerada de novo na integração |
-  | W0-T8 | Login exigido em `Pages/StudyTime` pela regra da Onda 0, P3. A Onda 0 registra a pasta `/StudyTime`, e a fase não edita o `Program.cs` |
-  | W0-T9 | `IUserCalendar`, `CalendarWeek`, `FakeTimeProvider`, `DeletionScope` com `IDeletionImpactContributor` (confirmação com a lista de contagens na exclusão de plano, disciplina e tópico), e `IPlanLinkContributor` |
-  | W0-T10 | `_FormErrors` e `FormErrorList` em `Pages/Shared`, com `role="alert"` e foco no primeiro campo inválido |
-  | W0-T11 | Fixture de E2E com usuário novo por teste, service workers bloqueados e um auxiliar que abre outro contexto autenticado como o mesmo usuário (segundo aparelho) |
-  | W0-T12 | Harness de desempenho e `performance.yml`. A fase só acrescenta um cenário |
+  | W0-T7 | Migração local `AddStudyTime` nos dois contextos, gerada de novo na integração ([4.3](../04-qualidade-e-entrega.md#43-fluxo-de-trabalho-no-git)) |
+  | W0-T8 | Login exigido pela `FallbackPolicy` (Onda 0, P3): as páginas de `Pages/StudyTime` nascem protegidas, e o `AnonymousAccessTests` as classifica como privadas pela pasta `/StudyTime/`. A fase não edita o `Program.cs` nem o teste ([3.11](../03-arquitetura.md#login-no-app-inteiro)) |
+  | W0-T9 | `IUserCalendar` (`UserCalendarSnapshot`), `CalendarWeek`, `FakeTimeProvider`, `DeletionScope` com `IDeletionImpactContributor` e `DeletionImpactItem` (confirmação com a lista de contagens na exclusão de plano, disciplina e tópico), e `IPlanLinkContributor` com `PlanLink` ([3.10](../03-arquitetura.md#calendário-do-usuário)) |
+  | W0-T10 | `FormErrors`, `FormErrorList` e `Pages/Shared/_FormErrors.cshtml`, com `role="alert"` e foco no primeiro campo inválido, o `FieldTargetMap`, o `asp-error-span` e o `[BindingErrorPartial]` nos handlers HTMX ([3.9](../03-arquitetura.md#formulários-e-erros)) |
+  | W0-T11 | Fixture de E2E com usuário novo por teste (`CreateUserAsync`), service workers bloqueados, o `CreateOtherDevicePageAsync`, que abre outro contexto autenticado como o mesmo usuário (segundo aparelho), e os pacotes do host em processo do pomodoro ([P8 desta fase](#p8--relógio-do-servidor-no-e2e-do-pomodoro)) ([4.1](../04-qualidade-e-entrega.md#41-estratégia-de-testes)) |
+  | W0-T12 | Harness de desempenho (`PerformanceFixture`) e `performance.yml`. A fase só acrescenta uma classe de cenários ([4.1](../04-qualidade-e-entrega.md#41-estratégia-de-testes)) |
   | W0-T13 | Ícones da seção [Ícones](#ícones) no sprite |
 
 - Respostas do autor na Onda 0: P1 (peças comuns), P3 (login no app inteiro), P4 (qual plano
   o painel mostra), P5 (fluxo de integração), P6 (eventos de correção e exclusão) e P7(d)
   (acerto do pomodoro numa gravação própria).
 - Dentro da Onda A:
-  - **7a — service worker:** a P1 decide essa dependência. Com B ou C, a notificação no
-    Android e no iOS com o app instalado só existe por
-    `ServiceWorkerRegistration.showNotification`, e o clique nela precisa de um
-    `notificationclick` no `sw.template.js`, arquivo da 7a. A 7a já traz esse
-    `notificationclick` mínimo (D11 da 7a: foca uma aba aberta do app ou abre `/`), então
-    não sobra tarefa para a integração. A Fase 5 não espera a 7a: sem service worker
-    registrado, usa a `Notification` do desktop. Com a P1 = A, não há dependência.
+  - **7a — service worker:** com a
+    [P1 desta fase](#p1--notificação-do-navegador-no-fim-do-bloco) (notificação) na opção
+    B, a notificação no Android e no iOS com o app instalado só existe por `ServiceWorkerRegistration.showNotification`, e o clique
+    nela precisa de um `notificationclick` no `sw.template.js`, arquivo da 7a. A 7a já traz
+    esse `notificationclick` mínimo (D11 da 7a: foca uma aba aberta do app ou abre `/`),
+    então não sobra tarefa para a integração. A Fase 5 não espera a 7a: sem service worker
+    registrado, usa a `Notification` do desktop.
   - **Fase 3 — árvore da disciplina:** a coluna de horas e o botão "Estudar" na árvore
     dependem da Fase 3 já integrada (P9).
 - [ADR 0003 — SQLite e PostgreSQL](../adr/0003-sqlite-e-postgresql.md)
@@ -93,7 +93,7 @@ Arquivos comuns que a fase altera:
 | D10 | Preferências do pomodoro | A duração do bloco é copiada de `PomodoroFocusMinutes` para `PlannedDuration` ao iniciar: mudar a preferência não altera um bloco em andamento. O módulo lê `UserSettings` pela própria porta (`IStudyTimeStore`), porque um módulo da `Application` não usa tipos de outro (regra 8 de [3.5](../03-arquitetura.md#regras-de-dependência)) |
 | D11 | Script do cronômetro | `wwwroot/js/study-timer.js`, externo, sem `eval`, sem `hx-on:*` e sem atributo `style` (a barra do pomodoro é um `<progress>`). Os textos vêm de atributos `data-*` traduzidos pelo `.resx`. O script dispara eventos próprios (`trail-pomodoro-due`, `trail-timer-refresh`) que o HTMX escuta por `hx-trigger`, reinicia depois de `htmx:after:swap` e consulta o servidor ao voltar à aba (`visibilitychange`, `pageshow`) e a cada 60 s |
 | D12 | Métricas | Classe própria `StudyTimeMetrics` em `Telemetry/`, sobre o `Meter` da `ApplicationMetrics` sem editar esse arquivo e descoberta pela convenção da W0-T2: `trail.study_sessions.started` (tag `mode`) e `trail.study_sessions.minutes` (unidade `min`, tags `mode` e `end_kind`). O usuário nunca vira dimensão |
-| D13 | Exclusão em cascata | Chaves estrangeiras de `StudySession` para `Subject` e `Topic`, com cascata ([2.2](../02-dominio-e-regras.md#regras-de-negócio-e-onde-são-garantidas)). O `StudySessionDeletionImpactContributor` recebe o `DeletionScope` já resolvido pelo `Planning` e devolve um item (`studytime.deletion.sessions`, quantidade), com os textos nas chaves `studytime.deletion.sessions.one` e `studytime.deletion.sessions.other` do `StudyTimeResource.resx`. Conta as sessões cuja disciplina está em `SubjectIds` ou cujo tópico está em `TopicIds` |
+| D13 | Exclusão em cascata | Chaves estrangeiras de `StudySession` para `Subject` e `Topic`, com cascata ([2.2](../02-dominio-e-regras.md#regras-de-negócio-e-onde-são-garantidas)). O `StudySessionDeletionImpactContributor` recebe o `DeletionScope` já resolvido pelo `Planning` e devolve `DeletionImpactItem.Create("studytime.deletion.sessions", count)`, com os textos nas chaves `studytime.deletion.sessions.one` e `studytime.deletion.sessions.other` do `StudyTimeResource.resx`. Conta as sessões cuja disciplina está em `SubjectIds` ou cujo tópico está em `TopicIds`. As chaves seguem as opções recomendadas da [P10](onda-0-base-compartilhada.md#p10--regra-do-plural-nos-textos-com-quantidade) e da [P11](onda-0-base-compartilhada.md#p11--formato-dos-itens-da-prévia-de-exclusão) da Onda 0, ainda sem resposta, e se ajustam na integração se o autor escolher outra |
 | D14 | Correção e exclusão sem eventos novos | Uma sessão encerrada pode ser corrigida (disciplina, tópico, início, fim e anotação) e excluída, e a sessão em andamento pode ser descartada, sem eventos novos, conforme a Onda 0, P6. Essas operações aparecem na métrica `trail.usecase.results`, que o `ResultResponder` já registra por caso de uso e status. A correção envia a `Version` exibida e, se ela mudou, devolve `Conflict` sem perder o que foi digitado (D4 da Fase 2) |
 | D15 | Organização do módulo | Uma pasta por caso de uso, como nas Fases 3 e 4 e na [3.5](../03-arquitetura.md#35-camadas-módulos-e-padrões-internos) (`StudyTime/StartStudySession/`, `StudyTime/GetStudyHoursReport/` etc.), com a porta e o fallback na raiz do módulo. O store usa `Set<StudySession>()`, sem `DbSet` novo no `AppDbContext` |
 | D16 | Bloco de horas e plano do painel | O bloco mostra o plano do `DashboardContext`, como os blocos das Fases 3 e 4: hoje, a semana atual e os últimos 7 dias somam só as sessões das disciplinas desse plano. Motivo: o painel inteiro fala do plano escolhido no seletor, e horas por disciplina só têm sentido dentro de um plano. O total de todos os planos fica em `/tempo/horas` sem filtro de plano. A sessão em andamento aparece sempre, com o nome do plano, porque é um estado do usuário e não do plano. Para o plano padrão do painel, o `StudySessionPlanActivityContributor` (`IPlanActivityContributor`) informa, por plano, o `StartedAt` da sessão mais recente |
@@ -258,7 +258,9 @@ e PostgreSQL, sem mudança no `AppDbContext`.
     painel do cronômetro, a pausa (P4), as sessões de hoje e o `<dialog>` da sessão
     esquecida. Aceita `?disciplina=` e `?topico=` para chegar com a seleção pronta.
   - `/tempo/sessoes`: lista por período, lançamento manual, correção e exclusão. Os erros
-    usam o `_FormErrors` comum (W0-T10), junto de cada campo e numa lista anunciada.
+    usam o `_FormErrors` comum (W0-T10), junto de cada campo (`FieldTargetMap` e
+    `asp-error-span`) e numa lista anunciada, e os handlers HTMX declaram
+    `[BindingErrorPartial]` ([3.9](../03-arquitetura.md#formulários-e-erros)).
   - `/tempo/horas`: plano (`?plano=`; sem ele, todos os planos) e período (esta semana,
     semana anterior, últimos 30 dias, tudo ou intervalo), total, horas por dia (até 31
     dias) ou por semana, e tabela por disciplina com os tópicos em `<details>`. Os gráficos
@@ -325,21 +327,33 @@ a prévia de exclusão funcionam sem editar a página do painel nem as páginas 
   - a sessão aberta da vítima continua aberta depois da varredura;
   - teste de reflexão `StudyTimeIsolationSweep_CoversEveryStudyTimePageHandler`, com o
     namespace `Trail.Web.Pages.StudyTime` comparado por igualdade, como nas Fases 3 e 4, e
-    a lista de handlers sem identificador também verificada por reflexão. Ele atende o
-    teste da W0-T5 que exige uma varredura por namespace de páginas.
+    a lista de handlers sem identificador também verificada por reflexão. A
+    `StudyTimeIsolationSweep` declara `[IsolationSweep("Trail.Web.Pages.StudyTime")]`, que
+    atende o `PageNamespaceIsolationTests` da W0-T5
+    ([3.11](../03-arquitetura.md#isolamento)).
 - `tests/Trail.E2E.Tests/StudyTimeE2ETests.cs`, em `390x844` e `1280x800`, com a fixture da
-  W0-T11 sem alterá-la. Cada teste tem um usuário novo, então a regra "uma sessão aberta por
-  usuário" não depende da ordem das suítes das outras fases:
+  W0-T11 sem alterá-la. Cada teste cria o seu usuário (`CreateUserAsync` e
+  `CreatePageAsync(user, width, height)`), então a regra "uma sessão aberta por usuário" não
+  depende da ordem das suítes das outras fases:
   - cronômetro: iniciar, recarregar (o mesmo `StartedAt`), abrir um segundo contexto
-    autenticado como o mesmo usuário (outro aparelho, pelo auxiliar da W0-T11), encerrar por
-    ele e ver o primeiro
-    atualizar ao avançar 60 s com a API de relógio do Playwright;
-  - pomodoro, o fluxo 3 de [4.1](../04-qualidade-e-entrega.md#41-estratégia-de-testes):
-    iniciar num tópico, avançar o relógio 25 min, ver o aviso e a pausa, e a sessão nas
-    horas da disciplina e do tópico, conforme a P8. A notificação é conferida com a
-    permissão concedida no contexto e a `Notification` trocada por um registro
-    (`AddInitScriptAsync`), porque a fixture bloqueia service workers;
-  - sessão esquecida: o diálogo aparece e encerra num horário informado (P8);
+    autenticado como o mesmo usuário (outro aparelho, pelo `CreateOtherDevicePageAsync`),
+    encerrar por ele e ver o primeiro atualizar ao avançar 60 s com a API de relógio do
+    Playwright;
+  - pomodoro, o fluxo 3 de [4.1](../04-qualidade-e-entrega.md#41-estratégia-de-testes),
+    no host em processo da P8 desta fase (opção C): uma fixture nova, num arquivo próprio
+    do projeto de E2E, sobe o app com `WebApplicationFactory<Program>` em Kestrel
+    (`UseKestrel`) e `FakeTimeProvider`, pelos pacotes que a W0-T11 já acrescentou
+    (`Microsoft.AspNetCore.Mvc.Testing`, `Microsoft.Extensions.TimeProvider.Testing` e a
+    referência ao `Trail.Web`). Com o seu próprio navegador, ela reusa os auxiliares da
+    W0-T11: o `AppHttpSession` cadastra e faz login por HTTP na URL do host, e o
+    `E2EBrowserContexts` abre as páginas (`NewPageAsync`, com os service workers
+    bloqueados) e fecha os contextos (`CloseContextsOfBrowserAsync`). O teste avança juntos
+    os relógios do navegador e do servidor:
+    iniciar num tópico, avançar 25 min, ver o aviso e a pausa, e a sessão nas horas da
+    disciplina e do tópico. A notificação é conferida com a permissão concedida no
+    contexto e a `Notification` trocada por um registro (`AddInitScriptAsync`), porque os
+    contextos bloqueiam service workers;
+  - sessão esquecida, no mesmo host: o diálogo aparece e encerra num horário informado;
   - lançamento manual de 07/03/2026 23:30 até 00:40, que conta 1 h 10 min no sábado e
     nada no domingo, com o navegador em `America/New_York` e o usuário em
     `America/Sao_Paulo`, para provar que vale o fuso do usuário;
@@ -347,16 +361,20 @@ a prévia de exclusão funcionam sem editar a página do painel nem as páginas 
   - zero violações WCAG 2.1 AA no axe, nos temas claro e escuro, em `/tempo` (parado, em
     andamento, em pausa e com o diálogo aberto), `/tempo/sessoes` (com erros),
     `/tempo/horas` e no painel com o bloco de horas.
-- Cenário no harness de desempenho da Onda 0 (W0-T12): 10.000 sessões no plano de 1.000
-  tópicos; `/tempo/horas` com o período "tudo" e o bloco do painel abaixo de 300 ms no
-  servidor.
+- Cenários no harness de desempenho da Onda 0 (W0-T12), numa classe nova em
+  `Trail.Web.Tests/Performance/` com `[PerformanceTest]` e
+  `[Collection(PerformanceCollections.Sequential)]`, e uma fixture derivada de
+  `PerformanceFixture` que acrescenta 10.000 sessões ao plano de 1.000 tópicos pelo
+  `SeedAsync`: `/tempo/horas` com o período "tudo" e o bloco do painel, dentro do
+  `PerformanceBudget.Default` (p95 abaixo de 300 ms no servidor).
 
 **Pronto quando:**
 - Recarregar a página ou trocar de aparelho não perde a contagem.
 - Os testes com relógio controlado cobrem o pomodoro e a virada do dia (`TimeProvider` no
   .NET e API de relógio do Playwright no E2E).
 - Os testes de isolamento passam em SQLite e PostgreSQL, e os E2E passam contra o container
-  SQLite (os fluxos da P8, no host indicado pela resposta).
+  SQLite, exceto o pomodoro e a sessão esquecida, que passam no host em processo da P8
+  desta fase (opção C).
 - O CI fica 100% verde no PR da fase.
 
 ## Riscos

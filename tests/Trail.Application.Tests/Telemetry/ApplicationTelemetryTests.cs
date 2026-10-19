@@ -44,7 +44,7 @@ public sealed class ApplicationTelemetryTests
         using var listener = new MeterListener();
         listener.InstrumentPublished = (instrument, meterListener) =>
         {
-            if (instrument.Meter.Name == ApplicationTelemetry.Name
+            if (instrument.Meter == metrics.Meter
                 && instrument.Name == ApplicationMetrics.ResultsInstrumentName)
             {
                 meterListener.EnableMeasurementEvents(instrument);
@@ -100,7 +100,7 @@ public sealed class ApplicationTelemetryTests
         using var listener = new MeterListener();
         listener.InstrumentPublished = (instrument, meterListener) =>
         {
-            if (instrument.Meter.Name == ApplicationTelemetry.Name
+            if (instrument.Meter == metrics.Meter
                 && instrument.Name == ApplicationMetrics.EmailsSentInstrumentName)
             {
                 meterListener.EnableMeasurementEvents(instrument);
@@ -151,7 +151,7 @@ public sealed class ApplicationTelemetryTests
         using var listener = new MeterListener();
         listener.InstrumentPublished = (instrument, meterListener) =>
         {
-            if (instrument.Meter.Name == ApplicationTelemetry.Name
+            if (instrument.Meter == metrics.Meter
                 && instrument.Name == ApplicationMetrics.EmailsFailedInstrumentName)
             {
                 meterListener.EnableMeasurementEvents(instrument);
@@ -202,7 +202,7 @@ public sealed class ApplicationTelemetryTests
         using var listener = new MeterListener();
         listener.InstrumentPublished = (instrument, meterListener) =>
         {
-            if (instrument.Meter.Name == ApplicationTelemetry.Name
+            if (instrument.Meter == metrics.Meter
                 && instrument.Name == ApplicationMetrics.PlansCreatedInstrumentName)
             {
                 meterListener.EnableMeasurementEvents(instrument);
@@ -242,7 +242,7 @@ public sealed class ApplicationTelemetryTests
         using var listener = new MeterListener();
         listener.InstrumentPublished = (instrument, meterListener) =>
         {
-            if (instrument.Meter.Name == ApplicationTelemetry.Name
+            if (instrument.Meter == metrics.Meter
                 && instrument.Name == ApplicationMetrics.TopicStatusChangesInstrumentName)
             {
                 meterListener.EnableMeasurementEvents(instrument);
@@ -287,7 +287,7 @@ public sealed class ApplicationTelemetryTests
         using var listener = new MeterListener();
         listener.InstrumentPublished = (instrument, meterListener) =>
         {
-            if (instrument.Meter.Name == ApplicationTelemetry.Name
+            if (instrument.Meter == metrics.Meter
                 && instrument.Name == ApplicationMetrics.PlansCreatedInstrumentName)
             {
                 meterListener.EnableMeasurementEvents(instrument);
@@ -345,7 +345,7 @@ public sealed class ApplicationTelemetryTests
         using var listener = new MeterListener();
         listener.InstrumentPublished = (instrument, meterListener) =>
         {
-            if (instrument.Meter.Name == ApplicationTelemetry.Name
+            if (instrument.Meter == metrics.Meter
                 && instrument.Name == ApplicationMetrics.TopicStatusChangesInstrumentName)
             {
                 meterListener.EnableMeasurementEvents(instrument);

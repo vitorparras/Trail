@@ -70,5 +70,9 @@ dotnet_naming_rule.static_readonly_fields_are_pascal_case.severity = warning
 dotnet_naming_symbols.static_readonly_fields.applicable_kinds = field
 dotnet_naming_symbols.static_readonly_fields.required_modifiers = static, readonly
 
+[src/**.cs]
+dotnet_style_namespace_match_folder = true:warning
+dotnet_diagnostic.IDE0130.severity = warning
+
 [**/Migrations/*.cs]
 generated_code = true

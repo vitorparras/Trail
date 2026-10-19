@@ -20,7 +20,8 @@ public sealed partial class PlansE2ETests(DockerAppFixture fixture)
     public async Task StudyPlan_BuildTreeChangeStatusWriteNoteAndSearch_WorksWithoutAccessibilityViolations(int width, int height)
     {
         var planName = $"Auditor Fiscal {width}x{height}";
-        var page = await fixture.CreateAdminPageAsync(width, height);
+        var user = await fixture.CreateUserAsync();
+        var page = await fixture.CreatePageAsync(user, width, height);
         var main = page.GetByRole(AriaRole.Main);
 
         await page.GotoAsync(fixture.BaseUrl + "/planos");
@@ -130,6 +131,98 @@ public sealed partial class PlansE2ETests(DockerAppFixture fixture)
         await Expect(results.GetByText(TopicTitle)).ToHaveCountAsync(0);
 
         await AxeTestHelper.AssertAxeZeroViolationsAcrossThemesAndViewportsAsync(page);
+
+        await page.GotoAsync(planUrl);
+        var deleteSubjectLink = main.GetByRole(AriaRole.Link, new() { Name = UiText.Format("DeleteNamed", SubjectName), Exact = true });
+        var subjectDialog = page.GetByRole(AriaRole.Dialog, new() { Name = UiText.Get("DeleteSubject"), Exact = true });
+
+        await deleteSubjectLink.FocusAsync();
+        await OpenDeletionDialogAsync(page, () => deleteSubjectLink.PressAsync("Enter"), "handler=DeleteSubjectImpact");
+        string[] subjectItems =
+        [
+            UiText.Format("planning.deletion.subjects.one", 1),
+            UiText.Format("planning.deletion.topics.other", 2),
+            UiText.Format("planning.deletion.notes.one", 1),
+        ];
+        await Expect(subjectDialog).ToBeVisibleAsync();
+        await Expect(subjectDialog.GetByRole(AriaRole.Listitem)).ToHaveTextAsync(subjectItems);
+        await Expect(subjectDialog).ToHaveAccessibleDescriptionAsync(DeletionDescription(SubjectName, subjectItems));
+        await Expect(subjectDialog.GetByRole(AriaRole.Link, new() { Name = UiText.Get("Cancel"), Exact = true })).ToBeFocusedAsync();
+        await AxeTestHelper.AssertAxeZeroViolationsInBothThemesAsync(page);
+
+        await page.Keyboard.PressAsync("Escape");
+        await Expect(subjectDialog).ToBeHiddenAsync();
+        await Expect(deleteSubjectLink).ToBeFocusedAsync();
+        await Expect(subjectLink).ToBeVisibleAsync();
+
+        await subjectLink.ClickAsync();
+        await Expect(page).ToHaveURLAsync(SubjectPathPattern());
+        var topicDialog = page.GetByRole(AriaRole.Dialog, new() { Name = UiText.Get("DeleteTopic"), Exact = true });
+
+        await OpenDeletionDialogAsync(
+            page,
+            () => subtopicItem.GetByRole(AriaRole.Link, new() { Name = UiText.Format("DeleteNamed", SubtopicTitle), Exact = true }).ClickAsync(),
+            "handler=DeleteTopicImpact");
+        string[] topicItems =
+        [
+            UiText.Format("planning.deletion.topics.one", 1),
+            UiText.Format("planning.deletion.notes.one", 1),
+        ];
+        await Expect(topicDialog).ToBeVisibleAsync();
+        await Expect(topicDialog.GetByRole(AriaRole.Listitem)).ToHaveTextAsync(topicItems);
+        await Expect(topicDialog).ToHaveAccessibleDescriptionAsync(DeletionDescription(SubtopicTitle, topicItems));
+        await Expect(topicDialog.GetByRole(AriaRole.Link, new() { Name = UiText.Get("Cancel"), Exact = true })).ToBeFocusedAsync();
+        await AxeTestHelper.AssertAxeZeroViolationsInBothThemesAsync(page);
+
+        await topicDialog.GetByRole(AriaRole.Button, new() { Name = UiText.Get("ConfirmDelete"), Exact = true }).ClickAsync();
+        await Expect(page).ToHaveURLAsync(SubjectPathPattern());
+        await Expect(subtopicItem).ToHaveCountAsync(0);
+        await Expect(topicItem).ToHaveCountAsync(1);
+
+        await page.GotoAsync(planUrl);
+        await OpenDeletionDialogAsync(page, () => deleteSubjectLink.ClickAsync(), "handler=DeleteSubjectImpact");
+        await Expect(subjectDialog.GetByRole(AriaRole.Listitem)).ToHaveTextAsync(
+        [
+            UiText.Format("planning.deletion.subjects.one", 1),
+            UiText.Format("planning.deletion.topics.one", 1),
+            UiText.Format("planning.deletion.notes.other", 0),
+        ]);
+
+        await subjectDialog.GetByRole(AriaRole.Button, new() { Name = UiText.Get("ConfirmDelete"), Exact = true }).ClickAsync();
+        await Expect(page).ToHaveURLAsync(PlanDetailsPathPattern());
+        await Expect(subjectLink).ToHaveCountAsync(0);
+
+        var planDialog = page.GetByRole(AriaRole.Dialog, new() { Name = UiText.Get("DeleteStudyPlan"), Exact = true });
+        string[] planItems =
+        [
+            UiText.Format("planning.deletion.sections.one", 1),
+            UiText.Format("planning.deletion.subjects.other", 0),
+            UiText.Format("planning.deletion.topics.other", 0),
+            UiText.Format("planning.deletion.notes.other", 0),
+        ];
+        await main.Locator("[data-dialog-open='delete-plan-dialog']").ClickAsync();
+        await Expect(planDialog.GetByRole(AriaRole.Listitem)).ToHaveTextAsync(planItems);
+        await Expect(planDialog).ToHaveAccessibleDescriptionAsync(DeletionDescription(planName, planItems));
+        await Expect(planDialog.GetByRole(AriaRole.Button, new() { Name = UiText.Get("Cancel"), Exact = true })).ToBeFocusedAsync();
+        await AxeTestHelper.AssertAxeZeroViolationsInBothThemesAsync(page);
+
+        await planDialog.GetByRole(AriaRole.Button, new() { Name = UiText.Get("ConfirmDelete"), Exact = true }).ClickAsync();
+        await Expect(page).ToHaveURLAsync(PlanListPathPattern());
+        await Expect(main.GetByRole(AriaRole.Heading, new() { Level = 1 })).ToHaveTextAsync(UiText.Get("StudyPlans"));
+        await Expect(main).Not.ToContainTextAsync(planName);
+    }
+
+    private static Regex DeletionDescription(string target, IEnumerable<string> items) =>
+        new("^" + string.Join(@"\s*", new[] { target, UiText.Get("DeletionImpactWarning") }.Concat(items).Select(Regex.Escape)) + "$");
+
+    private static async Task OpenDeletionDialogAsync(IPage page, Func<Task> open, string handler)
+    {
+        var response = await page.RunAndWaitForResponseAsync(
+            open,
+            candidate => candidate.Request.Method == "GET" && candidate.Url.Contains(handler, StringComparison.Ordinal));
+
+        Assert.Equal(200, response.Status);
+        Assert.Equal("partial", await response.Request.HeaderValueAsync("hx-request-type"));
     }
 
     private static async Task SubmitSearchAsync(IPage page, ILocator searchForm)
@@ -143,6 +236,9 @@ public sealed partial class PlansE2ETests(DockerAppFixture fixture)
 
     [GeneratedRegex("/planos/[0-9a-f-]{36}$")]
     private static partial Regex PlanDetailsPathPattern();
+
+    [GeneratedRegex("/planos$")]
+    private static partial Regex PlanListPathPattern();
 
     [GeneratedRegex("/planos/[0-9a-f-]{36}/disciplinas/[0-9a-f-]{36}$")]
     private static partial Regex SubjectPathPattern();

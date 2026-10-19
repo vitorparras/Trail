@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+using Trail.Application;
 using Trail.Application.Abstractions;
 using Trail.Application.Accounts;
 using Trail.Application.Planning;
@@ -162,7 +163,13 @@ public static class DependencyInjection
         services.Replace(ServiceDescriptor.Scoped<IAccountIdentityGateway, AccountIdentityGateway>());
         services.Replace(ServiceDescriptor.Scoped<IEmailSender, MailKitEmailSender>());
         services.Replace(ServiceDescriptor.Scoped<IUserSettingsStore, EfUserSettingsStore>());
+        services.Replace(ServiceDescriptor.Scoped<IUserCalendar, UserCalendar>());
         services.Replace(ServiceDescriptor.Scoped<IPlanningStore, EfPlanningStore>());
+
+        services.AddContributorsFrom(typeof(DependencyInjection).Assembly);
+        services.AddPracticeInfrastructure();
+        services.AddFitnessInfrastructure();
+        services.AddStudyTimeInfrastructure();
 
         services.AddSingleton<DatabaseInitializer>();
         services.AddSingleton<IDatabaseInitializer>(sp => sp.GetRequiredService<DatabaseInitializer>());

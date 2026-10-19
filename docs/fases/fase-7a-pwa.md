@@ -16,9 +16,10 @@ da 1.0 ([ADR 0005](../adr/0005-web-responsiva-pwa.md)).
 
 - [Fase 2 — Planos e conteúdo](fase-2-planos-e-conteudo.md) (concluída e na `main`)
 - [Onda 0 — Base compartilhada](onda-0-base-compartilhada.md): `PwaResource` e o prefixo
-  `pwa.` (registro de recursos), `AddPwaWeb` já chamado no `Program.cs`, fixture do E2E com
-  service workers bloqueados por padrão e `UiText` por módulo, e a decisão sobre o login no
-  app inteiro
+  `pwa.` (`MessageResourceRegistry`), `AddPwaWeb` já chamado no `Program.cs`, fixture do
+  E2E com service workers bloqueados por padrão e `UiText` por módulo
+  (`UiResource.Pwa`), e o login no app inteiro pela `FallbackPolicy` (P3,
+  [3.11](../03-arquitetura.md#login-no-app-inteiro))
 - [ADR 0005 — Web responsiva + PWA](../adr/0005-web-responsiva-pwa.md)
 - [ADR 0013 — Frontend Tailwind CSS + daisyUI](../adr/0013-frontend-tailwind-daisyui.md)
 - [Arquitetura 3.12 (implantação), 3.13 (PWA) e 3.14 (segurança)](../03-arquitetura.md)
@@ -36,7 +37,7 @@ da 1.0 ([ADR 0005](../adr/0005-web-responsiva-pwa.md)).
 | D7 | Página "sem conexão" | `Pages/Offline.cshtml`, anônima, sem o layout principal (sem navegação, sem usuário, sem token antifalsificação, sem script inline), com os textos em `PwaResource`. É a mesma para todos os usuários, por isso é seguro guardá-la no cache |
 | D8 | Ícones próprios | Fonte única em SVG no repositório e PNGs gerados por uma ferramenta em `eng/PwaIcons` (projeto fora do `Trail.slnx`) que rasteriza o SVG com o Playwright, com a versão em `Directory.Packages.props` (o Dependabot enxerga). PNGs **versionados**. O teste confere dimensões e lista de arquivos, não o hash do PNG. O procedimento fica em `docs/guias/icones-pwa.md`, não em comentário de script. Nunca brasões ou logos de órgãos |
 | D9 | Lighthouse | Não entra no CI: o Lighthouse 12 removeu a categoria PWA. A instalabilidade é verificada pelo Chromium via CDP (`Page.getInstallabilityErrors` e `Page.getAppManifest`) no Playwright, que já roda no CI |
-| D10 | Autenticação | Manifest, `sw.js`, `/offline` e ícones são públicos (`[AllowAnonymous]` explícito), para continuarem funcionando seja qual for a decisão da Onda 0 sobre o login |
+| D10 | Autenticação | Com a `FallbackPolicy` da Onda 0 (P3), toda página exige login, a menos que declare o contrário. O navegador busca o manifest sem cookies (exceto com `crossorigin="use-credentials"`), e o registro do service worker recusa redirecionamentos. Sem o `[AllowAnonymous]`, os dois recebem o redirecionamento para o login e falham. Por isso, `ManifestModel`, `ServiceWorkerModel` e `OfflineModel` levam `[AllowAnonymous]`, e as três páginas entram na lista `PublicPages` do `AnonymousAccessTests` com status 200. Como ficam no namespace `Trail.Web.Pages`, os três `OnGet`, sem identificador, entram também na lista `RootPageHandlersWithoutResourceIdentifiers` do `UserIsolationTests.Dashboard.cs`, que cobre a varredura desse namespace. Os ícones são arquivos estáticos, já liberados pelo `MapStaticAssets().AllowAnonymous()` |
 | D11 | Notificações da Fase 5 | O worker traz um `notificationclick` mínimo: fecha a notificação e foca uma aba aberta do app ou abre `/`. Sem `push` e sem dados na notificação. Assim a opção B da pergunta de notificação do navegador da Fase 5 (P1) não depende de trabalho extra na integração; a Fase 5 só chama `registration.showNotification` |
 | D12 | Cores com tema manual | As metas `theme-color` com `media` seguem a preferência do sistema, não a escolha manual de tema. O `pwa.js` observa `data-theme` em `<html>` e, quando há tema fixado, ativa só a meta correspondente (`media="all"` na do tema e `media="not all"` na outra). O `theme.js` não é alterado |
 
@@ -57,6 +58,7 @@ A 7a mexe só no que está abaixo. Tudo o mais pertence às outras fases em para
 | `wwwroot/js/pwa.js`, `wwwroot/js/offline.js`, `wwwroot/icons/*`, `Pages/Offline.cshtml`, `Pages/ServiceWorker.cshtml`, `Pages/Manifest.cshtml`, `Pages/Shared/_Pwa*.cshtml` | `theme.js`, `dialogs.js`, `toasts.js`, `htmx-integration.js` |
 | `Resources/PwaResource.resx` (a classe marcadora vem da Onda 0) | `SharedResource.resx` e os demais `.resx` |
 | `eng/PwaIcons/*`, `docs/guias/icones-pwa.md` e, em `Directory.Packages.props`, só a versão da ferramenta, se faltar | `eng/frontend.props` e `eng/frontend.targets`; a fixture do E2E |
+| Testes novos em `Trail.Web.Tests/Pwa/` e `PwaE2ETests.cs`, e uma linha por página nova nas duas listas da D10 (`PublicPages` do `AnonymousAccessTests.cs` e `RootPageHandlersWithoutResourceIdentifiers` do `UserIsolationTests.Dashboard.cs`), que nenhuma outra fase da Onda A altera | As demais varreduras de isolamento, os testes das outras fases e o `DockerAppFixture` |
 
 Quando a integração juntar as branches, os únicos pontos de conflito esperados são as duas
 linhas do layout, triviais de resolver. A 7a não cria migração.
@@ -109,6 +111,8 @@ Windows e no Linux, e os testes de ícones passam.
   de `Styles/app.css` (`--color-base-100` dos dois temas) para sRGB e confere que os
   valores em hexadecimal estão a até ΔE 2 deles, para o tema e o manifest não divergirem.
 - Testes de integração em `Trail.Web.Tests/Pwa/`:
+  - acesso anônimo: as três páginas na lista pública do `AnonymousAccessTests` (D10), e o
+    manifest e o `sw.js` respondem 200 sem cookie e sem redirecionamento;
   - manifest: 200 anônimo, tipo `application/manifest+json`, campos obrigatórios, cores
     hexadecimais válidas, ícones com 192 e 512 e um `maskable`, cada ícone listado
     responde 200 com `image/png` e todas as chaves `pwa.` usadas existem no `PwaResource.resx`;
@@ -162,8 +166,11 @@ conexão" aparece sem rede, e nenhuma resposta HTML autenticada ou do HTMX entra
 Em `tests/Trail.E2E.Tests/PwaE2ETests.cs`, no Chromium do Playwright, contra o container
 SQLite. O CI acessa `http://127.0.0.1:8080`, que é contexto seguro, então não é preciso
 nenhum argumento do Chromium. A fixture compartilhada **não** muda: a Onda 0 (W0-T11) bloqueia
-service workers por padrão (`ServiceWorkers = Block`) e a `PwaE2ETests` cria o próprio
-contexto com `ServiceWorkers = Allow`. Os textos vêm do `UiText` do módulo (`PwaResource`).
+service workers por padrão (`ServiceWorkers = Block`), e a `PwaE2ETests` pede o próprio
+contexto com `ServiceWorkers = ServiceWorkerPolicy.Allow`, pelo
+`CreatePageAsync(user, options)` (ou pelo `CreatePageAsync(options)`, anônimo), e confere o
+registro pelo `navigator.serviceWorker`. Cada teste cria o seu usuário com o
+`CreateUserAsync`. Os textos vêm do `UiText` do módulo (`UiResource.Pwa`).
 
 **Verificação prévia (primeira coisa da T4).** O `SetOfflineAsync` do Playwright usa a
 emulação de rede do CDP da página, e as requisições feitas pelo próprio service worker

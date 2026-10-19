@@ -49,7 +49,7 @@ public sealed class VendoredFilesTests
         return Convert.ToHexStringLower(SHA256.HashData(stream));
     }
 
-    private static DirectoryInfo RepositoryRoot()
+    internal static DirectoryInfo RepositoryRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "Trail.slnx")))

@@ -12,13 +12,13 @@
           hx-swap="outerHTML"
           class="flex flex-col gap-4">
 
-        <div asp-validation-summary="All" class="alert alert-error text-sm" role="alert"></div>
+        <div asp-validation-summary="ModelOnly" class="alert alert-error text-sm" role="alert"></div>
 
         <div class="form-control">
             <label asp-for="TimeZoneId" class="label">
                 <span class="label-text font-medium">@SharedLocalizer["TimeZone"]</span>
             </label>
-            <select asp-for="TimeZoneId" class="select select-bordered w-full">
+            <select asp-for="TimeZoneId" asp-error-span class="select select-bordered w-full">
                 @foreach (var tz in Trail.Web.Pages.Account.SettingsModel.AvailableTimeZones)
                 {
                     <option value="@tz" selected="@(Model?.TimeZoneId == tz ? "selected" : null)">@tz</option>
@@ -32,7 +32,7 @@
                 <label asp-for="PomodoroFocusMinutes" class="label">
                     <span class="label-text font-medium">@SharedLocalizer["PomodoroFocusMinutes"]</span>
                 </label>
-                <input asp-for="PomodoroFocusMinutes"
+                <input asp-for="PomodoroFocusMinutes" asp-error-span
                        type="number"
                        min="1"
                        max="180"
@@ -45,7 +45,7 @@
                 <label asp-for="PomodoroBreakMinutes" class="label">
                     <span class="label-text font-medium">@SharedLocalizer["PomodoroBreakMinutes"]</span>
                 </label>
-                <input asp-for="PomodoroBreakMinutes"
+                <input asp-for="PomodoroBreakMinutes" asp-error-span
                        type="number"
                        min="1"
                        max="60"

@@ -10,6 +10,9 @@ internal sealed class FallbackPlanningStore : IPlanningStore
     public Task<IReadOnlyList<StudyPlan>> ListStudyPlansAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<StudyPlan>>([]);
 
+    public Task<IReadOnlyList<StudyPlanOptionView>> ListStudyPlanOptionsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<StudyPlanOptionView>>([]);
+
     public Task AddStudyPlanAsync(StudyPlan plan, CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
 

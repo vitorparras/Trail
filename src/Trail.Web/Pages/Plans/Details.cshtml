@@ -1,4 +1,5 @@
 @page "/planos/{planId:guid}"
+@using Trail.Web.Planning
 @model Trail.Web.Pages.Plans.DetailsModel
 @{
     ViewData["Title"] = Model.Plan.Name;
@@ -30,6 +31,38 @@
             </button>
         </div>
     </div>
+
+    @if (Model.PlanLinks.Count > 0)
+    {
+        <nav aria-label="@SharedLocalizer["PlanLinks"]" class="flex flex-wrap gap-2">
+            @foreach (var link in Model.PlanLinks)
+            {
+                <a asp-page="@link.Page" asp-all-route-data="@(new Dictionary<string, string>(link.RouteValues))" class="btn btn-outline btn-sm">
+                    @switch (link.Icon)
+                    {
+                        case PlanLinkIcon.RotateCcwClock:
+                            <icon name="rotate-ccw-clock" class="size-4" />
+                            break;
+                        case PlanLinkIcon.ClipboardCheck:
+                            <icon name="clipboard-check" class="size-4" />
+                            break;
+                        case PlanLinkIcon.Dumbbell:
+                            <icon name="dumbbell" class="size-4" />
+                            break;
+                    }
+                    @link.Text
+                </a>
+            }
+        </nav>
+    }
+
+    @if (Model.SubjectDeletion is not null)
+    {
+        <section class="card border border-error bg-base-100 p-4 sm:p-6" aria-labelledby="subject-deletion-heading" aria-describedby="@Model.SubjectDeletion.DescriptionId">
+            <h2 id="subject-deletion-heading" class="font-bold text-lg text-error">@SharedLocalizer["DeleteSubject"]</h2>
+            <partial name="_DeletionConfirmation" model="Model.SubjectDeletion" />
+        </section>
+    }
 
     <div class="card bg-base-200 p-4 sm:p-6 space-y-4">
         <div class="flex flex-wrap items-center gap-3">
@@ -219,10 +252,17 @@
                                                     <input type="hidden" name="expectedPlanVersion" value="@Model.Plan.Version" />
                                                     <button type="submit" class="btn btn-ghost btn-xs" aria-label="@SharedLocalizer["MoveDown"]">↓</button>
                                                 </form>
-                                                <form method="post" asp-page-handler="DeleteSubject" asp-route-planId="@Model.Plan.Id.Value">
-                                                    <input type="hidden" name="subjectId" value="@subject.SubjectId.Value" />
-                                                    <button type="submit" class="btn btn-ghost btn-xs text-error">@SharedLocalizer["Delete"]</button>
-                                                </form>
+                                                @{
+                                                    var deleteSubjectUrl = Url.Page("/Plans/Details", "DeleteSubjectImpact", new { planId = Model.Plan.Id.Value, subjectId = subject.SubjectId.Value });
+                                                }
+                                                <a href="@deleteSubjectUrl"
+                                                   hx-get="@deleteSubjectUrl"
+                                                   hx-target="#delete-subject-confirmation"
+                                                   hx-headers='{"HX-Request-Type": "partial"}'
+                                                   data-dialog-open-after-swap="delete-subject-dialog"
+                                                   aria-haspopup="dialog"
+                                                   aria-label="@SharedLocalizer["DeleteNamed", subject.Name]"
+                                                   class="btn btn-ghost btn-xs text-error">@SharedLocalizer["Delete"]</a>
                                             </div>
                                         </td>
                                     </tr>
@@ -306,10 +346,17 @@
                                                 <input type="hidden" name="expectedPlanVersion" value="@Model.Plan.Version" />
                                                 <button type="submit" class="btn btn-ghost btn-xs" aria-label="@SharedLocalizer["MoveDown"]">↓</button>
                                             </form>
-                                            <form method="post" asp-page-handler="DeleteSubject" asp-route-planId="@Model.Plan.Id.Value">
-                                                <input type="hidden" name="subjectId" value="@subject.SubjectId.Value" />
-                                                <button type="submit" class="btn btn-ghost btn-xs text-error">@SharedLocalizer["Delete"]</button>
-                                            </form>
+                                            @{
+                                                var deleteSubjectUrl = Url.Page("/Plans/Details", "DeleteSubjectImpact", new { planId = Model.Plan.Id.Value, subjectId = subject.SubjectId.Value });
+                                            }
+                                            <a href="@deleteSubjectUrl"
+                                               hx-get="@deleteSubjectUrl"
+                                               hx-target="#delete-subject-confirmation"
+                                               hx-headers='{"HX-Request-Type": "partial"}'
+                                               data-dialog-open-after-swap="delete-subject-dialog"
+                                               aria-haspopup="dialog"
+                                               aria-label="@SharedLocalizer["DeleteNamed", subject.Name]"
+                                               class="btn btn-ghost btn-xs text-error">@SharedLocalizer["Delete"]</a>
                                         </div>
                                     </td>
                                 </tr>
@@ -322,26 +369,29 @@
     </div>
 </div>
 
-<dialog id="delete-plan-dialog" class="modal" aria-labelledby="delete-plan-title">
+<dialog id="delete-plan-dialog" class="modal" aria-labelledby="delete-plan-title" aria-describedby="delete-plan-description">
     <div class="modal-box">
         <h2 id="delete-plan-title" class="font-bold text-lg text-error">@SharedLocalizer["DeleteStudyPlan"]</h2>
-        <p class="py-4 text-sm text-base-content/80">
-            @SharedLocalizer["DeletionImpactWarning"]
-        </p>
-        @if (Model.PlanImpact != null)
-        {
-            <ul class="list-disc list-inside text-sm text-base-content/70 space-y-1 mb-4">
-                <li>@SharedLocalizer["Sections"]: @Model.PlanImpact.SectionCount</li>
-                <li>@SharedLocalizer["Subjects"]: @Model.PlanImpact.SubjectCount</li>
-                <li>@SharedLocalizer["Topics"]: @Model.PlanImpact.TopicCount</li>
-                <li>@SharedLocalizer["Notes"]: @Model.PlanImpact.NoteCount</li>
-            </ul>
-        }
+        <div id="delete-plan-description">
+            <p class="pt-2 font-semibold text-base-content break-words">@Model.Plan.Name</p>
+            <p class="py-2 text-sm text-base-content/80">@SharedLocalizer["DeletionImpactWarning"]</p>
+            @if (Model.PlanImpact is not null)
+            {
+                <partial name="_DeletionImpact" model="Model.PlanImpact.Items" />
+            }
+        </div>
         <div class="modal-action">
             <form method="post" asp-page-handler="DeletePlan" asp-route-planId="@Model.Plan.Id.Value">
                 <button type="submit" class="btn btn-error">@SharedLocalizer["ConfirmDelete"]</button>
-                <button type="button" data-dialog-close class="btn btn-ghost">@SharedLocalizer["Cancel"]</button>
+                <button type="button" data-dialog-close class="btn btn-ghost" autofocus>@SharedLocalizer["Cancel"]</button>
             </form>
         </div>
+    </div>
+</dialog>
+
+<dialog id="delete-subject-dialog" class="modal" aria-labelledby="delete-subject-title" aria-describedby="@DeletionConfirmationModel.SubjectDialogDescriptionId">
+    <div class="modal-box">
+        <h2 id="delete-subject-title" class="font-bold text-lg text-error">@SharedLocalizer["DeleteSubject"]</h2>
+        <div id="delete-subject-confirmation"></div>
     </div>
 </dialog>

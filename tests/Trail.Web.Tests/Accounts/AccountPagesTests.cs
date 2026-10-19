@@ -1,5 +1,6 @@
 using System.Net;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.WebUtilities;
 using Trail.Application.Accounts;
 using Trail.Domain.Accounts;
 using Trail.Domain.Common;
@@ -444,43 +445,6 @@ public sealed class AccountPagesTests(TrailWebApplicationFactory baseFactory) : 
     }
 
     [Fact]
-    public async Task Post_ResendConfirmation_WhenSmtpSendFails_Returns422AndShowsRetry()
-    {
-        var testUserId = UserId.New();
-        var gateway = new TestAccountIdentityGateway();
-        gateway.Users.Add(new AccountUserDto(testUserId, "pending@example.com", false, true, false, DateTime.UtcNow));
-
-        var emailSender = new TestEmailSender
-        {
-            IsSmtpConfigured = true,
-            SendResult = Result.Invalid(Message.Error("accounts.email.send_failed"))
-        };
-        var settingsStore = new TestUserSettingsStore();
-        var currentUser = new TestCurrentUser { IsAuthenticated = false };
-
-        using var factory = AccountTestHelper.CreateTestFactory(baseFactory, gateway, emailSender, settingsStore, currentUser);
-        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
-
-        var (_, _, csrfHeader, csrfToken) = await AccountTestHelper.GetDocWithAntiforgeryAsync(client, "/Account/ResendConfirmation");
-
-        var formData = new Dictionary<string, string>
-        {
-            ["Email"] = "pending@example.com"
-        };
-
-        using var response = await AccountTestHelper.PostFormWithAntiforgeryAsync(
-            client,
-            "/Account/ResendConfirmation",
-            formData,
-            csrfHeader,
-            csrfToken);
-
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
-        var html = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        Assert.Contains("Tentar novamente", html, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public async Task Post_ForgotPassword_SendsResetEmailAndRendersSentMessage()
     {
         var testUserId = UserId.New();
@@ -589,8 +553,10 @@ public sealed class AccountPagesTests(TrailWebApplicationFactory baseFactory) : 
         Assert.Contains("A confirmação de senha não confere", html, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public async Task Get_Settings_WhenUnauthenticated_Returns403Forbidden()
+    [Theory]
+    [InlineData("/Account/Settings")]
+    [InlineData("/Admin/Users")]
+    public async Task Get_SettingsOrAdministration_WhenUnauthenticated_RedirectsToLogin(string path)
     {
         var gateway = new TestAccountIdentityGateway();
         var emailSender = new TestEmailSender();
@@ -600,9 +566,13 @@ public sealed class AccountPagesTests(TrailWebApplicationFactory baseFactory) : 
         using var factory = AccountTestHelper.CreateTestFactory(baseFactory, gateway, emailSender, settingsStore, currentUser);
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
 
-        using var response = await client.GetAsync("/Account/Settings", TestContext.Current.CancellationToken);
+        using var response = await client.GetAsync(path, TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.NotNull(response.Headers.Location);
+        var location = new Uri(new Uri("http://localhost"), response.Headers.Location);
+        Assert.Equal("/Account/Login", location.AbsolutePath);
+        Assert.Equal(path, QueryHelpers.ParseQuery(location.Query)["ReturnUrl"].ToString());
     }
 
     [Fact]

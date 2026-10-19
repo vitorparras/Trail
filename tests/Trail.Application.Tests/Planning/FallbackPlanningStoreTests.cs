@@ -20,6 +20,7 @@ public sealed class FallbackPlanningStoreTests
 
         Assert.Null(await store.GetStudyPlanByIdAsync(planId, ct));
         Assert.Empty(await store.ListStudyPlansAsync(ct));
+        Assert.Empty(await store.ListStudyPlanOptionsAsync(ct));
         await store.AddStudyPlanAsync(plan, ct);
         await store.RemoveStudyPlanAsync(plan, ct);
 

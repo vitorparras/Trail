@@ -52,7 +52,7 @@ public sealed class RequestPasswordResetHandler
         var tokenResult = await _identityGateway.GeneratePasswordResetTokenAsync(user.Id, cancellationToken);
         if (!tokenResult.IsOk)
         {
-            return tokenResult.Failure;
+            return Result.Ok();
         }
 
         var resetUrl = command.ResetLinkBuilder?.Invoke(user.Id, tokenResult.Data)
@@ -66,13 +66,15 @@ public sealed class RequestPasswordResetHandler
             EmailKinds.PasswordReset);
 
         var sendResult = await _emailSender.SendAsync(message, cancellationToken);
-        if (!sendResult.IsOk)
+        if (sendResult.IsOk)
+        {
+            _metrics.RecordEmailSent(EmailKinds.PasswordReset);
+        }
+        else
         {
             _metrics.RecordEmailFailed(EmailKinds.PasswordReset);
-            return sendResult;
         }
 
-        _metrics.RecordEmailSent(EmailKinds.PasswordReset);
         return Result.Ok();
     }
 }

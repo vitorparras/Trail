@@ -43,6 +43,11 @@ public sealed class CreateInvitationHandler
             return Result.Forbidden(Message.Error("accounts.admin.forbidden"));
         }
 
+        if (_identityGateway.GetRegistrationMode() == RegistrationMode.Closed)
+        {
+            return Result.Forbidden(Message.Error("accounts.invitation.registration_closed"));
+        }
+
         if (string.IsNullOrWhiteSpace(command.Email))
         {
             return Result.Invalid(Message.Error("accounts.invitation.email_required", nameof(command.Email)));

@@ -25,6 +25,18 @@ public sealed class TestPlanningStore : IPlanningStore
         return Task.FromResult(list);
     }
 
+    public Task<IReadOnlyList<StudyPlanOptionView>> ListStudyPlanOptionsAsync(CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<StudyPlanOptionView> options =
+        [
+            .. _plans.Values
+                .OrderBy(plan => plan.Name, StringComparer.Ordinal)
+                .ThenBy(plan => plan.Id.Value)
+                .Select(plan => new StudyPlanOptionView(plan.Id, plan.Name)),
+        ];
+        return Task.FromResult(options);
+    }
+
     public Task AddStudyPlanAsync(StudyPlan plan, CancellationToken cancellationToken = default)
     {
         _plans[plan.Id] = plan;

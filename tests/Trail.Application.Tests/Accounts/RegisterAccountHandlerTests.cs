@@ -197,6 +197,44 @@ public sealed class RegisterAccountHandlerTests
         Assert.True(result.IsOk);
         Assert.True(result.Data.RequiresEmailConfirmation);
         Assert.Single(_identityGateway.Users);
+        Assert.Equal(["existing@example.com"], _identityGateway.SimulatedAccountCreations);
+    }
+
+    [Theory]
+    [InlineData("existing@example.com")]
+    [InlineData("new@example.com")]
+    public async Task HandleAsync_NonFirstUserWithWeakPassword_ReturnsThePasswordRuleWhetherOrNotTheEmailExists(string email)
+    {
+        _identityGateway.AnyUsersExistResult = true;
+        _identityGateway.RegistrationMode = RegistrationMode.Open;
+        _identityGateway.Users.Add(new AccountUserDto(UserId.New(), "existing@example.com", false, true, true, DateTime.UtcNow));
+        _identityGateway.ValidatePasswordResult = Result.Invalid(Message.Error("accounts.identity.password_too_short", nameof(RegisterAccountCommand.Password)));
+
+        var result = await CreateHandler().HandleAsync(new RegisterAccountCommand(email, "abcde", "abcde"), TestContext.Current.CancellationToken);
+
+        Assert.Equal(ResultStatus.Invalid, result.Status);
+        var message = Assert.Single(result.Messages);
+        Assert.Equal("accounts.identity.password_too_short", message.Code);
+        Assert.Equal(nameof(RegisterAccountCommand.Password), message.Target);
+        Assert.Single(_identityGateway.Users);
+        Assert.Empty(_identityGateway.SimulatedAccountCreations);
+    }
+
+    [Fact]
+    public async Task HandleAsync_NonFirstUserWhenCreationConflictsWithAConcurrentRegistration_ReturnsTheSameOkAsAnExistingEmail()
+    {
+        _identityGateway.AnyUsersExistResult = true;
+        _identityGateway.RegistrationMode = RegistrationMode.Open;
+        _identityGateway.CreateUserResult = Result.Conflict(Message.Error("accounts.registration.email_already_exists"));
+
+        var result = await CreateHandler().HandleAsync(new RegisterAccountCommand("racing@example.com", "Password123!", "Password123!"), TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsOk);
+        Assert.Empty(result.Messages);
+        Assert.True(result.Data.RequiresEmailConfirmation);
+        Assert.Null(result.Data.UserId);
+        Assert.Null(_userSettingsStore.Settings);
+        Assert.Empty(_emailSender.SentMessages);
     }
 
     [Fact]

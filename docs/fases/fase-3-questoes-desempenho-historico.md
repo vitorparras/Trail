@@ -26,18 +26,18 @@ Entregar a parte central do módulo `Practice`
 
   | Peça | Uso na Fase 3 |
   |---|---|
-  | W0-T1 | `QuestionEntryConfiguration` em `Persistence/Configurations/Practice/`, sem editar o `AppDbContext` |
-  | W0-T2 | Linhas nos métodos `AddPracticeApplication`, `AddPracticeInfrastructure` e `AddPracticeWeb`, que a Onda 0 cria vazios e já chama. `QuestionMetrics`, o bloco do painel, o link do plano e os contribuintes da prévia de exclusão e da atividade do plano entram pela descoberta por convenção. Nenhum ponto de composição é editado, nem o `Program.cs` |
-  | W0-T3 | `PracticeResource` e `Resources/PracticeResource.resx`, com os códigos `practice.*` traduzidos pelo registro de prefixos do `ResultResponder`; `Pages/Practice/_ViewImports.cshtml`; `UiText` do E2E por módulo |
-  | W0-T4 | `<chart>` nos gráficos do painel e do histórico, com a tabela equivalente (necessidades na T4) |
+  | W0-T1 | `QuestionEntryConfiguration` em `Persistence/Configurations/Practice/`, sem editar o `AppDbContext` ([3.10](../03-arquitetura.md#dois-bancos)) |
+  | W0-T2 | Linhas nos métodos `AddPracticeApplication`, `AddPracticeInfrastructure` e `AddPracticeWeb`, que a Onda 0 cria vazios e já chama. `QuestionMetrics`, o bloco do painel, o link do plano e os contribuintes da prévia de exclusão e da atividade do plano entram pela descoberta por convenção ([3.5](../03-arquitetura.md#pontos-de-extensão)). Nenhum ponto de composição é editado, nem o `Program.cs` |
+  | W0-T3 | `PracticeResource` e `Resources/PracticeResource.resx`, com os códigos `practice.*` traduzidos pelo `MessageResourceRegistry`; o `PracticeLocalizer` do `Pages/Practice/_ViewImports.cshtml`; os textos com quantidade em `<código>.one` e `<código>.other`, pelo `CountedMessage`; `UiText.Get(UiResource.Practice, key)` no E2E ([3.5](../03-arquitetura.md#textos-e-mensagens)) |
+  | W0-T4 | `<chart>` nos gráficos do painel e do histórico, com a tabela equivalente, nas regras de cor da [3.9](../03-arquitetura.md#gráficos) (necessidades na T4) |
   | W0-T5 | `IDashboardBlock`, `DashboardContext` (o plano do painel, pela Onda 0, P4), `IPlanActivityContributor` (a atividade mais recente de cada plano, que escolhe o plano padrão) e a varredura de isolamento do painel |
-  | W0-T6 | `QuestionCount` e o auxiliar de mapeamento (colunas `Total`, `Correct` e `Wrong`, `CHECK` com nomes entre aspas) |
-  | W0-T7 | Migração local `AddQuestionEntries`, gerada de novo na integração |
-  | W0-T8 | Login exigido em `Pages/Practice`, registrado pela Onda 0 em qualquer resposta da Onda 0, P3 |
-  | W0-T9 | `IUserCalendar` (só o `Today`), `CalendarWeek`, `FakeTimeProvider`, `DeletionScope` com `IDeletionImpactContributor` (confirmação com contagens também na exclusão de disciplina e de tópico), e `IPlanLinkContributor` |
-  | W0-T10 | `_FormErrors` e `FormErrorList` em `Pages/Shared`, com `role="alert"` e foco no primeiro campo inválido |
-  | W0-T11 | Fixture do E2E com um usuário novo por teste e o service worker bloqueado |
-  | W0-T12 | Harness de desempenho e `.github/workflows/performance.yml`: esta fase só acrescenta cenários |
+  | W0-T6 | `QuestionCount` e `HasQuestionCount` (colunas `Total`, `Correct` e `Wrong`, `CHECK` com nomes entre aspas), chamado depois das outras propriedades ([3.10](../03-arquitetura.md#contagem-de-questões)) |
+  | W0-T7 | Migração local `AddQuestionEntries`, gerada de novo na integração ([4.3](../04-qualidade-e-entrega.md#43-fluxo-de-trabalho-no-git)) |
+  | W0-T8 | Login exigido pela `FallbackPolicy` (Onda 0, P3): as páginas de `Pages/Practice` nascem protegidas, e o `AnonymousAccessTests` as classifica como privadas pela pasta `/Practice/`, sem edição ([3.11](../03-arquitetura.md#login-no-app-inteiro)) |
+  | W0-T9 | `IUserCalendar` (só o `Today`), `CalendarWeek`, `FakeTimeProvider`, `DeletionScope` com `IDeletionImpactContributor` e `DeletionImpactItem` (confirmação com contagens também na exclusão de disciplina e de tópico), e `IPlanLinkContributor` com `PlanLink` e `PlanLinkIcon.RotateCcwClock` |
+  | W0-T10 | `FormErrors`, `FormErrorList` e `Pages/Shared/_FormErrors.cshtml`, com `role="alert"` e foco no primeiro campo inválido, o `FieldTargetMap`, o `asp-error-span` e o `[BindingErrorPartial]` nos handlers HTMX ([3.9](../03-arquitetura.md#formulários-e-erros)) |
+  | W0-T11 | Fixture do E2E com um usuário novo por teste e o service worker bloqueado ([4.1](../04-qualidade-e-entrega.md#41-estratégia-de-testes)) |
+  | W0-T12 | Harness de desempenho (`PerformanceFixture`) e `.github/workflows/performance.yml`: esta fase só acrescenta uma classe de cenários, com a sua fixture e o seu volume ([4.1](../04-qualidade-e-entrega.md#41-estratégia-de-testes)) |
   | W0-T13 | Os ícones da seção [Ícones](#ícones), no sprite |
 
 - Respostas do autor na Onda 0: P1 (peças comuns), P3 (login no app inteiro), P4 (qual plano
@@ -47,8 +47,8 @@ Entregar a parte central do módulo `Practice`
     acrescentam linhas nos arquivos comuns da Onda 0 ([Fronteiras](#fronteiras-com-outras-fases)).
   - **Fase 5:** sem dependência de código. O atalho e as horas na árvore da disciplina
     (pergunta 9 da Fase 5, opção C) dependem do merge das duas fases.
-  - **Critério "E1 a E5" do roteiro:** fecha com o merge da Fase 4, se a Onda 0, P7(c) for
-    aceita.
+  - **Critério "E1 a E5" do roteiro:** esta fase cobre E1, E2, E3 e E5, e o E4 fecha com o
+    merge da Fase 4 (Onda 0, P7(c)).
   - **Fase 7a:** nenhuma. O E2E roda com o service worker bloqueado (W0-T11).
 - ADRs [0009](../adr/0009-questoes-como-lancamentos.md),
   [0010](../adr/0010-periodo-de-desempenho.md), [0011](../adr/0011-estilo-arquitetural.md),
@@ -66,12 +66,12 @@ Entregar a parte central do módulo `Practice`
 | D5 | "Hoje" e semana | O "hoje" vem do `IUserCalendar` (W0-T9), no fuso de `UserSettings.TimeZoneId`. A Fase 3 trabalha só com `DateOnly` e usa só o `Today`: a conversão de instantes é do `StudyCalendar` da Fase 5. "Últimos N dias" vai de hoje − (N − 1) até hoje. As semanas vão de segunda a domingo (`CalendarWeek`, W0-T9), pela `Date` |
 | D6 | Plano "sem pontuação" | Lançar, corrigir e excluir devolvem `Invalid` com `practice.plan.scoring_disabled`. As consultas devolvem `ScoringEnabled = false`, e as telas escondem campos, lançamentos, desempenho e o link "Histórico", sem apagar nada. Voltar para outra regra mostra tudo de novo, recalculado na leitura |
 | D7 | Concorrência | Corrigir e excluir enviam a `Version` exibida. Se ela mudou, o resultado é `Conflict`, e o formulário mantém o que foi digitado, como na edição de texto ([3.10](../03-arquitetura.md#310-dados-dois-bancos-integridade-e-concorrência)). Lançar cria um agregado novo e não tem conflito |
-| D8 | Exclusão em cascata | Chave estrangeira `TopicId` → `Topics` em cascata: excluir tópico, disciplina ou plano apaga os lançamentos pelo banco, sem eventos (exceção da [2.2](../02-dominio-e-regras.md#modelo-tático-ddd)). Na prévia, um `IDeletionImpactContributor` (W0-T9) conta os lançamentos dos tópicos do `DeletionScope` e devolve o código `practice.deletion.question_entries`, com os textos nas chaves `.one` e `.other` do `PracticeResource.resx`. Vale para a exclusão de plano, disciplina e tópico |
+| D8 | Exclusão em cascata | Chave estrangeira `TopicId` → `Topics` em cascata: excluir tópico, disciplina ou plano apaga os lançamentos pelo banco, sem eventos (exceção da [2.2](../02-dominio-e-regras.md#modelo-tático-ddd)). Na prévia, um `IDeletionImpactContributor` (W0-T9) conta os lançamentos dos tópicos do `DeletionScope.TopicIds` (na exclusão do tópico, ele e os subtópicos; na da disciplina e do plano, todos os tópicos; na do bloco, nenhum) e devolve `DeletionImpactItem.Create("practice.deletion.question_entries", count)`, com os textos nas chaves `.one` e `.other` do `PracticeResource.resx` (`{0:N0}` para o número). Vale para a exclusão de plano, disciplina e tópico. As chaves seguem as opções recomendadas da [P10](onda-0-base-compartilhada.md#p10--regra-do-plural-nos-textos-com-quantidade) e da [P11](onda-0-base-compartilhada.md#p11--formato-dos-itens-da-prévia-de-exclusão) da Onda 0, ainda sem resposta, e se ajustam na integração se o autor escolher outra |
 | D9 | Arquivos próprios no módulo `Practice` | Uma pasta por caso de uso, como na 3.5 (`Practice/RecordQuestions/`, `Practice/GetPerformance/`), porta própria, `QuestionEntryId.cs` em arquivo próprio e store com `Set<QuestionEntry>()`, sem `DbSet` novo no `AppDbContext`. As páginas ficam em `Pages/Practice/`, fora de `MockExams/` (Fase 4). A Fase 2 mantém a estrutura atual |
 | D10 | Métricas | Classe `QuestionMetrics` sobre o `Meter` da `ApplicationMetrics`, sem editar esse arquivo e descoberta pela convenção da W0-T2: `trail.questions.recorded` (tag `outcome`: `correct`, `wrong` e `blank`, somando as quantidades), `trail.question_entries.corrected` e `trail.question_entries.deleted`. Sem usuário como dimensão ([ADR 0016](../adr/0016-observabilidade.md)) |
 | D11 | Lista de lançamentos | 20 por vez, dos mais recentes para os mais antigos, paginada pela chave (`Date`, `CreatedAt`, `Id`): "carregar mais" por HTMX e link para a próxima página sem JavaScript. Um lançamento novo no meio não repete nem pula itens |
 | D12 | Origem dos lançamentos importados e restaurados | Fica para a Fase 6, dona da importação e da restauração. A Fase 3 entrega o `QuestionsRecorded` sem origem. A Fase 6 decide se acrescenta a origem ao evento, como no `StudyPlanCreated`, ou se a carga de dados não levanta o evento |
-| D13 | Estatísticas na árvore da disciplina | Um view component da Prática (`TopicQuestionStatsViewComponent`), chamado por uma linha nova dentro do laço de `Pages/Plans/_TopicTree.cshtml`, a única edição da Fase 3 nas páginas do `Planning`. A primeira chamada da requisição faz uma só consulta (`GetSubjectQuestionStats`), com as somas de todos os tópicos da disciplina, guardada num serviço com escopo da requisição; as outras linhas só leem. A árvore usa o período padrão do plano, porque é redesenhada pelos handlers do `Planning`, que não levam o período. Todo handler fica em `Pages/Practice`, inclusive o lançamento feito pela árvore, que devolve o parcial `_TopicTree` atualizado, lido pela consulta do `Planning` (`GetSubjectTopicsHandler`) |
+| D13 | Estatísticas na árvore da disciplina | Um view component da Prática (`TopicQuestionStatsViewComponent`), chamado por uma linha nova dentro do laço de `Pages/Plans/_TopicTree.cshtml`, junto dos controles de cada tópico (ao lado do link "Excluir", que desde a W0-T9 abre a confirmação com a prévia), a única edição da Fase 3 nas páginas do `Planning`. A primeira chamada da requisição faz uma só consulta (`GetSubjectQuestionStats`), com as somas de todos os tópicos da disciplina, guardada num serviço com escopo da requisição; as outras linhas só leem. A árvore usa o período padrão do plano, porque é redesenhada pelos handlers do `Planning`, que não levam o período. Todo handler fica em `Pages/Practice`, inclusive o lançamento feito pela árvore, que devolve o parcial `_TopicTree` atualizado, lido pela consulta do `Planning` (`GetSubjectTopicsHandler`) |
 
 ## Tarefas e etapas de execução
 
@@ -124,8 +124,8 @@ flowchart LR
   - unidade de cada invariante e de cada código de mensagem;
   - regressão em `SpreadsheetRegressionTests` (classe `partial`), um caso nomeado por erro:
     E1 (0 certas e 10 erradas dão −100,0%), E2 (2 questões a 100% e 200 a 0% pesam pelo
-    volume) e E3 (tópicos que se anulam mostram 0,0% na disciplina). Se a Onda 0, P7(c)
-    for aceita, a Fase 4 acrescenta o E4 num arquivo `partial` próprio, ao lado deste;
+    volume) e E3 (tópicos que se anulam mostram 0,0% na disciplina). A Fase 4 acrescenta o
+    E4 num arquivo `partial` próprio, ao lado deste (Onda 0, P7(c));
   - propriedades (CsCheck) do período: `Includes` e `GetBounds` concordam; "últimos N dias"
     tem exatamente N dias, inclui hoje e nunca o futuro; N está contido em N + 1; o
     intervalo livre inclui as duas pontas; dentro + fora do período = todos;
@@ -188,13 +188,18 @@ testado, e `Trail.Architecture.Tests` verde, incluindo a regra 8 para o `Practic
 
 ### T3 — Persistência e migração (`Infrastructure`)
 
-- `QuestionEntryConfiguration` (W0-T1): tabela `QuestionEntries`, `QuestionCount` pelo
-  auxiliar de mapeamento da W0-T6 (colunas `Total`, `Correct` e `Wrong` e o `CHECK` da
-  [2.2](../02-dominio-e-regras.md#invariantes)), chave estrangeira em cascata para
-  `Topics` (D8) e índices em `(TopicId, Date)` e `(OwnerId, Date)`. `Version`, filtro por
-  dono e conversores vêm das convenções existentes.
+- `QuestionEntryConfiguration` (W0-T1): tabela `QuestionEntries`,
+  `builder.HasQuestionCount(x => x.Count, "CK_QuestionEntries_Count")` (W0-T6, colunas
+  `Total`, `Correct` e `Wrong` e o `CHECK` da [2.2](../02-dominio-e-regras.md#invariantes)),
+  chamado depois das outras propriedades, chave estrangeira em cascata para `Topics` (D8) e
+  índices em `(TopicId, Date)` e `(OwnerId, Date)`. `Version`, filtro por dono e
+  conversores vêm das convenções existentes.
 - `EfQuestionEntryStore` (somas com `GROUP BY` sobre inteiros, D3), registrado em
-  `AddPracticeInfrastructure`.
+  `AddPracticeInfrastructure`. O `Blank` não é traduzido em consultas: os brancos são
+  somados como `Total - Correct - Wrong`
+  ([3.10](../03-arquitetura.md#contagem-de-questões)).
+- A revisão confere na migração gerada as colunas `Total`, `Correct` e `Wrong`, sem
+  prefixo, e o `CHECK`.
 - Migração local `AddQuestionEntries` em `SqliteAppDbContext` e `PostgreSqlAppDbContext`,
   100% gerada (W0-T7).
 - `QuestionEntryPersistenceTests` nos dois bancos: o `CHECK` recusa uma linha inválida
@@ -221,7 +226,8 @@ SQLite e PostgreSQL.
     para o painel sem JavaScript e, com HTMX, trocando só o bloco pelo endpoint acima, que
     responde com `HX-Push-Url` para a URL do painel (P8);
   - volume sempre visível ("42 questões nos últimos 15 dias" ou "nenhuma questão nos
-    últimos 15 dias"), com singular e plural pelo `.resx`;
+    últimos 15 dias"), com singular e plural pelas chaves `.one` e `.other` do
+    `CountedMessage` e um texto próprio para o zero;
   - tabela do plano, dos blocos e das disciplinas com volume, desempenho e faixa (cor e
     texto), com a legenda das faixas do plano;
   - um gráfico por disciplina, com um rótulo por tópico (E5) e a tabela equivalente (P3).
@@ -232,13 +238,20 @@ SQLite e PostgreSQL.
   a regra é "sem pontuação".
 - Plano sem pontuação: sem campos de questões e com um aviso no lugar do bloco (D6).
 - Formulários enviados por HTMX com `_FormErrors` e `FormErrorList` (W0-T10), sem versão
-  própria. Números no formato pt-BR ("42,9%").
-- Necessidades do `<chart>` (W0-T4):
-  - painel: barras horizontais dentro de um `<details>` fechado (P3), eixo de −100 a 100
-    (Cebraspe) ou de 0 a 100 (tradicional), valores em % no formato pt-BR, tópico sem
-    questões como lacuna, e redesenho depois da troca do bloco pelo HTMX;
+  própria, nas convenções da [3.9](../03-arquitetura.md#formulários-e-erros): o
+  `FieldTargetMap` liga `Total`, `Correct`, `Wrong` e `Date` aos campos, que levam
+  `asp-error-span`; os handlers HTMX declaram `[BindingErrorPartial]` com o parcial do
+  formulário; o período (`?periodo=`) é lido como texto e interpretado pela página; e o
+  estado de que o 422 precisa (tópico e plano) vem da rota. Números no formato pt-BR
+  ("42,9%").
+- Necessidades do `<chart>` (W0-T4), nas regras de cor da
+  [3.9](../03-arquitetura.md#gráficos) (nenhuma série neutra em `ChartColor.Error`):
+  - painel: barras horizontais (`Horizontal = true`) dentro de um `<details>` fechado
+    (P3), eixo de −100 a 100 (`ChartAxis.Symmetric(100)`, Cebraspe) ou de 0 a 100
+    (tradicional), valores em % (`ChartValueFormat.Percent()`), tópico sem questões como
+    lacuna (`null`), e redesenho depois da troca do bloco pelo HTMX;
   - histórico: dois gráficos com os mesmos rótulos (semanas), barras do volume e linha do
-    desempenho, com lacunas nas semanas sem questões (P4);
+    desempenho, com lacunas visíveis nas semanas sem questões (`SpanGaps = false`, P4);
   - a tabela equivalente gerada do mesmo modelo. Nenhuma série tracejada.
 - Testes em `Trail.Web.Tests/Practice/`, com os auxiliares de nome iniciado por `Question`
   (`QuestionPagesTestHelper`, `TestQuestionEntryStore`, `FailingQuestionEntryStore`), para
@@ -267,7 +280,10 @@ funcionam com e sem HTMX, e o gráfico é redesenhado depois da troca de períod
   - teste de reflexão próprio: um handler novo em `Trail.Web.Pages.Practice` sem caso na
     varredura faz o teste falhar. O namespace é comparado por igualdade, como no teste da
     Fase 2, e as páginas de `Trail.Web.Pages.Practice.MockExams` ficam na varredura da
-    Fase 4. O painel em si fica na varredura da W0-T5.
+    Fase 4. O painel em si fica na varredura da W0-T5;
+  - a `QuestionIsolationSweep` declara `[IsolationSweep("Trail.Web.Pages.Practice")]`, que
+    atende o `PageNamespaceIsolationTests` da W0-T5
+    ([3.11](../03-arquitetura.md#isolamento)).
 - `tests/Trail.E2E.Tests/QuestionsE2ETests.cs`, com o usuário novo de cada teste (W0-T11),
   seguindo o fluxo 2 da [4.1](../04-qualidade-e-entrega.md#41-estratégia-de-testes):
   - lançar num subtópico e ver o tópico pai, a disciplina, o painel e o histórico
@@ -277,14 +293,18 @@ funcionam com e sem HTMX, e o gráfico é redesenhado depois da troca de períod
   - data futura recusada, com a mensagem anunciada ao leitor de tela; corrigir e excluir;
   - em `390x844` e `1280x800`, nos temas claro e escuro, com zero violações WCAG 2.1 AA no
     axe e o diálogo de lançamento operado só pelo teclado.
-- Cenários no harness de desempenho (W0-T12), com 10.000 lançamentos nos 1.000 tópicos do
-  harness: painel, página da disciplina, página do tópico e histórico, cada um abaixo de
-  300 ms no servidor ([3.15](../03-arquitetura.md#315-verificações-automáticas-da-arquitetura)).
-  O cenário da página do plano, da Onda 0, passa a rodar com esses lançamentos.
+- Cenários no harness de desempenho (W0-T12), numa classe nova em
+  `Trail.Web.Tests/Performance/` com `[PerformanceTest]` e
+  `[Collection(PerformanceCollections.Sequential)]`, e uma fixture derivada de
+  `PerformanceFixture` que acrescenta 10.000 lançamentos aos 1.000 tópicos do harness pelo
+  `SeedAsync`: painel, página do plano, página da disciplina, página do tópico e histórico,
+  cada um dentro do `PerformanceBudget.Default` (p95 abaixo de 300 ms no servidor,
+  [3.15](../03-arquitetura.md#315-verificações-automáticas-da-arquitetura)). Os arquivos do
+  harness e os cenários da Onda 0 não mudam.
 
 **Pronto quando:**
 - Os erros E1, E2, E3 e E5 têm testes nomeados que documentam o comportamento corrigido. O
-  E4 segue a Onda 0, P7(c).
+  E4 fica na Fase 4 (Onda 0, P7(c)).
 - Os testes de propriedade do período passam.
 - Os testes de isolamento passam nos dois bancos, e o E2E passa contra o container SQLite.
 - O CI fica 100% verde no PR da fase.

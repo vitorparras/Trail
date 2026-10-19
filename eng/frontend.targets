@@ -31,6 +31,7 @@ System.IO.File.WriteAllText(File, Content.Replace("\r\n", "\n"), new System.Text
   <ItemGroup>
     <TailwindInputFile Include="Styles/**/*" />
     <TailwindInputFile Include="Pages/**/*.cshtml" />
+    <TailwindInputFile Include="TagHelpers/**/*.cs" />
     <TailwindInputFile Include="$(MSBuildThisFileFullPath);$(MSBuildThisFileDirectory)frontend.props" />
   </ItemGroup>
 

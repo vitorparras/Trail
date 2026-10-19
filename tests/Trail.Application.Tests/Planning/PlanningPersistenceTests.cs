@@ -381,8 +381,7 @@ public sealed class PlanningPersistenceTests
         var topicImpact = await impactHandler.HandleAsync(
             new GetDeletionImpactQuery(DeletionTargetKind.Topic, planId, null, subject1Id, t1Id), ct);
         Assert.True(topicImpact.IsOk);
-        Assert.Equal(4, topicImpact.Data.TopicCount);
-        Assert.Equal(4, topicImpact.Data.NoteCount);
+        Assert.Equal([Item("planning.deletion.topics", 4), Item("planning.deletion.notes", 4)], topicImpact.Data.Items);
 
         var delTopicResult = await deleteTopicHandler.HandleAsync(new DeleteTopicCommand(subject1Id, t1Id), ct);
         Assert.True(delTopicResult.IsOk);
@@ -399,8 +398,9 @@ public sealed class PlanningPersistenceTests
         var subjectImpact = await impactHandler.HandleAsync(
             new GetDeletionImpactQuery(DeletionTargetKind.Subject, planId, null, subject1Id), ct);
         Assert.True(subjectImpact.IsOk);
-        Assert.Equal(1, subjectImpact.Data.TopicCount);
-        Assert.Equal(1, subjectImpact.Data.NoteCount);
+        Assert.Equal(
+            [Item("planning.deletion.subjects", 1), Item("planning.deletion.topics", 1), Item("planning.deletion.notes", 1)],
+            subjectImpact.Data.Items);
 
         var delSubResult = await deleteSubjectHandler.HandleAsync(new DeleteSubjectCommand(planId, subject1Id), ct);
         Assert.True(delSubResult.IsOk);
@@ -419,10 +419,14 @@ public sealed class PlanningPersistenceTests
         var planImpact = await impactHandler.HandleAsync(
             new GetDeletionImpactQuery(DeletionTargetKind.StudyPlan, planId), ct);
         Assert.True(planImpact.IsOk);
-        Assert.Equal(1, planImpact.Data.SectionCount);
-        Assert.Equal(1, planImpact.Data.SubjectCount);
-        Assert.Equal(1, planImpact.Data.TopicCount);
-        Assert.Equal(1, planImpact.Data.NoteCount);
+        Assert.Equal(
+            [Item("planning.deletion.sections", 1), Item("planning.deletion.subjects", 1), Item("planning.deletion.topics", 1), Item("planning.deletion.notes", 1)],
+            planImpact.Data.Items);
+
+        var sectionImpact = await impactHandler.HandleAsync(
+            new GetDeletionImpactQuery(DeletionTargetKind.Section, planId, sectionId), ct);
+        Assert.True(sectionImpact.IsOk);
+        Assert.Equal([Item("planning.deletion.sections", 1)], sectionImpact.Data.Items);
 
         var delPlanResult = await deletePlanHandler.HandleAsync(new DeleteStudyPlanCommand(planId), ct);
         Assert.True(delPlanResult.IsOk);
@@ -580,9 +584,116 @@ public sealed class PlanningPersistenceTests
         Assert.Equal(ResultStatus.NotFound, delPlanRes.Status);
     }
 
+    [Theory]
+    [MemberData(nameof(TestDatabaseProviders.EnabledProviders), MemberType = typeof(TestDatabaseProviders))]
+    public async Task DeletionImpact_WithRegisteredContributor_ResolvesTheScopeOfEachTargetAndListsItsItems(DatabaseProvider provider)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var contributor = new ScopeEchoContributor();
+        await using var harness = await CreateHarnessAsync(
+            provider,
+            services => services.AddScoped<IDeletionImpactContributor>(_ => contributor),
+            ct);
+
+        var user = UserId.New();
+        StudyPlanId planId;
+        SectionId sectionId;
+        SubjectId subject1Id;
+        SubjectId subject2Id;
+        TopicId t1Id;
+        TopicId t11Id;
+        TopicId t2Id;
+        TopicId t3Id;
+
+        using (var setupScope = harness.CreateUserScope(user))
+        {
+            var services = setupScope.ServiceProvider;
+            planId = (await services.GetRequiredService<CreateStudyPlanHandler>().HandleAsync(new CreateStudyPlanCommand("Scope Plan"), ct)).Data;
+            sectionId = (await services.GetRequiredService<AddSectionHandler>().HandleAsync(new AddSectionCommand(planId, "Section", 0), ct)).Data;
+            var createSubject = services.GetRequiredService<CreateSubjectHandler>();
+            subject1Id = (await createSubject.HandleAsync(new CreateSubjectCommand(planId, "Subject 1", sectionId), ct)).Data;
+            subject2Id = (await createSubject.HandleAsync(new CreateSubjectCommand(planId, "Subject 2"), ct)).Data;
+            var addTopic = services.GetRequiredService<AddTopicHandler>();
+            t1Id = (await addTopic.HandleAsync(new AddTopicCommand(subject1Id, "Topic 1", "1"), ct)).Data;
+            t11Id = (await addTopic.HandleAsync(new AddTopicCommand(subject1Id, "Topic 1.1", "1.1", t1Id), ct)).Data;
+            t2Id = (await addTopic.HandleAsync(new AddTopicCommand(subject1Id, "Topic 2", "2"), ct)).Data;
+            t3Id = (await addTopic.HandleAsync(new AddTopicCommand(subject2Id, "Topic 3", "3"), ct)).Data;
+            await services.GetRequiredService<SaveTopicNoteHandler>().HandleAsync(new SaveTopicNoteCommand(subject1Id, t11Id, "Note", 0), ct);
+        }
+
+        using (var otherScope = harness.CreateUserScope(UserId.New()))
+        {
+            var services = otherScope.ServiceProvider;
+            var otherPlanId = (await services.GetRequiredService<CreateStudyPlanHandler>().HandleAsync(new CreateStudyPlanCommand("Other Plan"), ct)).Data;
+            var otherSubjectId = (await services.GetRequiredService<CreateSubjectHandler>().HandleAsync(new CreateSubjectCommand(otherPlanId, "Other"), ct)).Data;
+            await services.GetRequiredService<AddTopicHandler>().HandleAsync(new AddTopicCommand(otherSubjectId, "Other topic", "1"), ct);
+        }
+
+        using var scope = harness.CreateUserScope(user);
+        var handler = scope.ServiceProvider.GetRequiredService<GetDeletionImpactHandler>();
+
+        var plan = await handler.HandleAsync(new GetDeletionImpactQuery(DeletionTargetKind.StudyPlan, planId), ct);
+        var section = await handler.HandleAsync(new GetDeletionImpactQuery(DeletionTargetKind.Section, planId, sectionId), ct);
+        var subject = await handler.HandleAsync(new GetDeletionImpactQuery(DeletionTargetKind.Subject, planId, null, subject1Id), ct);
+        var topic = await handler.HandleAsync(new GetDeletionImpactQuery(DeletionTargetKind.Topic, planId, null, subject1Id, t1Id), ct);
+
+        Assert.Equal(
+            [Item("planning.deletion.sections", 1), Item("planning.deletion.subjects", 2), Item("planning.deletion.topics", 4), Item("planning.deletion.notes", 1), Item("practice.sample.subjects", 2), Item("practice.sample.topics", 4)],
+            plan.Data.Items);
+        Assert.Equal(
+            [Item("planning.deletion.sections", 1), Item("practice.sample.subjects", 0), Item("practice.sample.topics", 0)],
+            section.Data.Items);
+        Assert.Equal(
+            [Item("planning.deletion.subjects", 1), Item("planning.deletion.topics", 3), Item("planning.deletion.notes", 1), Item("practice.sample.subjects", 1), Item("practice.sample.topics", 3)],
+            subject.Data.Items);
+        Assert.Equal(
+            [Item("planning.deletion.topics", 2), Item("planning.deletion.notes", 1), Item("practice.sample.subjects", 0), Item("practice.sample.topics", 2)],
+            topic.Data.Items);
+
+        Assert.Equal(
+            [DeletionTargetKind.StudyPlan, DeletionTargetKind.Section, DeletionTargetKind.Subject, DeletionTargetKind.Topic],
+            contributor.Scopes.Select(received => received.Kind));
+        Assert.All(contributor.Scopes, received => Assert.Equal(planId, received.PlanId));
+        Assert.Equal(Sorted(subject1Id, subject2Id), Sorted([.. contributor.Scopes[0].SubjectIds]));
+        Assert.Equal(Sorted(t1Id, t11Id, t2Id, t3Id), Sorted([.. contributor.Scopes[0].TopicIds]));
+        Assert.Empty(contributor.Scopes[1].SubjectIds);
+        Assert.Empty(contributor.Scopes[1].TopicIds);
+        Assert.Equal([subject1Id], contributor.Scopes[2].SubjectIds);
+        Assert.Equal(Sorted(t1Id, t11Id, t2Id), Sorted([.. contributor.Scopes[2].TopicIds]));
+        Assert.Empty(contributor.Scopes[3].SubjectIds);
+        Assert.Equal(Sorted(t1Id, t11Id), Sorted([.. contributor.Scopes[3].TopicIds]));
+    }
+
+    private static DeletionImpactItem Item(string code, int count) => DeletionImpactItem.Create(code, count);
+
+    private static List<Guid> Sorted(params SubjectId[] ids) => [.. ids.Select(id => id.Value).Order()];
+
+    private static List<Guid> Sorted(params TopicId[] ids) => [.. ids.Select(id => id.Value).Order()];
+
+    private sealed class ScopeEchoContributor : IDeletionImpactContributor
+    {
+        public List<DeletionScope> Scopes { get; } = [];
+
+        public Task<IReadOnlyList<DeletionImpactItem>> GetImpactAsync(DeletionScope scope, CancellationToken cancellationToken = default)
+        {
+            Scopes.Add(scope);
+            return Task.FromResult<IReadOnlyList<DeletionImpactItem>>(
+            [
+                DeletionImpactItem.Create("practice.sample.topics", scope.TopicIds.Count),
+                DeletionImpactItem.Create("practice.sample.subjects", scope.SubjectIds.Count),
+            ]);
+        }
+    }
+
+    private static Task<PlanningTestHarness> CreateHarnessAsync(
+        DatabaseProvider provider,
+        CancellationToken cancellationToken = default) =>
+        CreateHarnessAsync(provider, null, cancellationToken);
+
     private static async Task<PlanningTestHarness> CreateHarnessAsync(
         DatabaseProvider provider,
-        CancellationToken cancellationToken = default)
+        Action<IServiceCollection>? configure,
+        CancellationToken cancellationToken)
     {
         DbConnection? sqliteConnection = null;
         string? postgresSchema = null;
@@ -634,6 +745,7 @@ public sealed class PlanningPersistenceTests
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddApplication();
         services.Replace(ServiceDescriptor.Scoped<IPlanningStore, EfPlanningStore>());
+        configure?.Invoke(services);
 
         var rootProvider = services.BuildServiceProvider();
 

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Trail.Application.Accounts;
@@ -6,8 +7,14 @@ using Trail.Web.Results;
 
 namespace Trail.Web.Pages.Account;
 
+[AllowAnonymous]
 public sealed class ResetPasswordModel : PageModel
 {
+    private static readonly FieldTargetMap Fields = FieldTargetMap.Empty.Prefixed(
+        nameof(Input),
+        nameof(InputModel.NewPassword),
+        nameof(InputModel.ConfirmNewPassword));
+
     private readonly ResetPasswordHandler _resetPasswordHandler;
 
     public ResetPasswordModel(ResetPasswordHandler resetPasswordHandler)
@@ -46,7 +53,7 @@ public sealed class ResetPasswordModel : PageModel
 
         if (!result.IsOk)
         {
-            return this.Respond(result, "account.reset_password");
+            return this.Respond(result, "account.reset_password", options => options.Fields = Fields);
         }
 
         ResetComplete = true;

@@ -53,7 +53,7 @@ public sealed class CreateModel : PageModel
         var result = await _createStudyPlanHandler.HandleAsync(command, cancellationToken);
         if (!result.IsOk)
         {
-            return this.Respond(result, "planning.create_plan");
+            return this.Respond(result, "planning.create_plan", options => options.Fields = PlanFormFields.Plan);
         }
 
         return RedirectToPage("/Plans/Details", new { planId = result.Data.Value });

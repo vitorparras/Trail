@@ -63,8 +63,9 @@ jobs:
 
       - name: Test
         run: |
+          echo "Skipping tests with the trait Category=Performance; they run in performance.yml"
           for project in tests/Trail.Domain.Tests/Trail.Domain.Tests.csproj tests/Trail.Architecture.Tests/Trail.Architecture.Tests.csproj tests/Trail.Application.Tests/Trail.Application.Tests.csproj tests/Trail.Web.Tests/Trail.Web.Tests.csproj; do
-            dotnet test "$project" --no-build --configuration Release --coverage --coverage-output-format cobertura --results-directory TestResults
+            dotnet test "$project" --no-build --configuration Release --filter-not-trait "Category=Performance" --coverage --coverage-output-format cobertura --results-directory TestResults
           done
 
       - name: Verify coverage
@@ -128,7 +129,7 @@ jobs:
         run: docker build --file Dockerfile --tag ghcr.io/vitorparras/trail:latest .
 
       - name: Start application container
-        run: docker compose --file deploy/compose.sqlite.yml up --detach --wait
+        run: docker compose --file deploy/compose.sqlite.yml --file tests/Trail.E2E.Tests/compose.e2e.yml up --detach --wait
 
       - name: Restore
         run: dotnet restore tests/Trail.E2E.Tests/Trail.E2E.Tests.csproj --locked-mode "-warnaserror:NU1901;NU1902;NU1903;NU1904"
@@ -146,11 +147,11 @@ jobs:
 
       - name: Show application logs
         if: failure()
-        run: docker compose --file deploy/compose.sqlite.yml logs --no-color
+        run: docker compose --file deploy/compose.sqlite.yml --file tests/Trail.E2E.Tests/compose.e2e.yml logs --no-color
 
       - name: Tear down compose
         if: always()
-        run: docker compose --file deploy/compose.sqlite.yml down --volumes
+        run: docker compose --file deploy/compose.sqlite.yml --file tests/Trail.E2E.Tests/compose.e2e.yml down --volumes
 
   build:
     name: Build and test

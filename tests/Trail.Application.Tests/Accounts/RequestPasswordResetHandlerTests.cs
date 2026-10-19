@@ -71,33 +71,46 @@ public sealed class RequestPasswordResetHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_TokenGenerationFails_ReturnsFailure()
+    public async Task HandleAsync_TokenGenerationFails_ReturnsTheSameOkAsAnUnknownEmail()
     {
         _identityGateway.PasswordResetTokenResult = Result.Invalid(Message.Error("token.error"));
         _identityGateway.Users.Add(new AccountUserDto(UserId.New(), "user@example.com", false, true, true, DateTime.UtcNow));
         var handler = CreateHandler();
-        var command = new RequestPasswordResetCommand("user@example.com");
 
-        var result = await handler.HandleAsync(command, TestContext.Current.CancellationToken);
+        var result = await handler.HandleAsync(new RequestPasswordResetCommand("user@example.com"), TestContext.Current.CancellationToken);
+        var unknown = await handler.HandleAsync(new RequestPasswordResetCommand("unknown@example.com"), TestContext.Current.CancellationToken);
 
-        Assert.False(result.IsOk);
-        var message = Assert.Single(result.Messages);
-        Assert.Equal("token.error", message.Code);
+        Assert.True(result.IsOk);
+        Assert.Empty(result.Messages);
+        Assert.Equal(unknown.Status, result.Status);
+        Assert.Empty(_emailSender.SentMessages);
     }
 
     [Fact]
-    public async Task HandleAsync_EmailSendFails_ReturnsFailureAndRecordsMetric()
+    public async Task HandleAsync_EmailSendFails_ReturnsTheSameOkAsAnUnknownEmailAndRecordsTheFailure()
     {
         _emailSender.SendResult = Result.Invalid(Message.Error("smtp.error"));
         _identityGateway.Users.Add(new AccountUserDto(UserId.New(), "user@example.com", false, true, true, DateTime.UtcNow));
         var handler = CreateHandler();
-        var command = new RequestPasswordResetCommand("user@example.com");
+        long failures = 0;
+        using var listener = new MeterListener();
+        listener.InstrumentPublished = (instrument, meterListener) =>
+        {
+            if (instrument.Meter == _metrics.Meter && instrument.Name == ApplicationMetrics.EmailsFailedInstrumentName)
+            {
+                meterListener.EnableMeasurementEvents(instrument);
+            }
+        };
+        listener.SetMeasurementEventCallback<long>((_, measurement, _, _) => failures += measurement);
+        listener.Start();
 
-        var result = await handler.HandleAsync(command, TestContext.Current.CancellationToken);
+        var result = await handler.HandleAsync(new RequestPasswordResetCommand("user@example.com"), TestContext.Current.CancellationToken);
+        var unknown = await handler.HandleAsync(new RequestPasswordResetCommand("unknown@example.com"), TestContext.Current.CancellationToken);
 
-        Assert.False(result.IsOk);
-        var message = Assert.Single(result.Messages);
-        Assert.Equal("smtp.error", message.Code);
+        Assert.True(result.IsOk);
+        Assert.Empty(result.Messages);
+        Assert.Equal(unknown.Status, result.Status);
+        Assert.Equal(1, failures);
     }
 
     [Fact]

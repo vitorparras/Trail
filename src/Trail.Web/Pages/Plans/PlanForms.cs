@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Trail.Application.Planning;
+using Trail.Web.Results;
 
 namespace Trail.Web.Pages.Plans;
 
@@ -46,8 +46,6 @@ public sealed record MoveTopicFormModel(
     Guid? NewParentId,
     bool ShowErrors);
 
-public sealed record FormErrorList(string Id, IReadOnlyList<string> Errors);
-
 public static class PlanFormErrors
 {
     public const string NameField = "Name";
@@ -55,33 +53,17 @@ public static class PlanFormErrors
     public const string CodeField = "TopicCode";
     public const string ParentField = "ParentId";
     public const string MarkdownField = "Markdown";
+}
 
-    public static IReadOnlyList<string> For(ModelStateDictionary modelState, bool show, params string[] fields)
-    {
-        ArgumentNullException.ThrowIfNull(modelState);
-        ArgumentNullException.ThrowIfNull(fields);
+public static class PlanFormFields
+{
+    public const string InputPrefix = "Input";
 
-        if (!show)
-        {
-            return [];
-        }
-
-        return fields
-            .Append(string.Empty)
-            .SelectMany(field => ErrorsOf(modelState, field))
-            .Distinct(StringComparer.Ordinal)
-            .ToList();
-    }
-
-    public static bool HasErrors(ModelStateDictionary modelState, bool show, string field)
-    {
-        ArgumentNullException.ThrowIfNull(modelState);
-
-        return show && ErrorsOf(modelState, field).Any();
-    }
-
-    private static IEnumerable<string> ErrorsOf(ModelStateDictionary modelState, string field) =>
-        modelState.TryGetValue(field, out var entry)
-            ? entry.Errors.Select(error => error.ErrorMessage)
-            : [];
+    public static readonly FieldTargetMap Plan = FieldTargetMap.Empty
+        .Prefixed(InputPrefix, "Name", "Description", "DefaultMockExamQuestions")
+        .Field("LowThreshold", $"{InputPrefix}.LowBandThreshold")
+        .Field("HighThreshold", $"{InputPrefix}.HighBandThreshold")
+        .Field("Days", $"{InputPrefix}.PeriodDays")
+        .Field("EndDate", $"{InputPrefix}.PeriodEndDate")
+        .Field("Kind", $"{InputPrefix}.PeriodKind");
 }

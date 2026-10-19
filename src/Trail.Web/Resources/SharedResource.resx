@@ -111,7 +111,16 @@
   <data name="accounts.change_password.passwords_do_not_match" xml:space="preserve">
     <value>A confirmação da nova senha não confere.</value>
   </data>
+  <data name="accounts.change_password.user_not_found" xml:space="preserve">
+    <value>Conta não encontrada. Faça login novamente.</value>
+  </data>
   <data name="accounts.confirm_email.invalid_token" xml:space="preserve">
+    <value>O link de confirmação de e-mail é inválido ou expirou.</value>
+  </data>
+  <data name="accounts.confirmation.invalid_token" xml:space="preserve">
+    <value>O link de confirmação de e-mail é inválido ou expirou.</value>
+  </data>
+  <data name="accounts.confirmation.user_not_found" xml:space="preserve">
     <value>O link de confirmação de e-mail é inválido ou expirou.</value>
   </data>
   <data name="accounts.admin.forbidden" xml:space="preserve">
@@ -123,11 +132,35 @@
   <data name="accounts.admin.cannot_deactivate_self" xml:space="preserve">
     <value>Não é possível desativar a própria conta de administrador.</value>
   </data>
+  <data name="accounts.admin.update_failed" xml:space="preserve">
+    <value>Não foi possível atualizar o usuário. Tente novamente.</value>
+  </data>
+  <data name="accounts.admin.not_found" xml:space="preserve">
+    <value>Administrador não encontrado.</value>
+  </data>
+  <data name="accounts.admin.not_admin" xml:space="preserve">
+    <value>O usuário informado não é administrador.</value>
+  </data>
   <data name="accounts.invitation.email_required" xml:space="preserve">
     <value>O e-mail para convite é obrigatório.</value>
   </data>
   <data name="accounts.invitation.user_already_exists" xml:space="preserve">
     <value>Já existe um usuário cadastrado com este e-mail.</value>
+  </data>
+  <data name="accounts.invitation.invalid_token" xml:space="preserve">
+    <value>O link do convite é inválido.</value>
+  </data>
+  <data name="accounts.invitation.already_accepted" xml:space="preserve">
+    <value>Este convite já foi utilizado.</value>
+  </data>
+  <data name="accounts.invitation.expired" xml:space="preserve">
+    <value>Este convite expirou. Peça um novo ao administrador.</value>
+  </data>
+  <data name="accounts.invitation.not_found" xml:space="preserve">
+    <value>Convite não encontrado.</value>
+  </data>
+  <data name="accounts.invitation.registration_closed" xml:space="preserve">
+    <value>Não é possível convidar com o cadastro fechado (modo Closed). Para convidar, defina Registration__Mode como InviteOnly e reinicie o container.</value>
   </data>
   <data name="accounts.login.email_required" xml:space="preserve">
     <value>O e-mail é obrigatório.</value>
@@ -168,6 +201,9 @@
   <data name="accounts.registration.invite_invalid" xml:space="preserve">
     <value>O convite informado é inválido ou já foi utilizado.</value>
   </data>
+  <data name="accounts.registration.email_already_exists" xml:space="preserve">
+    <value>Não foi possível concluir o cadastro. Tente novamente.</value>
+  </data>
   <data name="accounts.password_reset.email_required" xml:space="preserve">
     <value>O e-mail é obrigatório.</value>
   </data>
@@ -185,6 +221,15 @@
   </data>
   <data name="accounts.password_reset.passwords_do_not_match" xml:space="preserve">
     <value>A confirmação de senha não confere.</value>
+  </data>
+  <data name="accounts.reset_password.invalid_token" xml:space="preserve">
+    <value>O link de redefinição de senha é inválido ou expirou.</value>
+  </data>
+  <data name="accounts.reset_password.user_not_found" xml:space="preserve">
+    <value>O link de redefinição de senha é inválido ou expirou.</value>
+  </data>
+  <data name="accounts.reset_password.password_required" xml:space="preserve">
+    <value>A nova senha é obrigatória.</value>
   </data>
   <data name="accounts.test_email.email_required" xml:space="preserve">
     <value>O e-mail de destino é obrigatório.</value>
@@ -206,6 +251,39 @@
   </data>
   <data name="accounts.email.send_failed" xml:space="preserve">
     <value>Falha ao enviar e-mail. Tente novamente.</value>
+  </data>
+  <data name="accounts.email.smtp_not_configured" xml:space="preserve">
+    <value>O servidor SMTP não está configurado.</value>
+  </data>
+  <data name="accounts.identity.default_error" xml:space="preserve">
+    <value>Não foi possível concluir a operação. Tente novamente.</value>
+  </data>
+  <data name="accounts.identity.concurrency_failure" xml:space="preserve">
+    <value>A conta foi alterada por outra operação. Tente novamente.</value>
+  </data>
+  <data name="accounts.identity.password_mismatch" xml:space="preserve">
+    <value>A senha atual está incorreta.</value>
+  </data>
+  <data name="accounts.identity.invalid_token" xml:space="preserve">
+    <value>O link é inválido ou expirou.</value>
+  </data>
+  <data name="accounts.identity.invalid_user_name" xml:space="preserve">
+    <value>O e-mail só pode conter letras sem acento, números e os caracteres - . _ @ +.</value>
+  </data>
+  <data name="accounts.identity.invalid_email" xml:space="preserve">
+    <value>Informe um endereço de e-mail válido.</value>
+  </data>
+  <data name="accounts.identity.duplicate_user_name" xml:space="preserve">
+    <value>Não foi possível concluir o cadastro. Tente novamente.</value>
+  </data>
+  <data name="accounts.identity.duplicate_email" xml:space="preserve">
+    <value>Não foi possível concluir o cadastro. Tente novamente.</value>
+  </data>
+  <data name="accounts.identity.password_too_short" xml:space="preserve">
+    <value>A senha deve ter pelo menos 6 caracteres.</value>
+  </data>
+  <data name="accounts.identity.password_requires_unique_chars" xml:space="preserve">
+    <value>A senha deve ter mais caracteres diferentes.</value>
   </data>
   <data name="Login" xml:space="preserve">
     <value>Entrar</value>
@@ -468,6 +546,15 @@
   <data name="InvitationLinkGenerated" xml:space="preserve">
     <value>Link do convite gerado:</value>
   </data>
+  <data name="RegistrationClosedHeading" xml:space="preserve">
+    <value>Cadastro fechado</value>
+  </data>
+  <data name="RegistrationClosedDescription" xml:space="preserve">
+    <value>O modo de cadastro atual é Closed: ninguém cria conta nova, nem com convite. Por isso, os convites não aparecem nesta tela.</value>
+  </data>
+  <data name="RegistrationClosedHowToInvite" xml:space="preserve">
+    <value>Para convidar alguém, defina Registration__Mode como InviteOnly e reinicie o container.</value>
+  </data>
   <data name="ManualLinkGenerated" xml:space="preserve">
     <value>Link gerado para entrega manual:</value>
   </data>
@@ -696,9 +783,6 @@
   <data name="Subtopics" xml:space="preserve">
     <value>Subtópicos</value>
   </data>
-  <data name="Notes" xml:space="preserve">
-    <value>Anotações</value>
-  </data>
   <data name="SectionName" xml:space="preserve">
     <value>Nome do bloco</value>
   </data>
@@ -816,6 +900,42 @@
   <data name="planning.deletion.topic_required" xml:space="preserve">
     <value>O tópico é obrigatório para exclusão.</value>
   </data>
+  <data name="planning.deletion.sections.one" xml:space="preserve">
+    <value>{0:N0} bloco</value>
+  </data>
+  <data name="planning.deletion.sections.other" xml:space="preserve">
+    <value>{0:N0} blocos</value>
+  </data>
+  <data name="planning.deletion.subjects.one" xml:space="preserve">
+    <value>{0:N0} disciplina</value>
+  </data>
+  <data name="planning.deletion.subjects.other" xml:space="preserve">
+    <value>{0:N0} disciplinas</value>
+  </data>
+  <data name="planning.deletion.topics.one" xml:space="preserve">
+    <value>{0:N0} tópico</value>
+  </data>
+  <data name="planning.deletion.topics.other" xml:space="preserve">
+    <value>{0:N0} tópicos</value>
+  </data>
+  <data name="planning.deletion.notes.one" xml:space="preserve">
+    <value>{0:N0} anotação</value>
+  </data>
+  <data name="planning.deletion.notes.other" xml:space="preserve">
+    <value>{0:N0} anotações</value>
+  </data>
+  <data name="DeleteSubject" xml:space="preserve">
+    <value>Excluir disciplina</value>
+  </data>
+  <data name="DeleteTopic" xml:space="preserve">
+    <value>Excluir tópico</value>
+  </data>
+  <data name="DeleteNamed" xml:space="preserve">
+    <value>Excluir {0}</value>
+  </data>
+  <data name="PlanLinks" xml:space="preserve">
+    <value>Acompanhamento do plano</value>
+  </data>
   <data name="NewParentTopic" xml:space="preserve">
     <value>Novo tópico pai</value>
   </data>
@@ -839,5 +959,53 @@
   </data>
   <data name="TopicStatusFor" xml:space="preserve">
     <value>Status do tópico {0}</value>
+  </data>
+  <data name="Dashboard" xml:space="preserve">
+    <value>Painel</value>
+  </data>
+  <data name="DashboardPlan" xml:space="preserve">
+    <value>Plano</value>
+  </data>
+  <data name="DashboardShowPlan" xml:space="preserve">
+    <value>Mostrar</value>
+  </data>
+  <data name="DashboardShowingPlan" xml:space="preserve">
+    <value>Painel do plano {0}.</value>
+  </data>
+  <data name="DashboardOpenPlan" xml:space="preserve">
+    <value>Abrir o plano</value>
+  </data>
+  <data name="DashboardNoBlocks" xml:space="preserve">
+    <value>Ainda não há resumos para mostrar. Abra o plano para acompanhar as disciplinas e os tópicos.</value>
+  </data>
+  <data name="DashboardWelcomeHeading" xml:space="preserve">
+    <value>Boas-vindas ao Trail</value>
+  </data>
+  <data name="DashboardWelcomeDescription" xml:space="preserve">
+    <value>Crie o seu primeiro plano de estudo para acompanhar aqui o seu progresso.</value>
+  </data>
+  <data name="DashboardCreateFirstPlan" xml:space="preserve">
+    <value>Criar o primeiro plano</value>
+  </data>
+  <data name="ModelBindingAttemptedValueIsInvalid" xml:space="preserve">
+    <value>O valor '{0}' não é válido.</value>
+  </data>
+  <data name="ModelBindingMissingBindRequiredValue" xml:space="preserve">
+    <value>É necessário informar um valor.</value>
+  </data>
+  <data name="ModelBindingMissingKeyOrValue" xml:space="preserve">
+    <value>É necessário informar um valor.</value>
+  </data>
+  <data name="ModelBindingMissingRequestBodyRequiredValue" xml:space="preserve">
+    <value>O corpo da requisição é obrigatório.</value>
+  </data>
+  <data name="ModelBindingUnknownValueIsInvalid" xml:space="preserve">
+    <value>O valor informado não é válido.</value>
+  </data>
+  <data name="ModelBindingValueMustBeANumber" xml:space="preserve">
+    <value>O valor deve ser um número.</value>
+  </data>
+  <data name="ModelBindingValueMustNotBeNull" xml:space="preserve">
+    <value>É necessário informar um valor.</value>
   </data>
 </root>

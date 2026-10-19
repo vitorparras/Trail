@@ -1,8 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Trail.Web.Pages.Account;
 
+[AllowAnonymous]
 public sealed class AcceptInviteModel : PageModel
 {
     public IActionResult OnGet([FromQuery] string? token = null, [FromQuery] string? inviteToken = null)

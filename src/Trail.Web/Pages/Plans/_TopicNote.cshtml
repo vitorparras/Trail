@@ -1,8 +1,8 @@
 @model Trail.Web.Pages.Plans.SubjectModel
 @{
     const string noteErrorsId = "topic-note-errors";
-    var noteErrors = PlanFormErrors.For(ViewData.ModelState, Model.ShowNoteErrors, PlanFormErrors.MarkdownField);
-    var noteInvalid = PlanFormErrors.HasErrors(ViewData.ModelState, Model.ShowNoteErrors, PlanFormErrors.MarkdownField);
+    var noteErrors = FormErrors.For(ViewData.ModelState, Model.ShowNoteErrors, PlanFormErrors.MarkdownField);
+    var noteInvalid = FormErrors.HasErrors(ViewData.ModelState, Model.ShowNoteErrors, PlanFormErrors.MarkdownField);
 }
 
 <div id="topic-notes-container" class="card bg-base-100 border border-base-300 p-4 sm:p-6 space-y-4">

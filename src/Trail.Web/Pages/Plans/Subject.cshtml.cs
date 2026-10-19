@@ -2,6 +2,7 @@ using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Trail.Application.Abstractions;
 using Trail.Application.Planning;
 using Trail.Domain.Common;
 using Trail.Domain.Planning;
@@ -13,6 +14,9 @@ namespace Trail.Web.Pages.Plans;
 
 public sealed class SubjectModel : PageModel
 {
+    private const string NoteTopicQueryKey = "noteTopicId";
+    private const string PostedTopicKey = "topicId";
+
     private readonly GetSubjectTopicsHandler _getSubjectTopicsHandler;
     private readonly UpdateSubjectHandler _updateSubjectHandler;
     private readonly AddTopicHandler _addTopicHandler;
@@ -70,6 +74,8 @@ public sealed class SubjectModel : PageModel
     public SubjectDetailView Subject { get; private set; } = null!;
 
     public TopicNoteView? SelectedNote { get; private set; }
+
+    public DeletionConfirmationModel? TopicDeletion { get; private set; }
 
     public string RenderedMarkdownHtml { get; private set; } = string.Empty;
 
@@ -173,7 +179,11 @@ public sealed class SubjectModel : PageModel
         }
 
         ShowSubject(subjectResult.Data);
-        await next();
+        var executedContext = await next();
+        if (executedContext.Result is PageResult && SelectedNote is null)
+        {
+            await LoadNoteAsync(await NoteTopicOfRequestAsync(context.HttpContext.Request), context.HttpContext.RequestAborted);
+        }
     }
 
     public async Task<IActionResult> OnGetAsync(
@@ -182,23 +192,11 @@ public sealed class SubjectModel : PageModel
         Guid? noteTopicId,
         CancellationToken cancellationToken = default)
     {
-        var targetTopicId = noteTopicId ?? (Subject.Topics.Count > 0 ? Subject.Topics[0].Id.Value : null);
-        if (!targetTopicId.HasValue)
-        {
-            return Page();
-        }
+        var noteResult = await LoadNoteAsync(noteTopicId, cancellationToken);
 
-        var noteResult = await _getTopicNoteHandler.HandleAsync(
-            new GetTopicNoteQuery(Subject.Id, TopicId.From(targetTopicId.Value)),
-            cancellationToken);
-
-        if (!noteResult.IsOk)
-        {
-            return this.Respond(noteResult, "planning.get_topic_note");
-        }
-
-        ShowNote(noteResult.Data);
-        return Page();
+        return noteResult is { IsOk: false }
+            ? this.Respond(noteResult, "planning.get_topic_note")
+            : Page();
     }
 
     public async Task<IActionResult> OnGetTopicNoteAsync(
@@ -512,12 +510,47 @@ public sealed class SubjectModel : PageModel
             TopicId.From(topicId));
 
         var result = await _getDeletionImpactHandler.HandleAsync(query, cancellationToken);
-        if (!result.IsOk)
+        if (result.IsOk)
         {
-            return this.Respond(result, "planning.get_topic_deletion_impact");
+            TopicDeletion = DeletionConfirmationModel.ForTopic(result.Data, planId, subjectId, DeletionConfirmationModel.TopicSectionDescriptionId);
         }
 
-        return new JsonResult(result.Data);
+        return this.Respond(result, "planning.get_topic_deletion_impact", options =>
+        {
+            options.PartialViewName = DeletionConfirmationModel.PartialViewName;
+            options.PartialModelFactory = impact => DeletionConfirmationModel.ForTopic(impact, planId, subjectId);
+        });
+    }
+
+    private async Task<Guid?> NoteTopicOfRequestAsync(HttpRequest request)
+    {
+        var candidate = HttpMethods.IsGet(request.Method)
+            ? request.Query[NoteTopicQueryKey].ToString()
+            : request.HasFormContentType ? (await request.ReadFormAsync(request.HttpContext.RequestAborted))[PostedTopicKey].ToString() : null;
+
+        return Guid.TryParse(candidate, CultureInfo.InvariantCulture, out var topicId) && Subject.Topics.Any(topic => topic.Id.Value == topicId)
+            ? topicId
+            : null;
+    }
+
+    private async Task<Result<TopicNoteView>?> LoadNoteAsync(Guid? topicId, CancellationToken cancellationToken)
+    {
+        var targetTopicId = topicId ?? (Subject.Topics.Count > 0 ? Subject.Topics[0].Id.Value : null);
+        if (!targetTopicId.HasValue)
+        {
+            return null;
+        }
+
+        var noteResult = await _getTopicNoteHandler.HandleAsync(
+            new GetTopicNoteQuery(Subject.Id, TopicId.From(targetTopicId.Value)),
+            cancellationToken);
+
+        if (noteResult.IsOk)
+        {
+            ShowNote(noteResult.Data);
+        }
+
+        return noteResult;
     }
 
     private static Guid ReadRouteGuid(PageHandlerExecutingContext context, string routeKey) =>

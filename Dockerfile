@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0-noble@sha256:0d99ebf1ccad15037b5c98c9fe8979d6b8dbac23812feae2277a0b277b5c5ffa AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0-noble@sha256:de4fe90a98845d75910b9769662465c84de1a934665c431279d1382b2bddc02b AS build
 ARG TARGETARCH
 WORKDIR /source
 COPY Trail.slnx Directory.Build.props Directory.Packages.props global.json nuget.config .editorconfig ./
@@ -12,7 +12,7 @@ COPY src/ src/
 RUN dotnet publish src/Trail.Web/Trail.Web.csproj --no-restore -c Release -a $TARGETARCH -p:ContinuousIntegrationBuild=true -p:UseAppHost=false -o /app/publish
 RUN mkdir -p /data
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled-extra@sha256:3ed6558056b54d5c9dfefb7ff473728e022ff2bf1d976cbf8ee07b05ec594374 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled-extra@sha256:9b755ea799ae649141a073e30d8b62d8095a5465af2b7694d17866e8c05131d8 AS final
 WORKDIR /app
 COPY --from=build --chown=$APP_UID:$APP_UID /data /data
 COPY --from=build /app/publish .

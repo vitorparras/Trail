@@ -1,0 +1,39 @@
+name: Sugerir funcionalidade
+description: Proponha uma melhoria ou funcionalidade nova.
+title: "[Sugestão]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Que problema isso resolve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Solução proposta
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+  - type: dropdown
+    id: help
+    attributes:
+      label: Você gostaria de implementar?
+      options:
+        - "Sim, posso abrir um pull request"
+        - "Não, só estou sugerindo"
+    validations:
+      required: true
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      options:
+        - label: Procurei nas issues e discussões existentes e isto ainda não foi proposto.
+          required: true
+        - label: Concordo em seguir o Código de Conduta deste projeto.
+          required: true
